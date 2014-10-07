@@ -1,0 +1,135 @@
+<html>
+	<head>
+		<title>Synapse.js - XOR</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="Training a neural network to solve an XOR - Synapse.js">
+		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
+		<meta name="author" content="Juan Cazala">
+		<script src='jquery.js'></script>
+		<script src='../synapse.js'></script>
+		<style>
+
+			body { 
+				font-family: "Lucida Console", Monaco, monospace;
+				padding: 0px 25px;
+				position: relative;
+			}
+
+			.title {
+				text-align: center;
+				color: rgb(71, 71, 71);;
+				font-size: 27px;
+				margin: 36px;
+			}
+
+			p {
+				padding: 10px;
+				font-size: 12px;
+			}
+			.code {
+				display: inline-block;
+				background-color: #DDD;
+				padding: 10px;
+			}
+			.log {
+				padding: 0px;
+				color: gray;
+				padding-left: 13px;
+				font-size: 11px;
+			}
+			.validate {
+				width: 16;
+				height: 13;
+				display: inline-block;
+				top: 1px;
+			}
+			.tick {
+				background-image: url(tick.png);
+			}
+			.fail{
+				background-image: url(fail.png);
+				width: 12px;
+				height: 12px;
+				top: -1px;
+				position: relative;
+			}
+			#footer {
+				position: absolute;
+				text-align: center;
+				width: 100%;
+				font-size: 11px;
+				bottom: 10px;
+			}
+			a{
+				color: gray;
+			}
+
+		</style>
+		<script>
+
+			var perceptron = null;
+
+			var log = function(text){
+				$('<p>', {'class' : 'log'}).html(text).appendTo($(document.body));
+			}
+
+			var train = function(){
+				$(".log").remove();
+				log("Training XOR...");
+				log ("&nbsp");
+				perceptron = new Architect.Perceptron(2,3,1);
+				var results = perceptron.trainer.XOR();
+				log("Trained!");
+				log("- Iterations: " + results.iterations);
+				log("- Error: " + results.error);
+				log("- Elapsed time: " + results.time + " ms");
+
+				validate();
+
+			}
+
+			var validate = function(){
+				log ("&nbsp");
+				log("Validating...");
+				var total = 0;
+				var output = perceptron.activate([0,0])[0].toFixed(2);
+				var ok = output < .5;
+				log ("1) input: [0,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
+				total += ok;
+				output = perceptron.activate([0,1])[0].toFixed(2);
+				ok = output > .5;
+				total += ok;
+				log ("2) input: [0,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
+				output = perceptron.activate([1,0])[0].toFixed(2);
+				ok = output > .5;
+				total += ok;
+				log ("3) input: [1,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
+				output = perceptron.activate([1,1])[0].toFixed(2);
+				ok = output < .5;
+				total += ok;
+				log ("4) input: [1,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
+				log ("&nbsp");
+				if (total == 4)
+				{
+					log ("Success!");
+					log ("&nbsp");
+					log ("&nbsp");
+				} else {
+					log ("Failed...");
+					log ("&nbsp");
+					log ("&nbsp");
+					train();
+				}
+			}
+
+		</script>
+	</head>
+	<body>
+		<div class='title'>Synapse.js - XOR</div>
+		<p> In this sample, a simple perceptron (2 inputs, 3 hidden and 1 output neurons) will be trained to learn how to solve an XOR. </p>
+		<p class="code"> var perceptron = new Architect.Perceptron(2,3,1);<br>perceptron.trainer.XOR(); </p>
+		<p> Start training: <button onclick="train();">START</button></p>
+		<div id="log"></div>
+		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
+	</body>
+</html>

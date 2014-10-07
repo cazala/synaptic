@@ -1,0 +1,305 @@
+<html>
+	<head>
+		<title>Synapse.js - Distracted Sequence Recall</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="Distracted Sequence Recall task sample - Synapse.js">
+		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
+		<meta name="author" content="Juan Cazala">
+		<script src='jquery.js'></script>
+		<script src='../synapse.js'></script>
+		<style>
+
+			body { 
+				font-family: "Lucida Console", Monaco, monospace;
+				padding: 0px 25px;
+				position: relative;
+			}
+			.title {
+				text-align: center;
+				color: rgb(71, 71, 71);;
+				font-size: 27px;
+				margin: 36px;
+			}
+
+			p, li {
+				padding: 4px;
+				font-size: 12px;
+				text-align: justify;
+			}
+			.code {
+				display: inline-block;
+				background-color: #DDD;
+				padding: 10px;
+			}
+			.log {
+				padding: 0px;
+				color: gray;
+				padding-left: 13px;
+				font-size: 11px;
+			}
+			.validate {
+				width: 16;
+				height: 13;
+				display: inline-block;
+				position: relative;
+				top: 1px;
+			}
+			.tick {
+				background-image: url(tick.png);
+			}
+			.fail{
+				background-image: url(fail.png);
+				width: 12px;
+				height: 12px;
+				top: 1px;
+				position: relative;
+			}
+			.square{
+				width: 12px;
+				height: 12px;
+				top: -1px;
+				position: relative;
+				border: 1px solid black;
+				display: inline-block;
+			}
+			#footer {
+				position: absolute;
+				text-align: center;
+				width: 100%;
+				font-size: 11px;
+				bottom: 10px;
+			}
+			a{
+				color: gray;
+			}
+		</style>
+		<script>
+
+			var LSTM = null;
+
+			var targets = [2,4];
+			var distractors = [3,5];
+			var prompts = [0, 1];
+			var length = 10;
+
+			var sequence = null;
+			var sequenceLength = 0;
+			var targetsCorrect = 0;
+			var distractorsCorrect = 0;
+			var indexes = [];
+			var positions = [];
+			var symbol = 0;
+			var symbols = targets.length + distractors.length + prompts.length;
+
+			var log = function(text, append){
+				var p = $('<p>', {'class' : 'log'}).html(text).appendTo($(document.body));
+				if (append)
+					p.appendTo($("#" + append));
+			}
+
+			var train = function(){
+				$('.log').remove();
+
+				var squareTargets =[];
+				for (var i in targets)
+					squareTargets[i] = square(targets[i]);
+				log("Targets: " + squareTargets.join(' '));
+
+				var squareDistractors =[];
+				for (var i in distractors)
+					squareDistractors[i] = square(distractors[i]);
+				log("Distractors: " + squareDistractors.join(' '));
+
+				var squarePrompts =[];
+				for (var i in prompts)
+					squarePrompts[i] = square(prompts[i]);
+				log("Prompts: " + squarePrompts.join(' '));
+
+				log("Length: " + length);
+				log ("&nbsp");
+
+				log("Training DSR...");
+
+				$("body").animate({ scrollTop: $(window).height() }, function()
+				{
+					var inputs = symbols;
+					var outputs = targets.length;
+					var hidden = inputs * 0.8 | 0;
+					LSTM = new Architect.LSTM(inputs,hidden,outputs);
+
+					var results = LSTM.trainer.DSR({
+						targets: targets,
+						distractors: distractors,
+						prompts: prompts,
+						length: length,
+						iterations: 250000,
+						rate: .3
+					});
+					if (results.iterations < 250000)
+					{
+						log("Trained!");
+						log("- Iterations: " + results.iterations);
+						log("- Error: " + results.error);
+						log("- Elapsed time: " + results.time + " ms");
+						log("- Success rate: " + (results.success*100).toFixed(2) + "%");
+						$('<div>', { id: 'log-validate', style:'height:450px;'}).appendTo($(document.body));
+						validate();
+					} else{
+						log ("&nbsp");
+						log ("Failed...");
+						log ("&nbsp");
+						log ("&nbsp");
+						console.log('failed');
+						train()
+					}
+				});
+
+			}
+
+			var validate = function(){
+				//$(document.body).css("min-height", 1349);
+				$("#log-validate").html('');
+				log ("&nbsp", "log-validate");
+				log("Validating...", "log-validate");
+				
+				sequence = [], sequenceLength = length - prompts.length;
+				for (i  = 0; i < sequenceLength; i ++)
+				{
+					var any = Math.random() * distractors.length | 0;
+					sequence.push(distractors[any]);
+				}
+				indexes = [], positions = [];
+				for (i = 0; i < prompts.length; i ++)
+				{
+					indexes.push(Math.random() * targets.length | 0);
+					positions.push(noRepeat(sequenceLength, positions));
+				}
+				positions = positions.sort();
+				for (i = 0; i < prompts.length; i ++)
+				{
+					sequence[positions[i]] = targets[indexes[i]];
+					sequence.push(prompts[i]);
+				}
+				targetsCorrect = distractorsCorrect = symbol = 0;
+
+				log ("&nbsp", "log-validate");
+				var squareSecuence =[];
+				for (var i in sequence)
+					squareSecuence[i] = square(sequence[i]);
+				log("Sequence: " + squareSecuence.join(' '), "log-validate");
+				next();
+			}
+
+			var next = function(){
+				// generate input from sequence
+				var input = [];
+				for (j = 0; j < symbols; j++)
+					input[j] = 0;
+				input[sequence[symbol]] = 1;
+
+				// generate target output
+				var output = [];
+				for (j = 0; j < targets.length; j++)
+					output[j] = 0;
+
+				if (symbol >= sequenceLength)
+				{
+					var index = symbol - sequenceLength;
+					output[indexes[index]] = 1;
+				}
+
+				// check result
+				var prediction = LSTM.activate(input);
+				var ok = equal(prediction, output);
+				if (ok)
+					if (i < sequenceLength)
+						distractorsCorrect++;
+					else
+						targetsCorrect++;
+				val = value(prediction);
+				log((symbol+1) + ") input: " + square(sequence[symbol]) +  " output: " + (val != "none" ? square(targets[val]) : "--") + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'), "log-validate")
+
+				symbol++;
+				$("body").animate({ scrollTop: $(window).height() });
+				if (symbol < sequence.length)
+					setTimeout(next, 100);
+				else {
+					if (distractorsCorrect + targetsCorrect == length)
+					{
+						log ("&nbsp", "log-validate");
+						log ("Success! <button onclick='validate();'>Try another sequence</button>", "log-validate");
+						log ("&nbsp", "log-validate");
+						log ("&nbsp", "log-validate");
+					} else {
+						log ("&nbsp", "log-validate");
+						log ("Failed...", "log-validate");
+						log ("&nbsp", "log-validate");
+						log ("&nbsp", "log-validate");
+						validate();
+					}
+				}
+			}
+
+			var noRepeat = function(range, avoid)
+			{
+				var number = Math.random() * range | 0;
+				var used = false;
+				for (var i in avoid)
+					if (number == avoid[i])
+						used = true;
+				return used ? noRepeat(range, avoid) : number;
+			}
+			var equal = function(prediction, output){
+				for (var i in prediction)
+					if (Math.round(prediction[i]) != output[i])
+						return false;
+				return true;
+			}
+
+			var value = function(array){
+				var max = .5;
+				var res = -1;
+				for (var i in array)
+					if (array[i] > max)
+					{
+						max = array[i];
+						res = i;
+					}
+				return res == -1 ? 'none' : res;
+			}
+
+			var colors = ['white', 'black', 'green', 'yellow', 'red', 'blue', 'purple', 'orange', 'gray', 'lightblue'];
+			var square = function(value){
+				return '<span class="square" style="background-color:' + colors[value] + '">&nbsp</span>';
+			}
+
+		</script>
+	</head>
+	<body>
+		<div class='title'>Synapse.js - DSR</div>
+		<p>This sample is a simplified version of <a href='http://www.overcomplete.net/papers/nn2012.pdf'>Derek D. Monner's Distracted Sequence Recall</a> task, which involves 6 symbols, each represented locally in an input layer of 6 neurons:</p>
+		<ul>
+			<li>Targets: <span class="square" style="background-color:green">&nbsp;</span> <span class="square" style="background-color:red">&nbsp;</span> &lt;- must be recognized and remembered by the network.</li>
+			<li>Distractors: <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:blue">&nbsp;</span> &lt;- never need to be remembered.</li>
+			<li>Prompts: <span class="square" style="background-color:white">&nbsp;</span> <span class="square" style="background-color:black">&nbsp;</span> &lt;- direct the network to give an answer.</li>
+		</ul>
+		 <p>A single trial consists of the presentation of a temporal sequence of 10 input symbols. The first 8 consist of 2 randomly chosen target symbols and 6 randomly chosen distractor symbols, all in random order; the remaining two symbols are the two prompts, which direct the network to produce the first and second target in the sequence, in order, regardless of when they occurred. A sample sequence would look like this:
+		 </p>
+		 <ul>
+			<li>Sequence: <span class="square" style="background-color:blue">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:red">&nbsp;</span> <span class="square" style="background-color:blue">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:green">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:white">&nbsp;</span> <span class="square" style="background-color:black">&nbsp;</span></li>
+		</ul>
+		 <p>Note that the targets may appear at any point in the sequence, so the network cannot rely on their temporal position; rather, the network must recognize the symbols as targets and preferentially save them, along with temporal order information, in order to produce the correct output sequence.</p>
+		 <p>The network is trained to produce <b>no output</b> for all symbols except the prompts, and for each prompt symbol the network must produce the output symbol which corresponds to the appropriate target from the sequence. For the sequence shown above, the prompts should output <span class="square" style="background-color:red">&nbsp;</span> <span class="square" style="background-color:green">&nbsp;</span>, respectively.</p>
+		 <p>The network doesn't have any prior knowledge of which are the target, distractor or prompt symbols, nor what is the length of the sequence, it has to learn all this information during its training process.</p>
+		 <p>In this sample a <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>Long Short Term Memory</a> network (6 input neurons, 7 memory blocks, and 2 output neurons) will be trained to complete the Distracted Sequence Recall task with a success rate of at least 95%.</p>
+		<p class='code'>var LSTM = new Architect.LSTM(6,7,2);<br>
+			<br>LSTM.trainer.DSR({
+			<br>&nbsp;&nbsp;&nbsp;&nbsp;targets: [2,4],
+			<br>&nbsp;&nbsp;&nbsp;&nbsp;distractors: [3,5],
+			<br>&nbsp;&nbsp;&nbsp;&nbsp;prompts: [0,1],
+			<br>&nbsp;&nbsp;&nbsp;&nbsp;length: 10
+			<br>});</p>
+		<p> Start training: <button onclick="train();">START</button></p>
+		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
+	</body>
+</html>
