@@ -64,10 +64,10 @@
 			}
 			#footer {
 				position: absolute;
-				text-align: center;
-				width: 100%;
 				font-size: 11px;
 				bottom: 10px;
+				margin-left: 50%;
+				left: -245px;
 			}
 			a{
 				color: gray;
@@ -90,6 +90,7 @@
 			var positions = [];
 			var symbol = 0;
 			var symbols = targets.length + distractors.length + prompts.length;
+			var json = null;
 
 			var log = function(text, append){
 				var p = $('<p>', {'class' : 'log'}).html(text).appendTo($(document.body));
@@ -120,8 +121,9 @@
 				log ("&nbsp");
 
 				log("Training DSR...");
+				log ("&nbsp");
 
-				$("body").animate({ scrollTop: $(window).height() }, function()
+				$("body").animate({ scrollTop: $(document).height() }, function()
 				{
 					var inputs = symbols;
 					var outputs = targets.length;
@@ -221,7 +223,7 @@
 				log((symbol+1) + ") input: " + square(sequence[symbol]) +  " output: " + (val != "none" ? square(targets[val]) : "--") + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'), "log-validate")
 
 				symbol++;
-				$("body").animate({ scrollTop: $(window).height() });
+				
 				if (symbol < sequence.length)
 					setTimeout(next, 100);
 				else {
@@ -229,13 +231,10 @@
 					{
 						log ("&nbsp", "log-validate");
 						log ("Success! <button onclick='validate();'>Try another sequence</button>", "log-validate");
-						log ("&nbsp", "log-validate");
-						log ("&nbsp", "log-validate");
+						$("body").animate({ scrollTop: $(document).height() }, "slow");
 					} else {
 						log ("&nbsp", "log-validate");
 						log ("Failed...", "log-validate");
-						log ("&nbsp", "log-validate");
-						log ("&nbsp", "log-validate");
 						validate();
 					}
 				}
