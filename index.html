@@ -1,1 +1,57 @@
-hola mundo
+<html>
+	<head>
+		<title>Synapse.js</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="Text prediction reading Wikipedia and Neural Networks - Synapse.js">
+		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
+		<meta name="author" content="Juan Cazala">
+		<style>
+			body { 
+				font-family: "Lucida Console", Monaco, monospace;
+				padding: 0px 25px;
+				position: relative;
+			}
+			.title {
+				text-align: center;
+				color: rgb(71, 71, 71);;
+				font-size: 27px;
+				margin: 36px;
+			}
+
+			p, li {
+				padding: 2px;
+				font-size: 12px;
+				text-align: justify;
+			}
+			.quote{
+				font-style: italic;
+				color: rgb(162, 162, 162);
+				font-size: 12px;
+				text-align: center;
+			}
+			#footer {
+				position: absolute;
+				font-size: 11px;
+				bottom: 10px;
+				margin-left: 50%;
+				left: -245px;
+			}
+			a{
+				color: gray;
+			}
+		</style>
+	</head>
+	<body>
+		<div class='title'>Synapse.js</div>
+		<p>Synapse.js is a javascript/node.js neural networks library, its generalized algorythm is architecture-free, so you can build and train basically any type of first order or even <a href='http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network'>second order neural network</a> architectures.</p>
+		<p>This library includes a few built-in architectures like <a href='http://en.wikipedia.org/wiki/Multilayer_perceptron'>multilayer perceptrons</a>, multilayer <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>long-short term memory</a> networks (LSTM) or <a href='http://en.wikipedia.org/wiki/Liquid_state_machine'>liquid state machines</a>, and a trainer capable of training any given network, and includes built-in training tasks/tests like solving an XOR,passing a <a href='http://www.overcomplete.net/papers/nn2012.pdf'>Distracted Sequence Recall</a> task or an <a href='http://www.willamette.edu/~gorr/classes/cs449/reber.html'>Embeded Reber Grammar</a> test.</p>
+		<p><b>Demos:</b>
+			<ul>
+				<li><a href='xor.html'>Solve an XOR</a>.</li>
+				<li><a href='dsr.html'>Distracted sequence recall task</a>.</li>
+				<li><a href='wiki.html'>Generate text</a>.</li>
+			</ul>
+		</p>
+		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
+	</body>
+</html>
