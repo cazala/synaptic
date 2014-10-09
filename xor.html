@@ -70,7 +70,7 @@
 			var perceptron = null;
 
 			var log = function(text){
-				$('<p>', {'class' : 'log'}).html(text).appendTo($(document.body));
+				return $('<p>', {'class' : 'log'}).html(text).appendTo($(document.body)).hide().fadeIn();
 			}
 
 			var train = function(){
@@ -78,7 +78,10 @@
 				log("Training XOR...");
 				log ("&nbsp");
 				perceptron = new Architect.Perceptron(2,3,1);
-				var results = perceptron.trainer.XOR();
+				var results = perceptron.trainer.XOR({ 
+					error: .0001,
+					rate: .5
+				});
 				log("Trained!");
 				log("- Iterations: " + results.iterations);
 				log("- Error: " + results.error);
@@ -94,32 +97,42 @@
 				var total = 0;
 				var output = perceptron.activate([0,0])[0].toFixed(2);
 				var ok = output < .5;
-				log ("1) input: [0,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
+				var x1 = log ("1) input: [0,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>')).hide();
 				total += ok;
 				output = perceptron.activate([0,1])[0].toFixed(2);
 				ok = output > .5;
 				total += ok;
-				log ("2) input: [0,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
+				var x2 = log ("2) input: [0,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>')).hide();
 				output = perceptron.activate([1,0])[0].toFixed(2);
 				ok = output > .5;
 				total += ok;
-				log ("3) input: [1,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
+				var x3 = log ("3) input: [1,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>')).hide();
 				output = perceptron.activate([1,1])[0].toFixed(2);
 				ok = output < .5;
 				total += ok;
-				log ("4) input: [1,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
+				var x4 = log ("4) input: [1,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>')).hide();
 				log ("&nbsp");
 				if (total == 4)
 				{
-					log ("Success!");
+					var x5 = log ("Success!").hide();
 					log ("&nbsp");
 					log ("&nbsp");
 				} else {
-					log ("Failed...");
+					var x5 = log ("Failed...").hide();
 					log ("&nbsp");
 					log ("&nbsp");
 					train();
 				}
+
+				x1.fadeIn(function(){
+					x2.fadeIn(function(){
+						x3.fadeIn(function(){
+							x4.fadeIn(function(){
+								x5.fadeIn();
+							})
+						})
+					})
+				})
 			}
 
 		</script>
