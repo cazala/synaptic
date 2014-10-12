@@ -1,11 +1,11 @@
 Synapse
 =======
 
-### Overview
+##Overview
 
-## Neuron
+###Neuron
 
-#Description
+######Description
 
 Text
 
