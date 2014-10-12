@@ -1,0 +1,32 @@
+{
+  "name": "synapse",
+  "version": "0.1.0",
+  "description": "Architecture-free neural network library",
+  "main": "./lib/synapse",
+  "scripts": {
+    "test": "mocha test"
+  },
+  "devDependencies": {
+    "mocha": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cazala/synapse.git"
+  },
+  "keywords": [
+    "neural network",
+    "machine learning",
+    "long short term memory",
+    "perceptron",
+    "architecture free"
+  ],
+  "author": "Juan Cazala <juancazala@gmail.com> (http://juancazala.com/)",
+  "license": {
+    "type": "MIT",
+    "url": "https://github.com/cazala/synapse/blob/master/LICENSE"
+  },
+  "bugs": {
+    "url": "https://github.com/cazala/synapse/issues"
+  },
+  "homepage": "https://github.com/cazala/synapse"
+}
