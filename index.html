@@ -52,6 +52,22 @@
 			a{
 				color: gray;
 			}
+			img {
+				border: 1px solid black;
+				padding: 2px;
+				margin-right: 10px;
+				margin-bottom: 10px;
+				display: block;
+			}
+
+			.image_frame {
+				display: inline-block;
+				text-align: center;
+				font-size: 12px;
+				vertical-align: text-top;
+				max-width: 135px;
+				text-decoration: underline;
+			}
 		</style>
 	</head>
 	<body>
@@ -59,13 +75,11 @@
 		<p>Synapse.js is a javascript/node.js neural networks library, its generalized algorythm is architecture-free, so you can build and train basically any type of first order or even <a href='http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network'>second order neural network</a> architectures.</p>
 		<p>This library includes a few built-in architectures like <a href='http://en.wikipedia.org/wiki/Multilayer_perceptron'>multilayer perceptrons</a>, multilayer <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>long-short term memory</a> networks (LSTM) or <a href='http://en.wikipedia.org/wiki/Liquid_state_machine'>liquid state machines</a>, and a trainer capable of training any given network, and includes built-in training tasks/tests like solving an XOR, completing a Distracted Sequence Recall task or an <a href='http://www.willamette.edu/~gorr/classes/cs449/reber.html'>Embeded Reber Grammar</a> test.</p>
 		<p><b>Demos:</b>
-			<ul>
-				<li><a href='xor.html'>Solve an XOR</a>.</li>
-				<li><a href='dsr.html'>Distracted sequence recall task</a>.</li>
-				<li><a href='grayscale.html'>Learn how to grayscale</a>.</li>
-				<li><a href='paint.html'>Paint an image</a>.</li>
-				<li><a href='wiki.html'>Generate text by reading Wikipedia</a>.</li>
-			</ul>
+			<a href='xor.html'><div class="image_frame"><img src='img/demo1.png'/><span>Learn XOR</span></div></a>
+			<a href='dsr.html'><div class="image_frame"><img src='img/demo2.png'/><span>Discrete Sequence Recall</span></div></a>
+			<a href='grayscale.html'><div class="image_frame"><img src='img/demo3.png'/><span>Learn how to grayscale</span></div></a>
+			<a href='paint.html'><div class="image_frame"><img src='img/demo4.png'/><span>Paint an image</span></div></a>
+			<a href='wiki.html'><div class="image_frame"><img src='img/demo5.png'/><span>Read from Wikipedia</span></div></a>
 		</p>
 		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
 	</body>
