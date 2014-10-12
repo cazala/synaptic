@@ -1,0 +1,163 @@
+<html>
+	<head>
+		<title>Synapse.js - Painting</title>
+		<meta charset="UTF-8">
+		<meta name="description" content="Training a neural network to solve an XOR - Synapse.js">
+		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
+		<meta name="author" content="Juan Cazala">
+		<script src='js/jquery.js'></script>
+		<script src='js/synapse.js'></script>
+		<style>
+			html {
+				box-shadow: 0 0 50px gray inset;
+			}
+			body { 
+				font-family: "Lucida Console", Monaco, monospace;
+				padding: 0px 25px;
+				position: relative;
+			}
+
+			.title {
+				text-align: center;
+				color: rgb(71, 71, 71);;
+				font-size: 27px;
+				margin: 36px;
+			}
+
+			p {
+				padding: 10px;
+				font-size: 12px;
+			}
+			.log {
+				padding: 0px;
+				color: gray;
+				padding-left: 13px;
+				font-size: 11px;
+			}
+			#footer {
+				position: absolute;
+				font-size: 11px;
+				bottom: 10px;
+				margin-left: 50%;
+				left: -245px;
+			}
+			a{
+				color: gray;
+			}
+			img, canvas {
+				border: 1px solid black;
+				padding: 2px;
+				margin-right: 10px;
+				margin-bottom: 10px;
+				display: block;
+			}
+
+			.image_frame {
+				display: inline-block;
+				text-align: center;
+				font-size: 12px;
+			}
+
+			.train {
+				display: none;
+			}
+		</style>
+		<script>
+
+			var perceptron = null;
+			var worker = null;
+			var index = 0;
+			var twitter_data = null;
+			var canvas = null;
+			var context = null;
+			var size = 125 * 125;
+			var iteration = 0;
+			var to = null;
+
+			var getData = function(imageObj){
+
+				canvas = canvas || document.getElementById('canvas');
+		        context = context || canvas.getContext('2d');
+
+		        context.drawImage(imageObj, 0, 0);
+
+		        var imageData = context.getImageData(0, 0, 125, 125);
+		        return imageData.data;
+			}
+
+			var train = function(){
+				iteration = 0;
+				to && clearTimeout(to);
+				perceptron = new Architect.LSTM(2,14,3);
+		        twitter_data = getData(document.getElementById('twitter'));
+		        $(".train").show();
+				preview();
+			}
+
+			var entrenar = function(){
+				
+				for (var x = 0; x < 125; x+=1)
+				{
+					for(var y = 0; y < 125; y+=1)
+					{
+						px = pixel(twitter,x,y)
+						perceptron.activate([x/125,y/125]);
+						perceptron.propagate(.01, pixel(twitter_data,x,y));
+					}
+				}
+				preview();
+			}
+
+			var pixel = function(data,x,y){
+
+				var red = data[((125 * y) + x) * 4];
+		        var green = data[((125 * y) + x) * 4 + 1];
+		        var blue = data[((125 * y) + x) * 4 + 2];
+
+		        return [red / 255, green / 255, blue / 255];
+			}
+
+			var preview = function(){
+				$("#log").html("Iterations: " + iteration++);
+				var imageData = context.getImageData(0, 0, 125, 125);
+				for (var x = 0; x < 125; x++)
+				{
+					for(var y = 0; y < 125; y++)
+					{
+						var rgb = perceptron.activate([x/125,y/125]);
+						imageData.data[((125 * y) + x) * 4] = (rgb[0] )* 255;
+						imageData.data[((125 * y) + x) * 4 + 1] = (rgb[1] ) * 255;
+						imageData.data[((125 * y) + x) * 4 + 2] = (rgb[2] ) * 255;
+					}
+				}
+				context.putImageData(imageData,0,0);
+				to = setTimeout(entrenar,16);
+			}
+
+		</script>
+		<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-54879338-2', 'auto');
+  ga('send', 'pageview');
+
+</script>
+	</head>
+	<body>
+		
+		<div class='title'>Synapse.js - Painting</div>
+		<p> In this demo, a <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>Long Short Term Memory</a> network (2 inputs, 14 memory blocks, 3 outputs) will be trained entering the coordinates of every pixel (x, y) of an image as input, and the color as ouput (RGB values). After each iteration, the network will be directed to fill a canvas, the coordinates of every pixel will be provided and the canvas will be painted with the RGB values outputed by the network.</p>
+		<p> Start training: <button onclick="train();">START</button> <p id="log" class="log"></p></p>
+		<div class="train">
+		<div class="image_frame"><img src='img/twitter.png' id='twitter'/><span>original</span></div>
+		<div class="image_frame"><canvas id='canvas' width =125 height=125></canvas><span>painted</span></div>
+		<p>&nbsp;</p>
+		<p>It may take a few thousand iterations for the painted image to start looking like the original, this is an example after 5000 iterations:</p>
+		<div class="image_frame" style="text-align: center;"><img src='img/twitter_painted.png'/></div>
+		</div>
+		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
+	</body>
+</html>
