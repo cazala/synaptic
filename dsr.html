@@ -107,6 +107,7 @@
 			}
 
 			var train = function(){
+				$("#aux").remove();
 				$('.log').remove();
 				$("#log-validate").remove();
 
@@ -318,6 +319,7 @@
 			<br>&nbsp;&nbsp;&nbsp;&nbsp;length: 10
 			<br>});</p>
 		<p> Start training: <button onclick="train();">START</button></p>
+		<p id="aux">&nbsp;</p>
 		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
 	</body>
 </html>
