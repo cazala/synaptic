@@ -2,7 +2,7 @@
 	<head>
 		<title>Synapse.js - Painting</title>
 		<meta charset="UTF-8">
-		<meta name="description" content="Training a neural network to solve an XOR - Synapse.js">
+		<meta name="description" content="Training a neural network to paint a canvas - Synapse.js">
 		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
 		<meta name="author" content="Juan Cazala">
 		<script src='js/jquery.js'></script>
@@ -15,7 +15,6 @@
 				font-family: "Lucida Console", Monaco, monospace;
 				padding: 0px 25px;
 				position: relative;
-				line-height: 120%;
 			}
 
 			.title {
@@ -95,7 +94,7 @@
 				preview();
 			}
 
-			var iterate = function(){
+			var entrenar = function(){
 				
 				for (var x = 0; x < 125; x+=1)
 				{
@@ -132,7 +131,7 @@
 					}
 				}
 				context.putImageData(imageData,0,0);
-				to = setTimeout(iterate,16);
+				to = setTimeout(entrenar,16);
 			}
 
 		</script>
@@ -155,6 +154,7 @@
 		<div class="train">
 		<div class="image_frame"><img src='img/twitter.png' id='twitter'/><span>original</span></div>
 		<div class="image_frame"><canvas id='canvas' width =125 height=125></canvas><span>painted</span></div>
+		<p>&nbsp;</p>
 		<p>It may take a few thousand iterations for the painted image to start looking like the original, this is an example after 5000 iterations:</p>
 		<div class="image_frame" style="text-align: center;"><img src='img/twitter_painted.png'/></div>
 		</div>

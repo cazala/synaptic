@@ -17,7 +17,6 @@
 				font-family: "Lucida Console", Monaco, monospace;
 				padding: 0px 25px;
 				position: relative;
-				line-height: 120%;
 			}
 			.title {
 				text-align: center;
@@ -41,7 +40,6 @@
 				color: gray;
 				padding-left: 13px;
 				font-size: 11px;
-				line-height: 100%;
 			}
 			.validate {
 				width: 16;
@@ -107,7 +105,6 @@
 			}
 
 			var train = function(){
-				$("#aux").remove();
 				$('.log').remove();
 				$("#log-validate").remove();
 
@@ -308,7 +305,7 @@
 			<li>Sequence: <span class="square" style="background-color:blue">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:red">&nbsp;</span> <span class="square" style="background-color:blue">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:green">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:white">&nbsp;</span> <span class="square" style="background-color:black">&nbsp;</span></li>
 		</ul>
 		 <p>Note that the targets may appear at any point in the sequence, so the network cannot rely on their temporal position; rather, the network must recognize the symbols as targets and preferentially save them, along with temporal order information, in order to produce the correct output sequence.</p>
-		 <p>The network is trained to produce <b>no output</b> for all symbols except for the prompts, and for each prompt symbol the network must produce the output symbol which corresponds to the appropriate target from the sequence. For the sequence shown above, the prompts should output <span class="square" style="background-color:red">&nbsp;</span> <span class="square" style="background-color:green">&nbsp;</span>, respectively.</p>
+		 <p>The network is trained to produce <b>no output</b> for all symbols except the prompts, and for each prompt symbol the network must produce the output symbol which corresponds to the appropriate target from the sequence. For the sequence shown above, the prompts should output <span class="square" style="background-color:red">&nbsp;</span> <span class="square" style="background-color:green">&nbsp;</span>, respectively.</p>
 		 <p>The network doesn't have any prior knowledge of which are the target, distractor or prompt symbols, nor what is the length of the sequence, it has to learn all this information during its training process.</p>
 		 <p>In this sample a <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>Long Short Term Memory</a> network (6 input neurons, 7 memory blocks, and 2 output neurons) will be trained to complete the Distracted Sequence Recall task with a success rate of at least 95%.</p>
 		<p class='code'>var LSTM = new Architect.LSTM(6,7,2);<br>
@@ -319,7 +316,6 @@
 			<br>&nbsp;&nbsp;&nbsp;&nbsp;length: 10
 			<br>});</p>
 		<p> Start training: <button onclick="train();">START</button></p>
-		<p id="aux">&nbsp;</p>
 		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
 	</body>
 </html>
