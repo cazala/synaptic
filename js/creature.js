@@ -1,6 +1,6 @@
 function Creature(world, x, y)
 {
-	this.network = new Architect.Perceptron(40, 50, 3);
+	this.network = new Architect.Perceptron(40, 25, 3);
 	this.world = world;
 	this.mass = .3;
 	this.maxspeed = 2;
