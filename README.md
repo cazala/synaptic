@@ -23,6 +23,6 @@ You can download synapse with [npm](http://npmjs.org):
 `npm install synapse`
 
 ######In the browser
-Just include the file synapse.js (you can find it in the /lib directory) with a script tag in your HTML:
+Just include the file synapse.js (you can find it in the `/lib` directory) with a script tag in your HTML:
 
 `<script src="synapse.js"></script>`
