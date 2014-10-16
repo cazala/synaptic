@@ -9,36 +9,51 @@
 		<script src='js/synapse.js'></script>
 		<style>
 
-			html {
-				box-shadow: 0 0 50px gray inset;
-			}
-
 			body { 
-				font-family: "Lucida Console", Monaco, monospace;
-				padding: 0px 25px;
+				font-family: 'Open Sans', sans-serif;
 				position: relative;
+				line-height: 120%;
+				margin: 0px;
+			}
+			.container {
+				width: 1024px;
+				margin: 0 auto;
 			}
 			.title {
 				text-align: center;
-				color: rgb(71, 71, 71);;
-				font-size: 27px;
-				margin: 36px;
+				color: rgb(125, 125, 125);
+				font-size: 34px;
+				padding-top: 50px;
+				height: 50px;
+				cursor: pointer;
+			}
+			.title b{
+				color:rgb(50, 50, 50);;
+			}
+			.title:hover{
+				opacity: .8;
+			}
+			.subtitle: {
+				font-weight: bold;
 			}
 
 			p, li {
 				padding: 4px;
-				font-size: 12px;
+				font-size: 13px;
 				text-align: justify;
 			}
-			.code {
-				display: inline-block;
-				background-color: #DDD;
-				padding: 10px;
+			.code, .log {
+				border-left: 5px solid rgb(220, 220, 220);
+				padding-left: 20px;
+				color: rgb(150, 150, 150);
+				line-height: 1.2;
+				white-space: pre;
+				font-family: "Lucida Console", Monaco, monospace;
+				font-size: 12px;
 			}
 			.log {
-				padding: 0px;
-				color: gray;
-				padding-left: 13px;
+				margin: 0px;
+				line-height: 3px;
 				font-size: 11px;
 			}
 			.validate {
@@ -62,11 +77,14 @@
 				width: 12px;
 				height: 12px;
 				border-radius: 12px;
-				top: -1px;
+				top: 2px;
 				position: relative;
 				border: 1px solid rgb(68, 68, 68);
 				display: inline-block;
 				box-shadow: inset 0 2px 1px rgba(255,255,255,0.8);
+			}
+			.log .square{
+				top: -5px;
 			}
 			#footer {
 				position: absolute;
@@ -76,7 +94,8 @@
 				left: -245px;
 			}
 			a{
-				color: gray;
+				color: black;
+				font-weight: bold;
 			}
 		</style>
 		<script>
@@ -99,12 +118,13 @@
 			var json = null;
 
 			var log = function(text, append){
-				var p = $('<p>', {'class' : 'log'}).html(text).appendTo($(document.body)).hide().fadeIn();
+				var p = $('<p>', {'class' : 'log'}).html(text).appendTo($(".container")).hide().fadeIn();
 				if (append)
 					p.appendTo($("#" + append));
 			}
 
 			var train = function(){
+				$("#aux").remove();
 				$('.log').remove();
 				$("#log-validate").remove();
 
@@ -151,7 +171,7 @@
 						log("- Error: " + results.error);
 						log("- Elapsed time: " + results.time + " ms");
 						log("- Success rate: " + (results.success*100).toFixed(2) + "%");
-						$('<div>', { id: 'log-validate', style:'height:450px;'}).appendTo($(document.body));
+						$('<div>', { id: 'log-validate', style:'height:450px;'}).appendTo(".container");
 						validate();
 					} else{
 						log ("&nbsp");
@@ -292,7 +312,7 @@
 </script>
 	</head>
 	<body>
-		<div class='title'>Synapse.js - DSR</div>
+		<div class="container"><div class='title' onclick="window.location='index.html';"><b>Synapse</b>.js</div><div style="font-weight: bold;">Discrete Sequence Recall</div>
 		<p>This sample is a simplified version of <a href='http://www.overcomplete.net/papers/nn2012.pdf'>Derek D. Monner's Distracted Sequence Recall</a> task, which involves 6 symbols, each represented locally in an input layer of 6 neurons:</p>
 		<ul>
 			<li>Targets: <span class="square" style="background-color:green">&nbsp;</span> <span class="square" style="background-color:red">&nbsp;</span> &lt;- must be recognized and remembered by the network.</li>
@@ -305,7 +325,7 @@
 			<li>Sequence: <span class="square" style="background-color:blue">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:red">&nbsp;</span> <span class="square" style="background-color:blue">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:green">&nbsp;</span> <span class="square" style="background-color:yellow">&nbsp;</span> <span class="square" style="background-color:white">&nbsp;</span> <span class="square" style="background-color:black">&nbsp;</span></li>
 		</ul>
 		 <p>Note that the targets may appear at any point in the sequence, so the network cannot rely on their temporal position; rather, the network must recognize the symbols as targets and preferentially save them, along with temporal order information, in order to produce the correct output sequence.</p>
-		 <p>The network is trained to produce <b>no output</b> for all symbols except the prompts, and for each prompt symbol the network must produce the output symbol which corresponds to the appropriate target from the sequence. For the sequence shown above, the prompts should output <span class="square" style="background-color:red">&nbsp;</span> <span class="square" style="background-color:green">&nbsp;</span>, respectively.</p>
+		 <p>The network is trained to produce <b>no output</b> for all symbols except for the prompts, and for each prompt symbol the network must produce the output symbol which corresponds to the appropriate target from the sequence. For the sequence shown above, the prompts should output <span class="square" style="background-color:red">&nbsp;</span> <span class="square" style="background-color:green">&nbsp;</span>, respectively.</p>
 		 <p>The network doesn't have any prior knowledge of which are the target, distractor or prompt symbols, nor what is the length of the sequence, it has to learn all this information during its training process.</p>
 		 <p>In this sample a <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>Long Short Term Memory</a> network (6 input neurons, 7 memory blocks, and 2 output neurons) will be trained to complete the Distracted Sequence Recall task with a success rate of at least 95%.</p>
 		<p class='code'>var LSTM = new Architect.LSTM(6,7,2);<br>
@@ -316,6 +336,7 @@
 			<br>&nbsp;&nbsp;&nbsp;&nbsp;length: 10
 			<br>});</p>
 		<p> Start training: <button onclick="train();">START</button></p>
-		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
+		<p id="aux">&nbsp;</p>
+	</div>
 	</body>
 </html>

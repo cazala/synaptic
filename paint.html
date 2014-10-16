@@ -2,47 +2,47 @@
 	<head>
 		<title>Synapse.js - Painting</title>
 		<meta charset="UTF-8">
-		<meta name="description" content="Training a neural network to paint a canvas - Synapse.js">
+		<meta name="description" content="Training a neural network to solve an XOR - Synapse.js">
 		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
 		<meta name="author" content="Juan Cazala">
 		<script src='js/jquery.js'></script>
 		<script src='js/synapse.js'></script>
 		<style>
-			html {
-				box-shadow: 0 0 50px gray inset;
-			}
 			body { 
-				font-family: "Lucida Console", Monaco, monospace;
-				padding: 0px 25px;
+				font-family: 'Open Sans', sans-serif;
 				position: relative;
+				line-height: 120%;
+				margin: 0px;
 			}
-
+			.container {
+				width: 1024px;
+				margin: 0 auto;
+			}
 			.title {
 				text-align: center;
-				color: rgb(71, 71, 71);;
-				font-size: 27px;
-				margin: 36px;
+				color: rgb(125, 125, 125);
+				font-size: 34px;
+				padding-top: 50px;
+				height: 50px;
+				cursor: pointer;
+			}
+			.title b{
+				color:rgb(50, 50, 50);;
+			}
+			.title:hover{
+				opacity: .8;
+			}
+			.subtitle: {
+				font-weight: bold;
 			}
 
 			p {
 				padding: 10px;
-				font-size: 12px;
-			}
-			.log {
-				padding: 0px;
-				color: gray;
-				padding-left: 13px;
-				font-size: 11px;
-			}
-			#footer {
-				position: absolute;
-				font-size: 11px;
-				bottom: 10px;
-				margin-left: 50%;
-				left: -245px;
+				font-size: 13px;
 			}
 			a{
-				color: gray;
+				color: black;
+				font-weight: bold;
 			}
 			img, canvas {
 				border: 1px solid black;
@@ -94,7 +94,7 @@
 				preview();
 			}
 
-			var entrenar = function(){
+			var iterate = function(){
 				
 				for (var x = 0; x < 125; x+=1)
 				{
@@ -131,7 +131,7 @@
 					}
 				}
 				context.putImageData(imageData,0,0);
-				to = setTimeout(entrenar,16);
+				to = setTimeout(iterate,16);
 			}
 
 		</script>
@@ -148,16 +148,15 @@
 	</head>
 	<body>
 		
-		<div class='title'>Synapse.js - Painting</div>
+		<div class="container"><div class='title' onclick="window.location='index.html';"><b>Synapse</b>.js</div><div style="font-weight: bold;">Paint an Image</div>
 		<p> In this demo, a <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>Long Short Term Memory</a> network (2 inputs, 14 memory blocks, 3 outputs) will be trained entering the coordinates of every pixel (x, y) of an image as input, and the color as ouput (RGB values). After each iteration, the network will be directed to fill a canvas, the coordinates of every pixel will be provided and the canvas will be painted with the RGB values outputed by the network.</p>
 		<p> Start training: <button onclick="train();">START</button> <p id="log" class="log"></p></p>
 		<div class="train">
 		<div class="image_frame"><img src='img/twitter.png' id='twitter'/><span>original</span></div>
 		<div class="image_frame"><canvas id='canvas' width =125 height=125></canvas><span>painted</span></div>
-		<p>&nbsp;</p>
 		<p>It may take a few thousand iterations for the painted image to start looking like the original, this is an example after 5000 iterations:</p>
 		<div class="image_frame" style="text-align: center;"><img src='img/twitter_painted.png'/></div>
 		</div>
-		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
+	</div>
 	</body>
 </html>

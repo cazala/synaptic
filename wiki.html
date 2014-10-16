@@ -19,25 +19,41 @@
 </script>
 		<style>
 
-			html {
-				box-shadow: 0 0 50px gray inset;
-			}
 			body { 
-				font-family: "Lucida Console", Monaco, monospace;
-				padding: 0px 25px;
+				font-family: 'Open Sans', sans-serif;
 				position: relative;
+				line-height: 120%;
+				margin: 0px;
+			}
+			.container {
+				width: 1024px;
+				margin: 0 auto;
 			}
 			.title {
 				text-align: center;
-				color: rgb(71, 71, 71);;
-				font-size: 27px;
-				margin: 36px;
+				color: rgb(125, 125, 125);
+				font-size: 34px;
+				padding-top: 50px;
+				height: 50px;
+				cursor: pointer;
+			}
+			.title b{
+				color:rgb(50, 50, 50);;
+			}
+			.title:hover{
+				opacity: .8;
+			}
+			.subtitle: {
+				font-weight: bold;
 			}
 
-			p, li {
-				padding: 4px;
-				font-size: 12px;
-				text-align: justify;
+			p {
+				padding: 10px;
+				font-size: 13px;
+			}
+			a{
+				color: black;
+				font-weight: bold;
 			}
 			.quote{
 				font-style: italic;
@@ -45,26 +61,17 @@
 				font-size: 12px;
 				text-align: center;
 			}
-			#footer {
-				position: absolute;
-				font-size: 11px;
-				bottom: 10px;
-				margin-left: 50%;
-				left: -245px;
-			}
-			a{
-				color: gray;
-			}
+			
 		</style>
 	</head>
 	<body>
-		<div class='title'>Synapse.js - Wiki</div>
+		<div class="container"><div class='title' onclick="window.location='index.html';"><b>Synapse</b>.js</div><div style="font-weight: bold;">Read from Wikipedia</div>
 		<p>In this example, a <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>Long Short Term Memory</a> network will be trained with the task of predicting the next character in a stream of text (articles from Wikipedia).</p>
 		<p>In the begining the network only ouputs trash, something like: <span class='quote'>"8db8fff8bff8ddb8bfbff868d8bfbddbf8db8d"</span></p>
 		<p>But after a few hours reading Wikipedia, the output text looks more like: <span class='quote'>"no es at asaesetsi aneteteise titis at"</span></p>
 		<p>The network starts to learn how to use spaces to separate words and how to use vowels and consonants to make syllables. Even though the network in this demo is too small to learn real words, it has been proven that when scaling this same model to thousands of neurons, the network can actually learn to <a href='http://machinelearning.wustl.edu/mlpapers/paper_files/ICML2011Sutskever_524.pdf'>write in english</a>.</p>
 		
 		<p> Start training: <a href='http://juancazala.com/wiki'><button>START</button></a></p>
-		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
+	</div>
 	</body>
 </html>

@@ -1,41 +1,103 @@
 <html>
 	<head>
 		<title>Synapse.js</title>
+		<link rel="icon" type="image/png" href="img/favicon.png">
 		<meta charset="UTF-8">
-		<meta name="description" content="Text prediction reading Wikipedia and Neural Networks - Synapse.js">
+		<meta name="description" content="Javascript neural network library for node.js and the browser.">
 		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
 		<meta name="author" content="Juan Cazala">
+		<script src="js/jquery.js"></script>
+		<script src="js/synapse.js"></script>
+		<script src="js/vector.js"></script>
+		<script src="js/creature.js"></script>
+		<script src="js/world.js"></script>
 		<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-  ga('create', 'UA-54879338-2', 'auto');
-  ga('send', 'pageview');
-
-</script>
+		  ga('create', 'UA-54879338-2', 'auto');
+		  ga('send', 'pageview');
+		</script>
 		<style>
-			html {
-				box-shadow: 0 0 50px gray inset;
-			}
 			body { 
-				font-family: "Lucida Console", Monaco, monospace;
-				padding: 0px 25px;
+				font-family: 'Open Sans', sans-serif;
 				position: relative;
 				line-height: 120%;
+				margin: 0px;
+			}
+			.container {
+				width: 1024px;
+				margin: 0 auto;
 			}
 			.title {
 				text-align: center;
-				color: rgb(71, 71, 71);;
-				font-size: 27px;
-				margin: 36px;
+				color: rgb(125, 125, 125);
+				font-size: 34px;
+				padding-top: 50px;
+				height: calc(100% - 700px);
 			}
 
+			.title b{
+				color:rgb(50, 50, 50);;
+			}
+
+			header {
+				font-style: italic;
+				text-align: center;
+				color: rgb(50,50,50);
+				height: calc(10% - 60px);
+				padding: 4%;
+			}
+			.demo span {
+				color: gray;
+			}
+			.demo-code{
+				width: 500px;
+				display: inline-block;
+			}
+			.pre {
+				border-left: 5px solid rgb(220, 220, 220);
+				padding-left: 20px;
+				color: rgb(150, 150, 150);
+				line-height: 1.2;
+				white-space: pre;
+				font-family: "Lucida Console", Monaco, monospace;
+				font-size: 12px;
+			}
+
+			.feature {
+				display: inline-block;
+				vertical-align: top;
+				margin-bottom: 60px;
+			}
+
+			.feature div {
+				display: inline-block;
+				width: 360px;
+				padding-left: 20px;
+			}
+
+			b{
+				color: black;
+			}
 			p, li {
 				padding: 2px;
-				font-size: 12px;
+				font-size: 14px;
 				text-align: justify;
+			}
+
+			canvas {
+				box-shadow: 0 0 10px rgb(220,220,220);
+			}
+			.description{
+				margin: 30px;
+				text-align: center;
+				font-style: italic;
+				font-size: 14px;
+				color: rgb(100, 100, 100);
+				margin-bottom: 10px;
 			}
 			.quote{
 				font-style: italic;
@@ -50,15 +112,23 @@
 				margin-left: 50%;
 				left: -245px;
 			}
-			a{
-				color: gray;
+			.subtitle{
+				text-align: center;
+				font-size: 22px;
+				font-weight: bold;
+				height: 60px;
 			}
-			img {
-				border: 1px solid black;
-				padding: 2px;
-				margin-right: 10px;
-				margin-bottom: 10px;
-				display: block;
+			.demo-list {
+				text-align: center;
+				height: 200px;
+			}
+			a{
+				color: black;
+				font-weight: bold;
+				text-decoration: none;
+			}
+			a:hover{
+				text-decoration: underline;
 			}
 
 			.image_frame {
@@ -68,20 +138,113 @@
 				vertical-align: text-top;
 				max-width: 135px;
 				text-decoration: underline;
+				box-shadow: 0 0 10px lightgray;
+				padding: 5px;
+				margin: 0 17px;
+				color: rgb(30, 30, 30);;
+				font-weight: normal;
+				border: 1px solid lightgray;
+			}
+
+			.image_frame span {
+				display: none;
+			}
+
+			.image_frame:hover span {
+				display: inline-block;
+			}
+
+			
+
+			.image_frame:hover img {
+				margin-bottom: 8px;
+
+			}
+
+			.arrow{
+				display: inline-block;
+				width: 30px;
+				height: 20px;
+				background-image: url(img/arrow.png);
+				margin-top: 15px;
+				margin-bottom: 100px;
+			}
+
+			footer {
+				text-align: center;
+				font-size: 11px;
+				margin: 10px;
 			}
 		</style>
 	</head>
 	<body>
-		<div class='title'>Synapse.js</div>
-		<p>Synapse.js is a javascript/node.js neural networks library, its generalized algorythm is architecture-free, so you can build and train basically any type of first order or even <a href='http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network'>second order neural network</a> architectures.</p>
-		<p>This library includes a few built-in architectures like <a href='http://en.wikipedia.org/wiki/Multilayer_perceptron'>multilayer perceptrons</a>, multilayer <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>long-short term memory</a> networks (LSTM) or <a href='http://en.wikipedia.org/wiki/Liquid_state_machine'>liquid state machines</a>, and a trainer capable of training any given network, which includes built-in training tasks/tests like solving an XOR, completing a Distracted Sequence Recall task or an <a href='http://www.willamette.edu/~gorr/classes/cs449/reber.html'>Embeded Reber Grammar</a> test, so you can easily test and compare the performance of different architectures.</p>
-		<p><b>Demos:</b>
-			<a href='xor.html'><div class="image_frame"><img src='img/demo1.png'/><span>Learn XOR</span></div></a>
-			<a href='dsr.html'><div class="image_frame"><img src='img/demo2.png'/><span>Discrete Sequence Recall</span></div></a>
-			<a href='filter.html'><div class="image_frame"><img src='img/demo3.png'/><span>Image filters</span></div></a>
-			<a href='paint.html'><div class="image_frame"><img src='img/demo4.png'/><span>Paint an image</span></div></a>
-			<a href='wiki.html'><div class="image_frame"><img src='img/demo5.png'/><span>Read from Wikipedia</span></div></a>
-		</p>
-		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
+		<a href="https://github.com/cazala/synapse"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+		<div class="container">
+			<div class='title'><b>Synapse</b>.js</div>
+			<header>Synapse.js is an architecture-free neural network library for <b>node.js</b> and the <b>browser</b>.</header>
+
+			<div class="demo">
+
+				<div class="demo-code">
+					<span>creature.js</span>
+					<div class="pre" style="margin-bottom: 30px;">
+var synapse = require('synapse');
+this.<b>network</b> = new synapse.Architect.Perceptron(40, 50, 3);
+					</div>
+					<span>world.js</span>
+					<div class="pre">
+creatures.forEach(function(creature)
+{
+    // move
+    var input = [];
+    for (var i in creatures)
+    {
+    	input.push(creatures[i].location.x);
+    	input.push(creatures[i].location.y);
+    	input.push(creatures[i].velocity.x);
+    	input.push(creatures[i].velocity.y);
+    }
+    var output = creature.<b>network.activate</b>(input);
+    creature.moveTo(output);
+    
+    // learn
+    var learningRate = .9;
+    var target = [
+    	targetX(creature), 
+    	targetY(creature), 
+    	targetAngle(creature)];
+    creature.<b>network.propagate</b>(learningRate, target);
+});</div>
+				</div>
+				<canvas id="canvas" width="500" height="445"></canvas>
+			</div>
+			<div class="description"> In this demo the creatures <b>learn</b> how to move all together as a group.</div>
+			<div style="text-align:center;"><span class="arrow"></span></div>
+
+			<div class="features">
+				<div class="feature"><img src="img/neuron.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Neuron</span>
+					<p>Neurons are the basic unit of the neural network. They can be connected to another neuron or gate connections between other neurons. This allows you to create complex and flexible architectures.<br><br><a href="http://github.com/cazala/synapse#neuron">+ Read documentation</a></p></div>
+				</div>
+				<div class="feature" style="margin-left: 70px;"><img src="img/network.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Network</span>
+					<p>Networks can be imported/exported to JSON, converted to workers or standalone functions. They can be connected to other networks or gate connections.<br><br><a href="http://github.com/cazala/synapse#network">+ Read documentation</a></p></div>
+				</div>
+				<div class="feature"><img src="img/trainer.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Trainer</span>
+					<p>Trainers can take any given network regardless of its architecture and use any training set. It includes built-in tasks to test networks, like learning an XOR, completing a Discrete Sequence Recall task or an Embeded Reber Grammar test.<br><br><a href="http://github.com/cazala/synapse#trainer">+ Read documentation</a></p></div>
+				</div>
+				<div class="feature" style="margin-left: 70px;"><img src="img/architect.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Architect</span>
+					<p>The Architect includes built-in useful architectures like <a href='http://en.wikipedia.org/wiki/Multilayer_perceptron'>multilayer perceptrons</a>, multilayer <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>long-short term memory</a> networks (LSTM) and <a href='http://en.wikipedia.org/wiki/Liquid_state_machine'>liquid state machines</a>.<br><br><a href="http://github.com/cazala/synapse#architect">+ Read documentation</a></p></div>
+				</div>
+			</div>
+
+			<div class="subtitle">Demos</div>
+			<div class="demo-list">
+				<a href='xor.html'><div class="image_frame"><img src='img/demo1.png'/><span>Learn XOR</span></div></a>
+				<a href='dsr.html'><div class="image_frame"><img src='img/demo2.png'/><span>Discrete Sequence Recall</span></div></a>
+				<a href='filter.html'><div class="image_frame"><img src='img/demo3.png'/><span>Learn image filters</span></div></a>
+				<a href='paint.html'><div class="image_frame"><img src='img/demo4.png'/><span>Paint an image</span></div></a>
+				<a href='wiki.html'><div class="image_frame"><img src='img/demo5.png'/><span>Read from Wikipedia</span></div></a>
+			</div>
+			<footer><b>Synapse</b>.js is open source (<a href="https://github.com/cazala/synapse/blob/master/LICENSE">MIT</a>). Kindly hosted by <a href="http://github.com">GitHub</a>.</footer>
+		</div>
 	</body>
 </html>

@@ -1,6 +1,7 @@
 <html>
 	<head>
 		<title>Synapse.js - XOR</title>
+		<link rel="icon" type="image/png" href="img/favicon.png">
 		<meta charset="UTF-8">
 		<meta name="description" content="Training a neural network to solve an XOR - Synapse.js">
 		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
@@ -8,35 +9,49 @@
 		<script src='js/jquery.js'></script>
 		<script src='js/synapse.js'></script>
 		<style>
-			html {
-				box-shadow: 0 0 50px gray inset;
-			}
 			body { 
-				font-family: "Lucida Console", Monaco, monospace;
-				padding: 0px 25px;
+				font-family: 'Open Sans', sans-serif;
 				position: relative;
+				line-height: 120%;
+				margin: 0px;
 			}
-
+			.container {
+				width: 1024px;
+				margin: 0 auto;
+			}
 			.title {
 				text-align: center;
-				color: rgb(71, 71, 71);;
-				font-size: 27px;
-				margin: 36px;
+				color: rgb(125, 125, 125);
+				font-size: 34px;
+				padding-top: 50px;
+				height: 50px;
+				cursor: pointer;
 			}
-
+			.title b{
+				color:rgb(50, 50, 50);;
+			}
+			.title:hover{
+				opacity: .8;
+			}
+			.subtitle: {
+				font-weight: bold;
+			}
 			p {
 				padding: 10px;
+				font-size: 13px;
+			}
+			.code, .log {
+				border-left: 5px solid rgb(220, 220, 220);
+				padding-left: 20px;
+				color: rgb(150, 150, 150);
+				line-height: 1.2;
+				white-space: pre;
+				font-family: "Lucida Console", Monaco, monospace;
 				font-size: 12px;
 			}
-			.code {
-				display: inline-block;
-				background-color: #DDD;
-				padding: 10px;
-			}
 			.log {
-				padding: 0px;
-				color: gray;
-				padding-left: 13px;
+				margin: 0px;
+				line-height: 1px;
 				font-size: 11px;
 			}
 			.validate {
@@ -55,16 +70,11 @@
 				top: -1px;
 				position: relative;
 			}
-			#footer {
-				position: absolute;
-				font-size: 11px;
-				bottom: 10px;
-				margin-left: 50%;
-				left: -245px;
-			}
 			a{
 				color: gray;
 			}
+
+
 
 		</style>
 		<script>
@@ -72,7 +82,7 @@
 			var perceptron = null;
 
 			var log = function(text){
-				return $('<p>', {'class' : 'log'}).html(text).appendTo($(document.body)).hide().fadeIn();
+				return $('<p>', {'class' : 'log'}).html(text).appendTo($(".container")).hide().fadeIn();
 			}
 
 			var train = function(){
@@ -99,42 +109,28 @@
 				var total = 0;
 				var output = perceptron.activate([0,0])[0].toFixed(2);
 				var ok = output < .5;
-				var x1 = log ("1) input: [0,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>')).hide();
+				var x1 = log ("1) input: [0,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
 				total += ok;
 				output = perceptron.activate([0,1])[0].toFixed(2);
 				ok = output > .5;
 				total += ok;
-				var x2 = log ("2) input: [0,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>')).hide();
+				var x2 = log ("2) input: [0,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
 				output = perceptron.activate([1,0])[0].toFixed(2);
 				ok = output > .5;
 				total += ok;
-				var x3 = log ("3) input: [1,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>')).hide();
+				var x3 = log ("3) input: [1,0] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
 				output = perceptron.activate([1,1])[0].toFixed(2);
 				ok = output < .5;
 				total += ok;
-				var x4 = log ("4) input: [1,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>')).hide();
+				var x4 = log ("4) input: [1,1] output: " + output + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'));
 				log ("&nbsp");
 				if (total == 4)
 				{
 					var x5 = log ("Success!").hide();
-					log ("&nbsp");
-					log ("&nbsp");
 				} else {
 					var x5 = log ("Failed...").hide();
-					log ("&nbsp");
-					log ("&nbsp");
 					train();
 				}
-
-				x1.fadeIn(function(){
-					x2.fadeIn(function(){
-						x3.fadeIn(function(){
-							x4.fadeIn(function(){
-								x5.fadeIn();
-							})
-						})
-					})
-				})
 			}
 
 		</script>
@@ -150,11 +146,11 @@
 </script>
 	</head>
 	<body>
-		<div class='title'>Synapse.js - XOR</div>
+		<div class="container"><div class='title' onclick="window.location='index.html';"><b>Synapse</b>.js</div><div style="font-weight: bold;">XOR</div>
 		<p> In this sample, a simple perceptron (2 inputs, 3 hidden and 1 output neurons) will be trained to learn how to solve an XOR. </p>
-		<p class="code"> var perceptron = new Architect.Perceptron(2,3,1);<br>perceptron.trainer.XOR(); </p>
+		<p class="code">var perceptron = new Architect.Perceptron(2,3,1);<br>perceptron.trainer.XOR(); </p>
 		<p> Start training: <button onclick="train();">START</button></p>
 		<div id="log"></div>
-		<div id="footer"><a href='http://synapse.juancazala.com'>synapse.js</a> - javascript neural network library for node.js and the browser</div>
+	</div>
 	</body>
 </html>
