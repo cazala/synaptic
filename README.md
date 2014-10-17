@@ -431,7 +431,7 @@ var exported = myNetwork.toJSON();
 var imported = Network.fromJSON(exported);
 ```
 
-######Worker
+######worker
 
 The network can be converted into a WebWorker. This feature doesn't work in node.js, and it's not supported on every browser (it must support Blob).
 
@@ -503,7 +503,7 @@ myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
 standalone([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
 ```
 
-######clone
+######Clone
 
 A network can be cloned to a completely new instance, with the same connections and traces.
 
