@@ -18,7 +18,7 @@ There are references to the equations in that paper commented through the source
 ###Installation
 
 ######In node
-You can download synapse with [npm](http://npmjs.org):
+You can install synapse with [npm](http://npmjs.org):
 
 `npm install synapse --save`
 
@@ -41,6 +41,8 @@ var Neuron = synapse.Neuron,
 Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synapse#architect).
 
 ###Example
+
+######Perceptron
 
 This is how you can create a simple perceptron.
 
@@ -82,3 +84,104 @@ myPerceptron.activate([1,0]); // 0.9829673642853368
 myPerceptron.activate([0,1]); // 0.9831714267395621
 myPerceptron.activate([1,1]); // 0.02128894618097928
 ```
+
+######Long Short-Term Memory
+
+This is how you can create a simple long short-term memory with input gate, forget gate, output gate, and peephole connections.
+
+```
+function LSTM(input, blocks, output)
+{
+	// create the layers
+	var inputLayer = new Layer(input);
+	var inputGate = new Layer(blocks);
+	var forgetGate = new Layer(blocks);
+	var memoryCell = new Layer(blocks);
+	var outputGate = new Layer(blocks);
+	var outputLayer = new Layer(output);
+
+	// connections from input layer
+	var input = inputLayer.project(memoryCell);
+	inputLayer.project(inputGate);
+	inputLayer.project(forgetGate);
+	inputLayer.project(outputGate);
+
+	// connections from memory cell
+	var output = memoryCell.project(outputLayer);
+
+	// self-connection
+	var self = memoryCell.project(memoryCell, Layer.connectionType.ONE_TO_ONE);
+
+	// peepholes
+	memoryCell.project(inputGate,  Layer.connectionType.ONE_TO_ONE);
+	memoryCell.project(forgetGate, Layer.connectionType.ONE_TO_ONE);
+	memoryCell.project(outputGate, Layer.connectionType.ONE_TO_ONE);
+
+	// gates
+	inputGate.gate(input, Layer.gateType.INPUT);
+	forgetGate.gate(self, Layer.gateType.ONE_TO_ONE);
+	outputGate.gate(output, Layer.gateType.OUTPUT);
+
+	// input to output direct connection
+	inputLayer.project(outputLayer);
+
+	// set the layers of the neural network
+	this.set({
+		input: inputLayer,
+		hidden: hiddenLayers,
+		output: outputLayer
+	});
+}
+
+// extend the prototype chain
+LSTM.prototype = new Network();
+LSTM.prototype.constructor = LSTM;
+```
+
+These are examples for explanatory purposes, the [Architect](http://github.com/cazala/synapse#architect) already includes Multilayer Perceptrons and
+Multilayer LSTM networks architectures.
+
+
+Documentation
+=============
+
+##Neuron
+
+Neurons are the basic unit of the neural network. They can be connected together, or used to gate connetions between other neurons. 
+A Neuron can perform basically 4 operations: project connections, gate connections, activate and propagate.
+
+######project
+
+A neuron can project a connection to another neuron (i.e. connect neuron A with neuron B).
+Here is how it's done:
+
+```
+var A = new Neuron();
+var B = new Neuron();
+A.project(B); // A now project a connection to B
+```
+
+Neurons can also self-connect:
+
+`A.project(A);`
+
+The method **project** returns a `Connection` object, that can be gated by another neuron.
+
+######gate
+
+A neuron can gate a connection between two neurons, or a neuron's self-connection. This allows you to create second order neural network](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network) architectures.
+
+```
+var A = new Neuron();
+var B = new Neuron();
+var connection = A.project(B);
+
+var C = new Neuron();
+C.gate(connection); // now C gates the connection between A and B
+```
+
+
+
+######activate
+
+A when a neuron activates, it computes it's state from all it's input connections and squashes it using its activation function, and returns the output (activation).
