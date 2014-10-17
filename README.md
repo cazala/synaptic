@@ -75,7 +75,7 @@ Now you can test your new network by creating a trainer and teaching the percept
 var myPerceptron = new Perceptron(2,3,1);
 var myTrainer = new Trainer(myPerceptron);
 
-myTrainer.XOR();
+myTrainer.XOR(); // { error: 0.004998819355993572, iterations: 21871, time: 356 }
 
 myPerceptron.activate([0,0]); // 0.0268581547421616
 myPerceptron.activate([1,0]); // 0.9829673642853368
