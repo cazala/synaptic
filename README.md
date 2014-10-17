@@ -503,7 +503,7 @@ myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
 standalone([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
 ```
 
-######Clone
+######clone
 
 A network can be cloned to a completely new instance, with the same connections and traces.
 
