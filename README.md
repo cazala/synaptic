@@ -40,7 +40,7 @@ var Neuron = synapse.Neuron,
 
 Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synapse#architect).
 
-###Example
+###Examples
 
 ######Perceptron
 
@@ -158,7 +158,7 @@ Here is how it's done:
 ```
 var A = new Neuron();
 var B = new Neuron();
-A.project(B); // A now project a connection to B
+A.project(B); // A now projects a connection to B
 ```
 
 Neurons can also self-connect:
@@ -169,7 +169,7 @@ The method **project** returns a `Connection` object, that can be gated by anoth
 
 ######gate
 
-A neuron can gate a connection between two neurons, or a neuron's self-connection. This allows you to create second order neural network](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network) architectures.
+A neuron can gate a connection between two neurons, or a neuron's self-connection. This allows you to create [second order neural network](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network) architectures.
 
 ```
 var A = new Neuron();
@@ -181,7 +181,49 @@ C.gate(connection); // now C gates the connection between A and B
 ```
 
 
-
 ######activate
 
 A when a neuron activates, it computes it's state from all it's input connections and squashes it using its activation function, and returns the output (activation).
+You can provide the activation as a parameter (useful for neurons in the input layer. it has to be a float between 0 and 1). For example:
+
+```
+var A = new Neuron();
+var B = new Neuron();
+A.project(B);
+
+A.activate(0.5); // 0.5
+B.activate(); // 0.3244554645
+```
+
+
+######propagate
+
+After an activation, you can teach the neuron what should have been the output (a.k.a. train). This is done by backpropagating the error.
+To use the **propagate** method you have to provide a learning rate, and a target value (float between 0 and 1).
+
+For example, if I want to train neuron B to output a value close to 0 when neuron A activates a value of 1, with an error smaller than 0.005:
+
+```
+var A = new Neuron();
+var B = new Neuron();
+A.project(B);
+
+var learningRate = .3,
+	targetOutput = 0,
+	error = 0.005
+	output = 1;
+
+while(output - targetOutput > error)
+{
+	A.activate(1);
+
+	output = B.activate();
+	B.propagate(learningRate, targetOutput);
+}
+
+// test it
+A.activate(1);
+B.activate(); // 0.0049998578298219975
+```
+
+##Layer
