@@ -481,7 +481,7 @@ function propagateWorker(){
 }
 ```
 
-######Standalone Function
+######standalone
 
 The network can be exported to a single javascript Function, with no dependecies on Synapse or any other library. Just a javascript function with an array and may operations within.
 
@@ -501,4 +501,28 @@ var myNetwork = new Network({
 
 myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
 standalone([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
+```
+
+######clone
+
+A network can be cloned to a completely new instance, with the same connections and traces.
+
+```
+var inputLayer = new Layer(4);
+var hiddenLayer = new Layer(6);
+var outputLayer = new Layer(2);
+
+inputLayer.project(hiddenLayer);
+hiddenLayer.project(outputLayer);
+
+var myNetwork = new Network({
+	input: inputLayer,
+	hidden: [hiddenLayer],
+	output: outputLayer
+});
+
+var clone = myNetwork.clone();
+
+myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
+clone.activate([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
 ```
