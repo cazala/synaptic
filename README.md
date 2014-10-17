@@ -198,7 +198,7 @@ B.activate(); // 0.3244554645
 
 ######propagate
 
-After an activation, you can teach the neuron what should have been the output (a.k.a. train). This is done by backpropagating the error.
+After an activation, you can teach the neuron what should have been the correct output (a.k.a. train). This is done by backpropagating the error.
 To use the **propagate** method you have to provide a learning rate, and a target value (float between 0 and 1).
 
 For example, if I want to train neuron B to output a value close to 0 when neuron A activates a value of 1, with an error smaller than 0.005:
@@ -270,7 +270,7 @@ There are two `connectionType`'s:
 - Layer.connectionType.ALL_TO_ALL
 - Layer.connectionType.ONE_TO_ONE
 
-If you make a one-to-one connection, both layers must have **the same size**.
+If not specified, the connection type is always `Layer.connectionType.ALL_TO_ALL.`If you make a one-to-one connection, both layers must have **the same size**.
 
 The method **project** returns a `LayerConnection` object, that can be gated by another layer.
 
@@ -305,10 +305,9 @@ A.activate([1,0,1,0,1]); // [1,0,1,0,1]
 B.activate(); // [0.3280457, 0.83243247, 0.5320423]
 ```
 
-
 ######propagate
 
-After an activation, you can teach the layer what should have been the output (a.k.a. train). This is done by backpropagating the error.
+After an activation, you can teach the layer what should have been the correct output (a.k.a. train). This is done by backpropagating the error.
 To use the **propagate** method you have to provide a learning rate, and a target value (array of floats between 0 and 1).
 
 For example, if I want to train layer B to output [0,0] when layer A activates [1,0,1,0,1], with an error smaller than 0.005:
@@ -316,7 +315,7 @@ For example, if I want to train layer B to output [0,0] when layer A activates [
 ```
 var A = new Layer(5);
 var B = new Layer(2);
-A.project(B, Layer.connectionType.ALL_TO_ALL);
+A.project(B);
 
 var learningRate = .3,
 	targetOutput = [0,0],
@@ -347,6 +346,159 @@ myLayer.set({
 })
 ```
 
+##Networks
 
+Networks are basically an array of layers. They have an input layer, a number of hidden layers, and an output layer. Networks can project and gate connections, activate and propagate in the same fashion as [Layers](http://github.com/cazala/synapse#layer) do. Networks can also be optimized, extended, exported to JSON, converted to Workers or standalone Functions, and cloned.
 
+```
+var inputLayer = new Layer(4);
+var hiddenLayer = new Layer(6);
+var outputLayer = new Layer(2);
 
+inputLayer.project(hiddenLayer);
+hiddenLayer.project(outputLayer);
+
+var myNetwork = new Network({
+	input: inputLayer,
+	hidden: [hiddenLayer],
+	output: outputLayer
+});
+```
+######projecting and gating
+
+A network can project a connection to another, or gate a connection between two others networks in the same way [Layers](http://github.com/cazala/synapse#layer) do.
+
+######activate
+
+When a network is activeted, an input must be provided to activate the input layer, then all the hidden layers are activated in order, and finally the output layer is activated and its activation is returned.
+
+```
+var inputLayer = new Layer(4);
+var hiddenLayer = new Layer(6);
+var outputLayer = new Layer(2);
+
+inputLayer.project(hiddenLayer);
+hiddenLayer.project(outputLayer);
+
+var myNetwork = new Network({
+	input: inputLayer,
+	hidden: [hiddenLayer],
+	output: outputLayer
+});
+
+myNetwork.activate([1,0,1,0]); // [0.5200553602396137, 0.4792707231811006]
+```
+
+######propagate
+
+You can provide a target value and a learning rate to a network and backpropagate the error from the output layer to all the hidden layers in reverse order until reaching the input layer.
+
+`myNetwork.propagate(.1, [0,0]);`
+
+######optimize
+
+Networks get optimized automatically on the fly after its first activation, if you print in the console the `activate` or `propagate` methods of your Network instance after activating it, it will look something like this:
+
+```
+function (input){
+F[1] = input[0];
+ F[2] = input[1];
+ F[3] = input[2];
+ F[4] = input[3];
+ F[6] = F[7];
+ F[7] = F[8];
+ F[7] += F[1] * F[9];
+ F[7] += F[2] * F[10];
+ F[7] += F[3] * F[11];
+ F[7] += F[4] * F[12];
+ F[5] = (1 / (1 + Math.exp(-F[7])));
+ F[13] = F[5] * (1 - F[5]);
+ ...
+ ```
+
+This improves the performance of the network dramatically.
+
+######extend
+
+You can see how to extend a network in the [Examples](http://github.com/cazala/synapse#examples) section.
+
+######toJSON/fromJSON
+
+Networks can be stored as JSON's and then restored back:
+
+```
+var exported = myNetwork.toJSON();
+var imported = Network.fromJSON(exported);
+```
+
+######Worker
+
+The network can be converted into a WebWorker. This feature doesn't work in node.js, and it's not supported on every browser (it must support Blob).
+
+```
+// create a network
+var inputLayer = new Layer(4);
+var hiddenLayer = new Layer(6);
+var outputLayer = new Layer(2);
+
+inputLayer.project(hiddenLayer);
+hiddenLayer.project(outputLayer);
+
+var myNetwork = new Network({
+	input: inputLayer,
+	hidden: [hiddenLayer],
+	output: outputLayer
+});
+
+// create a worker
+var myWorker = myNetwork.worker();
+
+myWorker.onmessage = function(e){
+	// give back control of the memory to the network - this is mandatory!
+	myNetwork.optimized.memory = e.data.memoryBuffer;
+
+	console.log(e.data);
+}
+
+// activate the network
+function activateWorker()
+{
+	myWorker.postMessage({ 
+		action: "activate",
+		input: [1,0,1,0],
+		memoryBuffer: myNetwork.optimized.memory
+	}, [myNetwork.optimized.memory.buffer]);
+}
+
+// backpropagate the network
+function propagateWorker(){
+	myWorker.postMessage({ 
+		action: "propagate",
+		target: [0,0],
+		rate: .1,
+		memoryBuffer: myNetwork.optimized.memory
+	}, [myNetwork.optimized.memory.buffer]);
+}
+```
+
+######Standalone Function
+
+The network can be exported to a single javascript Function, with no dependecies on Synapse or any other library. Just a javascript function with an array and may operations within.
+
+```
+var inputLayer = new Layer(4);
+var hiddenLayer = new Layer(6);
+var outputLayer = new Layer(2);
+
+inputLayer.project(hiddenLayer);
+hiddenLayer.project(outputLayer);
+
+var myNetwork = new Network({
+	input: inputLayer,
+	hidden: [hiddenLayer],
+	output: outputLayer
+});
+
+myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
+standalone([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
+```
