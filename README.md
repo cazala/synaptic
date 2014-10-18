@@ -87,7 +87,7 @@ myPerceptron.activate([1,1]); // 0.02128894618097928
 
 ######Long Short-Term Memory
 
-This is how you can create a simple long short-term memory with input gate, forget gate, output gate, and peephole connections.
+This is how you can create a simple [long short-term memory](http://people.idsia.ch/~juergen/lstmcell4.jpg) with input gate, forget gate, output gate, and peephole connections.
 
 ```
 function LSTM(input, blocks, output)
