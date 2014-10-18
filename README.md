@@ -233,16 +233,16 @@ You can change those properties the following way:
 
 ```
 var A = new Neuron();
-A.squash = Neuron.squash.HTAN;
+A.squash = Neuron.squash.TANH;
 A.bias = 1;
 ```
 
 There are 4 built-in squashing functions, but you can also create your own:
 
-- Neuron.squash.LOGISTIC
-- Neuron.squash.HTAN
-- Neuron.squash.IDENTITY
-- Neuron.squash.HLIM
+- [Neuron.squash.LOGISTIC](http://commons.wikimedia.org/wiki/File:SigmoidFunction.png)
+- [Neuron.squash.TANH](http://commons.wikimedia.org/wiki/File:TanhFunction.jpg)
+- [Neuron.squash.IDENTITY](http://en.wikipedia.org/wiki/File:Function-x.svg)
+- [Neuron.squash.HLIM](http://commons.wikimedia.org/wiki/File:HardLimitFunction.png)
 
 ##Layer
 
@@ -341,12 +341,12 @@ You can set the squashing function and bias of all the neurons in a layer by usi
 
 ```
 myLayer.set({
-	squash: Neuron.squash.HTAN,
+	squash: Neuron.squash.TANH,
 	bias: 0
 })
 ```
 
-##Networks
+##Network
 
 Networks are basically an array of layers. They have an input layer, a number of hidden layers, and an output layer. Networks can project and gate connections, activate and propagate in the same fashion as [Layers](http://github.com/cazala/synapse#layer) do. Networks can also be optimized, extended, exported to JSON, converted to Workers or standalone Functions, and cloned.
 
@@ -454,7 +454,7 @@ var myNetwork = new Network({
 var myWorker = myNetwork.worker();
 
 myWorker.onmessage = function(e){
-	// give back control of the memory to the network - this is mandatory!
+	// give control of the memory back to the network - this is mandatory!
 	myNetwork.optimized.memory = e.data.memoryBuffer;
 
 	console.log(e.data);
@@ -483,7 +483,7 @@ function propagateWorker(){
 
 ######standalone
 
-The network can be exported to a single javascript Function, with no dependecies on Synapse or any other library. Just a javascript function with an array and may operations within.
+The network can be exported to a single javascript Function. This can be useful when your network is already trained and you just need to use it, since the standalone functions is just one javascript function with an array and operations within, with no dependencies on Synapse or any other library.
 
 ```
 var inputLayer = new Layer(4);
@@ -498,6 +498,8 @@ var myNetwork = new Network({
 	hidden: [hiddenLayer],
 	output: outputLayer
 });
+
+var standalone = myNetwork.standalone();
 
 myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
 standalone([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
