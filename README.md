@@ -38,7 +38,7 @@ var Neuron = synapse.Neuron,
 	Architect = synapse.Architect;
 ```
 
-Now you can start to create networks, train them, or use built-in networks from the [Architect](#architect).
+Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synapse#architect).
 
 ###Examples
 
@@ -138,7 +138,7 @@ LSTM.prototype = new Network();
 LSTM.prototype.constructor = LSTM;
 ```
 
-These are examples for explanatory purposes, the [Architect](#architect) already includes Multilayer Perceptrons and
+These are examples for explanatory purposes, the [Architect](http://github.com/cazala/synapse#architect) already includes Multilayer Perceptrons and
 Multilayer LSTM networks architectures.
 
 
@@ -352,7 +352,7 @@ The method `neurons()` return an array with all the neurons in the layer, in act
 
 ##Network
 
-Networks are basically an array of layers. They have an input layer, a number of hidden layers, and an output layer. Networks can project and gate connections, activate and propagate in the same fashion as [Layers](#layer) do. Networks can also be optimized, extended, exported to JSON, converted to Workers or standalone Functions, and cloned.
+Networks are basically an array of layers. They have an input layer, a number of hidden layers, and an output layer. Networks can project and gate connections, activate and propagate in the same fashion as [Layers](http://github.com/cazala/synapse#layer) do. Networks can also be optimized, extended, exported to JSON, converted to Workers or standalone Functions, and cloned.
 
 ```
 var inputLayer = new Layer(4);
@@ -370,7 +370,7 @@ var myNetwork = new Network({
 ```
 ######project
 
-A network can project a connection to another, or gate a connection between two others networks in the same way [Layers](#layer) do.
+A network can project a connection to another, or gate a connection between two others networks in the same way [Layers](http://github.com/cazala/synapse#layer) do.
 You have to provide the network that you want to connect to and the `connectionType`:
 
 ```
@@ -499,7 +499,7 @@ This improves the performance of the network dramatically.
 
 ######extend
 
-You can see how to extend a network in the [Examples](#examples) section.
+You can see how to extend a network in the [Examples](http://github.com/cazala/synapse#examples) section.
 
 ######toJSON/fromJSON
 
@@ -668,7 +668,7 @@ The method `neurons()` return an array with all the neurons in the network, in a
 
 ######set
 
-The method `set(layers)` receives an object with layers in the same format as the constructor of `Network` and sets them as the layers of the Network, this is useful when you are extending the `Network` class to create your own architectures. See the [examples](#examples) section.
+The method `set(layers)` receives an object with layers in the same format as the constructor of `Network` and sets them as the layers of the Network, this is useful when you are extending the `Network` class to create your own architectures. See the [examples](http://github.com/cazala/synapse#examples) section.
 
 ```
 var inputLayer = new Layer(4);
@@ -826,6 +826,6 @@ var gates = 10;
 var myLiquidStateMachine = new Architect.Liquid(input, pool, output, connections, gates);
 ```
 
-You can create your own architectures by extending the `Network` class. You can check the [Examples](#examples) section for more information about this.
+You can create your own architectures by extending the `Network` class. You can check the [Examples](http://github.com/cazala/synapse#examples) section for more information about this.
 
 
