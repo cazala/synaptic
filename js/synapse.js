@@ -1582,8 +1582,7 @@ function Trainer(network, options){
 	this.network = network;
 	this.rate = options.rate || .1;
 	this.iterations = options.iterations || 10000;
-	this.error = options.error || .005;
-	this.callback = options.callback || null;
+	this.error = options.error || .005
 }
 Trainer.prototype = {
 
@@ -1673,9 +1672,7 @@ Trainer.prototype = {
 				shuffle: true
 			}
 		}
-
-		this.config(options);
-
+		
 		return this.train([
 			{
 				input: [0,0],
