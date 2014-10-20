@@ -786,9 +786,11 @@ The Architect contains built-in architectures, ready to use.
 
 ######Perceptron
 
-This architecture allows you to create multilayer perceptrons, also known as feed-forward neural networks. They consists on a sequence of layers, [each fully connected to the next one](http://www.codeproject.com/KB/dotnet/predictor/network.jpg). You have to provide a minimum of 3 layers (input, hidden and output), but you can use as many hidden layers as you wish.
+This architecture allows you to create multilayer perceptrons, also known as feed-forward neural networks. They consists on a sequence of layers, each fully connected to the next one. 
 
-This is a `Perceptron` with 2 neurons in the input layer, 3 neurons in the hidden layer, and 1 neuron in the output layer:
+![multilayer perceptron](http://www.codeproject.com/KB/dotnet/predictor/network.jpg "Multilayer Perceptron Architecture")
+
+You have to provide a minimum of 3 layers (input, hidden and output), but you can use as many hidden layers as you wish. This is a `Perceptron` with 2 neurons in the input layer, 3 neurons in the hidden layer, and 1 neuron in the output layer:
 
 `var myPerceptron = new Architect.Perceptron(2,3,1);`
 
@@ -798,7 +800,9 @@ And this is a deep multilayer perceptron with 2 neurons in the input layer, 4 hi
 
 ######LSTM
 
-The [long short-term memory](http://people.idsia.ch/~juergen/lstmcell4.jpg) is an architecture well-suited to learn from experience to classify, process and predict time series when there are very long time lags of unknown size between important events.
+The [long short-term memory](http://en.wikipedia.org/wiki/Long_short_term_memory) is an architecture well-suited to learn from experience to classify, process and predict time series when there are very long time lags of unknown size between important events.
+
+![long short-term memory](http://people.idsia.ch/~juergen/lstmcell4.jpg "Long Short-Term Memory Architecture")
 
 To use this architecture you have to set at least one input layer, one memory block assembly (consisting of four layers: input gate, memory cell, forget gate and output gate), and an output layer.
 
