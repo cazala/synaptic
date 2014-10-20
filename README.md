@@ -577,7 +577,7 @@ function propagateWorker(target){
 myWorker.onmessage = function(e){
 	// give control of the memory back to the network - this is mandatory!
 	myNetwork.optimized.ownership(e.data.memoryBuffer);
-	
+
 	if (e.data.action == "propagate")
 	{
 		if (index >= 4)
@@ -697,6 +697,135 @@ The trainer also contains bult-in tasks to test the performance of your network.
 
 ######train
 
-This method allows you to train any training set to a `Network`, the training set must be an `Array` containing object with an **input** and **output** properties, for exmple, this is how you train an XOR to a network using a trainer
+This method allows you to train any training set to a `Network`, the training set must be an `Array` containing object with an **input** and **output** properties, for exmple, this is how you train an XOR to a network using a trainer:
+
+```
+var trainingSet = [
+	{
+		input: [0,0],
+		output: [0]
+	},
+	{
+		input: [0,1],
+		output: [1]
+	},
+	{
+		input: [1,0],
+		output: [1]
+	},
+	{
+		input: [1,1],
+		output: [0]
+	},
+];
+
+var trainer = new Trainer(myNetwork);
+trainer.train(trainingSet);
+```
+You can also set different options for the training in an object as a second parameter, like:
+
+trainer.train(trainingSet,{
+	rate: .1,
+	iterations: 20000,
+	error: .005,
+	shuffle: true,
+	log: 1000
+});
+
++**rate**: learning rate to train the network.
++**iterations**: maximum number of iterations
++**error**: minimum error
++**shuffle**: if true, the training set is shuffled after every iteration, this is useful for training data sequences which order is not meaningful to networks with context memory, like LSTM's.
++**log**: this commands the trainer to console.log the error and iterations every X number of iterations.
++**customLog**: you can create custom logs like this one:
+
+```
+customLog: {
+	every: 500,
+	do: function(error, iterations) {
+		console.log("error", error, "iterations", iterations);
+	}
+}
+```
+
+When the training is done this method returns an object with the error, the iterations, and the elapsed time of the training.
+
+######XOR
+
+This method trains an XOR to the network, is useful when you are experimenting with different architectures and you want to test and compare their performances:
+
+```
+var trainer = new Trainer(myNetwork);
+trainer.XOR(); // {error: 0.004999821588193305, iterations: 21333, time: 111}
+```
+
+######DSR
+
+This method trains the network to complete a [Discrete Sequence Recall](http://synapse.juancazala.com/dsr.html), which is a task for testing context memory in neural networks.
+
+```
+trainer.DSR({
+	targets: [2,4],
+	distractors: [3,5],
+	prompts: [0,1],	
+	length: 10	
+});
+```
+
+
+######ERG
+
+This method trains the network to pass an [Embeded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test.
+
+`trainer.ERG();`
+
+
+##Architect
+
+The Architect contains built-in architectures, ready to use.
+
+######Perceptron
+
+This architecture allows you to create multilayer perceptrons, also known as feed-forward neural networks. They consists on a sequence of layers, [each fully connected to the next one](http://www.codeproject.com/KB/dotnet/predictor/network.jpg). You have to provide a minimum of 3 layers (input, hidden and output), but you can use as many hidden layers as you wish.
+
+This is a `Perceptron` with 2 neurons in the input layer, 3 neurons in the hidden layer, and 1 neuron in the output layer:
+
+`var myPerceptron = new Architect.Perceptron(2,3,1);`
+
+And this is a deep multilayer perceptron with 2 neurons in the input layer, 4 hidden layers with 10 neurons each, and 1 neuron in the output layer
+
+`var myPerceptron = new Architect.Perceptron(2, 10, 10, 10, 10, 1);`
+
+######LSTM
+
+The long [long short-term memory](http://people.idsia.ch/~juergen/lstmcell4.jpg) is an architecture well-suited to learn from experience to classify, process and predict time series when there are very long time lags of unknown size between important events.
+
+To use this architecture you have to set at least one input layer, one memory block assembly (consisting of four layers: input gate, memory cell, forget gate and output gate), and an output layer.
+
+`var myLSTM = new Architect.LSTM(2,6,1);` 
+
+Also you can set many layers of memory blocks:
+
+`var myLSTM = new Architect.LSTM(2,4,4,4,1);` 
+
+That LSTM network has three memory block assemblies, with 4 memory blocks each, and their own input gates, memory cells, forget gates and output gates.
+
+######Liquid
+
+The `Liquid` architecture allows you to create [Liquid State Machines](http://en.wikipedia.org/wiki/Liquid_state_machine). In these networks, neurons are randomly connected to each other. The recurrent nature of the connections turns the time varying input into a spatio-temporal pattern of activations in the network nodes.
+
+To use this architecture you have to set the size of the input layer, the size of the pool, the size of the output layer, the number of random connections in the pool, and the number of random gates among the connections.
+
+```
+var input = 2;
+var pool = 20;
+var output = 1;
+var connections = 30;
+var gates = 10;
+
+var myLiquidStateMachine = new Architect.Liquid(input, pool, output, connections, gates);
+```
+
+You can create your own architectures by extending the `Network` class. You can check the [Examples](http://github.com/cazala/synapse#examples) section for more information about this.
 
 
