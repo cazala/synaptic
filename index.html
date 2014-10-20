@@ -43,7 +43,7 @@
 				margin: 0px;
 			}
 			.container {
-				width: 1024px;
+				width: 1000px;
 				margin: 0 auto;
 			}
 			.home {
@@ -71,7 +71,7 @@
 				color: rgb(50,50,50);
 				position: absolute;
 				left: 50%;
-				top: 50%;
+				top: 40%;
 				margin-left: -330px;
 				margin-top: -10px;
 			}
@@ -79,8 +79,10 @@
 				color: gray;
 			}
 			.demo-code{
-				width: 519px;
+				width: 497px;
 				display: inline-block;
+				margin-left: 10px;
+				vertical-align: text-top;
 			}
 			.pre {
 				border-left: 5px solid rgb(220, 220, 220);
@@ -115,6 +117,7 @@
 
 			canvas {
 				box-shadow: 0 0 10px rgb(220,220,220);
+				vertical-align: text-top;;
 			}
 			.description{
 				margin: 30px;
@@ -249,7 +252,7 @@ this.<b>network</b> = new synapse.Architect.Perceptron(40, 25, 3);
     creature.<b>network.propagate</b>(learningRate, target);
 });</div>
 						</div>
-						<canvas id="canvas" width="500" height="445"></canvas>
+						<canvas id="canvas" width="500" height="418"></canvas>
 					</div>
 					<div class="description"> In this demo the creatures <b>learn</b> how to explore the screen together.</div>
 				</div>
