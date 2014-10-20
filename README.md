@@ -20,7 +20,7 @@ There are references to the equations in that paper commented through the source
 ######In node
 You can install synapse with [npm](http://npmjs.org):
 
-`npm install synapse --save`
+`npm install synapse-js --save`
 
 ######In the browser
 Just include the file synapse.js (you can find it in the `/lib` directory) with a script tag in your HTML:
@@ -30,7 +30,7 @@ Just include the file synapse.js (you can find it in the `/lib` directory) with 
 ###Usage
 
 ```
-var synapse = require('synapse');
+var synapse = require('synapse'); // this line is not needed in the browser
 var Neuron = synapse.Neuron,
 	Layer = synapse.Layer,
 	Network = synapse.Network,
@@ -44,7 +44,7 @@ Now you can start to create networks, train them, or use built-in networks from 
 
 ######Perceptron
 
-This is how you can create a simple perceptron.
+This is how you can create a simple [perceptron](http://www.codeproject.com/KB/dotnet/predictor/network.jpg).
 
 ```
 function Perceptron(input, hidden, output)
@@ -246,11 +246,11 @@ There are 4 built-in squashing functions, but you can also create your own:
 
 ##Layer
 
-Normally you won't work with single neurons, but use Layers instead. A layer is basically an array of neurons, they can do pretty much the same things as neurons do, put it makes the programming process faster.
+Normally you won't work with single neurons, but use Layers instead. A layer is basically an array of neurons, they can do pretty much the same things as neurons do, but it makes the programming process faster.
 
 To create a layer you just have to specify its size (the number of neurons in that layer).
 
-`var myLayer = new Layer(5)`
+`var myLayer = new Layer(5);`
 
 ######project
 
@@ -258,7 +258,7 @@ A layer can project a connection to another layer. You have to provide the layer
 
 ```
 var A = new Layer(5);
-var B = new Neuron(3);
+var B = new Layer(3);
 A.project(B, Layer.connectionType.ALL_TO_ALL); // All the neurons in layer A now project a connection to all the neurons in layer B
 ```
 
@@ -279,11 +279,11 @@ The method **project** returns a `LayerConnection` object, that can be gated by 
 A layer can gate a connection between two other layers, or a layers's self-connection.
 
 ```
-var A = new Neuron();
-var B = new Neuron();
+var A = new Layer(5);
+var B = new Layer(3);
 var connection = A.project(B);
 
-var C = new Neuron();
+var C = new Layer(4);
 C.gate(connection, Layer.gateType.INPUT_GATE); // now C gates the connection between A and B (input gate)
 ```
 
@@ -364,9 +364,42 @@ var myNetwork = new Network({
 	output: outputLayer
 });
 ```
-######projecting and gating
+######project
 
 A network can project a connection to another, or gate a connection between two others networks in the same way [Layers](http://github.com/cazala/synapse#layer) do.
+You have to provide the network that you want to connect to and the `connectionType`:
+
+```
+myNetwork.project(otherNetwork, Layer.connectionType.ALL_TO_ALL); 
+/* 	
+	All the neurons in myNetwork's output layer now project a connection
+	to all the neurons in otherNetowrk's input layer.
+*/
+```
+
+There are two `connectionType`'s:
+- Layer.connectionType.ALL_TO_ALL
+- Layer.connectionType.ONE_TO_ONE
+
+If not specified, the connection type is always `Layer.connectionType.ALL_TO_ALL.`If you make a one-to-one connection, both layers must have **the same size**.
+
+The method **project** returns a `LayerConnection` object, that can be gated by another network or layer.
+
+######gate
+
+A Network can gate a connection between two other Networks or Layers, or a Layers's self-connection.
+
+```
+var connection = A.project(B);
+C.gate(connection, Layer.gateType.INPUT_GATE); // now C's output layer gates the connection between A's output layer and B's input layer (input gate)
+```
+
+There are three `gateType`'s:
+- Layer.gateType.INPUT_GATE: If netowork C is gating connections between network A and B, all the neurons from C's output layer gate all the input connections to B's input layer.
+
+- Layer.gateType.OUTPUT_GATE: If network C is gating connections between network A and B, all the neurons from C's output layer gate all the output connections from A's output layer.
+
+- Layer.gateType.ONE_TO_ONE: If network C is gating connections between network A and B, each neuron from C's output layer gates one connection from A's output layer to B's input layer. To use this kind of gateType, A's output layer, B's input layer and C's output layer must be the same size.
 
 ######activate
 
@@ -391,9 +424,51 @@ myNetwork.activate([1,0,1,0]); // [0.5200553602396137, 0.4792707231811006]
 
 ######propagate
 
-You can provide a target value and a learning rate to a network and backpropagate the error from the output layer to all the hidden layers in reverse order until reaching the input layer.
+You can provide a target value and a learning rate to a network and backpropagate the error from the output layer to all the hidden layers in reverse order until reaching the input layer. For example, this is how you train a network how to solve an XOR:
 
-`myNetwork.propagate(.1, [0,0]);`
+```
+// create the network
+var inputLayer = new Layer(2);
+var hiddenLayer = new Layer(3);
+var outputLayer = new Layer(1);
+
+inputLayer.project(hiddenLayer);
+hiddenLayer.project(outputLayer);
+
+var myNetwork = new Network({
+	input: inputLayer,
+	hidden: [hiddenLayer],
+	output: outputLayer
+});
+
+// train the network
+var learningRate = .3;
+for (var i = 0; i < 20000; i++)
+{
+	// 0,0 => 0
+	myNetwork.activate([0,0]);
+	myNetwork.propagate(learningRate, [0]);
+
+	// 0,1 => 1
+	myNetwork.activate([0,1]);
+	myNetwork.propagate(learningRate, [1]);
+
+	// 1,0 => 1
+	myNetwork.activate([1,0]);
+	myNetwork.propagate(learningRate, [1]);
+
+	// 1,1 => 0
+	myNetwork.activate([1,1]);
+	myNetwork.propagate(learningRate, [0]);
+}
+
+
+// test the network
+myNetwork.activate([0,0]); // [0.015020775950893527]
+myNetwork.activate([0,1]); // [0.9815816381088985]
+myNetwork.activate([1,0]); // [0.9871822457132193]
+myNetwork.activate([1,1]); // [0.012950087641929467]
+```
 
 ######optimize
 
@@ -528,3 +603,6 @@ var clone = myNetwork.clone();
 myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
 clone.activate([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
 ```
+
+##Trainer
+
