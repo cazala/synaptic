@@ -20,7 +20,7 @@ There are references to the equations in that paper commented through the source
 ######In node
 You can install synapse with [npm](http://npmjs.org):
 
-`npm install synapse-js --save`
+`npm install synaptic --save`
 
 ######In the browser
 Just include the file synapse.js (you can find it in the `/lib` directory) with a script tag in your HTML:
@@ -346,6 +346,10 @@ myLayer.set({
 })
 ```
 
+######neurons
+
+The method `neurons()` return an array with all the neurons in the layer, in activation order.
+
 ##Network
 
 Networks are basically an array of layers. They have an input layer, a number of hidden layers, and an output layer. Networks can project and gate connections, activate and propagate in the same fashion as [Layers](http://github.com/cazala/synapse#layer) do. Networks can also be optimized, extended, exported to JSON, converted to Workers or standalone Functions, and cloned.
@@ -511,10 +515,31 @@ var imported = Network.fromJSON(exported);
 The network can be converted into a WebWorker. This feature doesn't work in node.js, and it's not supported on every browser (it must support Blob).
 
 ```
+// training set
+var learningRate = .3;
+var trainingSet = [
+	{
+		input: [0,0],
+		output: [0]
+	},
+	{
+		input: [0,1],
+		output: [1]
+	},
+	{
+		input: [1,0],
+		output: [1]
+	},
+	{
+		input: [1,1],
+		output: [0]
+	},
+];
+
 // create a network
-var inputLayer = new Layer(4);
-var hiddenLayer = new Layer(6);
-var outputLayer = new Layer(2);
+var inputLayer = new Layer(2);
+var hiddenLayer = new Layer(3);
+var outputLayer = new Layer(1);
 
 inputLayer.project(hiddenLayer);
 hiddenLayer.project(outputLayer);
@@ -528,32 +553,63 @@ var myNetwork = new Network({
 // create a worker
 var myWorker = myNetwork.worker();
 
-myWorker.onmessage = function(e){
-	// give control of the memory back to the network - this is mandatory!
-	myNetwork.optimized.memory = e.data.memoryBuffer;
-
-	console.log(e.data);
-}
-
 // activate the network
-function activateWorker()
+function activateWorker(input)
 {
 	myWorker.postMessage({ 
 		action: "activate",
-		input: [1,0,1,0],
+		input: input,
 		memoryBuffer: myNetwork.optimized.memory
 	}, [myNetwork.optimized.memory.buffer]);
 }
 
 // backpropagate the network
-function propagateWorker(){
+function propagateWorker(target){
 	myWorker.postMessage({ 
 		action: "propagate",
-		target: [0,0],
-		rate: .1,
+		target: target,
+		rate: learningRate,
 		memoryBuffer: myNetwork.optimized.memory
 	}, [myNetwork.optimized.memory.buffer]);
 }
+
+// train the worker
+myWorker.onmessage = function(e){
+	// give control of the memory back to the network - this is mandatory!
+	myNetwork.optimized.memory = e.data.memoryBuffer;
+	if (e.data.action == "propagate")
+	{
+		activateWorker(trainingSet[index].input);
+	}
+
+	if (e.data.action == "activate")
+	{
+		propagateWorker(trainingSet[index].output);	
+		index++;
+		if (index >= 4)
+		{
+			index = 0;
+			iterations++;
+			if (iterations % 100 == 0)
+			{
+				var output00 = myNetwork.activate([0,0]);
+				var output01 = myNetwork.activate([0,1]);
+				var output10 = myNetwork.activate([1,0]);
+				var output11 = myNetwork.activate([1,1]);
+
+				console.log("0,0 => ", output00);
+				console.log("0,1 => ", output01);
+				console.log("1,0 => ", output10);
+				console.log("1,1 => ", output11, "\n");
+			}
+		}
+	}
+}
+
+// kick it off
+var index = 0;
+var iterations = 0;
+activateWorker(trainingSet[index].input);
 ```
 
 ######standalone
@@ -604,5 +660,41 @@ myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
 clone.activate([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
 ```
 
+######neurons
+
+The method `neurons()` return an array with all the neurons in the network, in activation order.
+
+######set
+
+The method `set(layers)` receives an object with layers in the same format as the constructor of `Network` and sets them as the layers of the Network, this is useful when you are extending the `Network` class to create your own architectures. See the [examples](http://github.com/cazala/synapse#examples) section.
+
+```
+var inputLayer = new Layer(4);
+var hiddenLayer = new Layer(6);
+var outputLayer = new Layer(2);
+
+inputLayer.project(hiddenLayer);
+hiddenLayer.project(outputLayer);
+
+var myNetwork = new Network();
+
+myNetwork.set({
+	input: inputLayer,
+	hidden: [hiddenLayer],
+	output: outputLayer
+});
+```
+
 ##Trainer
+
+The `Trainer` makes it easier to train any set to any network, no matter its architecture. To create a trainer you just have to provide a `Network` to train.
+
+`var trainer = new Trainer(myNetwork);`
+
+The trainer also contains bult-in tasks to test the performance of your network.
+
+######train
+
+This method allows you to train any training set to a `Network`, the training set must be an `Array` containing object with an **input** and **output** properties, for exmple, this is how you train an XOR to a network using a trainer
+
 
