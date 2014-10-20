@@ -91,6 +91,7 @@
 				log ("&nbsp");
 				perceptron = new Architect.Perceptron(2,3,1);
 				var results = perceptron.trainer.XOR({ 
+					iterations: 100000
 					error: .0001,
 					rate: .5
 				});
