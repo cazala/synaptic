@@ -24,9 +24,9 @@ THE SOFTWARE
 
 
 
-************************************************************
-						SYNAPSE
-************************************************************
+********************************************************************************************
+                                         SYNAPSE
+********************************************************************************************
 
 Synapse.js is a javascript/node.js neural networks library, its generalized algorythm 
 is architecture-free, so you can build and train basically any type of first order or 
@@ -47,9 +47,10 @@ http://www.overcomplete.net/papers/nn2012.pdf
 There are references to the equations in that paper commented through the source code.
 
 
-************************************************************
-						NEURON
-***********************************************************/
+
+********************************************************************************************
+                                         NEURON
+*******************************************************************************************/
 
 function Neuron ()
 {	
@@ -485,7 +486,7 @@ Neuron.prototype = {
 					buildSentence(activation, ' = (1 / (1 + Math.exp(-', state, ')))', store_activation);
 					buildSentence(derivative, ' = ', activation, ' * (1 - ', activation, ')', store_activation);
 					break;
-				case Neuron.squash.HTAN:
+				case Neuron.squash.TANH:
 					var eP = getVar('aux');
 					var eN = getVar('aux_2');
 					buildSentence(eP, ' = Math.exp(', state, ')', store_activation);
@@ -757,10 +758,10 @@ Neuron.squash.LOGISTIC = function(x, derivate)
 	var fx = Neuron.squash.LOGISTIC(x);
 	return fx * (1 - fx);
 };
-Neuron.squash.HTAN = function(x, derivate)
+Neuron.squash.TANH = function(x, derivate)
 {
 	if (derivate)
-		return 1 - Math.pow(Neuron.squash.HTAN(x), 2);
+		return 1 - Math.pow(Neuron.squash.TANH(x), 2);
 	var eP = Math.exp(x);
 	var eN = 1 / eP;
 	return (eP - eN) / (eP + eN);
@@ -794,9 +795,9 @@ Neuron.squash.HLIM = function(x, derivate)
 })();
 
 
-/***********************************************************
-						LAYER
-***********************************************************/
+/*******************************************************************************************
+                                            LAYER
+*******************************************************************************************/
 
 function Layer(size, label)
 {
@@ -1080,9 +1081,9 @@ Layer.gateType.ONE_TO_ONE = "ONE TO ONE";
 })();
 
 
-/***********************************************************
-						NETWORK
-***********************************************************/
+/*******************************************************************************************
+                                         NETWORK
+*******************************************************************************************/
 
 function Network(layers)
 {
@@ -1215,8 +1216,9 @@ Network.prototype = {
 			hardcode += "F[" + optimized.targets[i] + "] = target[" + i + "]; ";
 		for (var i in optimized.propagation_sentences)
 			hardcode += optimized.propagation_sentences[i].join(" ") + " ";
-		hardcode += " }; ";
-		hardcode += "return {\nmemory: F,\nactivate: activate,\npropagate: propagate\n};";
+		hardcode += " };\n";
+		hardcode += "var ownership = function(memoryBuffer){\nF = memoryBuffer;\nthis.memory = F;\n};\n";
+		hardcode += "return {\nmemory: F,\nactivate: activate,\npropagate: propagate,\nownership: ownership\n};";
 		hardcode = hardcode.split(";").join(";\n");
 
 		var constructor = new Function(hardcode);
@@ -1383,7 +1385,7 @@ Network.prototype = {
 			};
 
 			copy.squash =   neuron.squash == Neuron.squash.LOGISTIC ? "LOGISTIC" :
-							neuron.squash == Neuron.squash.HTAN ? "HTAN" :
+							neuron.squash == Neuron.squash.TANH ? "TANH" :
 							neuron.squash == Neuron.squash.IDENTITY ? "IDENTITY" :
 							neuron.squash == Neuron.squash.HLIM ? "HLIM" : 
 							null;
@@ -1571,9 +1573,9 @@ Network.fromJSON = function(json){
 }
 
 
-/***********************************************************
-						TRAINER
-***********************************************************/
+/*******************************************************************************************
+                                        TRAINER
+*******************************************************************************************/
 
 function Trainer(network, options){
 	options = options || {};
@@ -1582,22 +1584,8 @@ function Trainer(network, options){
 	this.iterations = options.iterations || 10000;
 	this.error = options.error || .005;
 	this.callback = options.callback || null;
-	this.canceled = false;
 }
 Trainer.prototype = {
-
-	// set the configuration of the trainer (same as constructor)
-	config: function(options){
-		if (options)
-		{
-			this.network = options.network || this.network;
-			this.rate = options.rate || .1;
-			this.iterations = options.iterations || 100000;
-			this.error = options.error || .005;
-			this.callback = options.callback || null;
-			this.canceled = false;
-		}
-	},
 
 	// trains any given set to a network
 	train: function(set, options){
@@ -1681,7 +1669,7 @@ Trainer.prototype = {
 		} else {
 			options = {
 				iterations: 50000,
-				log: 500,
+				log: false,
 				shuffle: true
 			}
 		}
@@ -2039,9 +2027,9 @@ Trainer.prototype = {
 	}
 };
 
-/***********************************************************
-						  ARCHITECT
-***********************************************************/
+/*******************************************************************************************
+                                        ARCHITECT
+*******************************************************************************************/
 
 // Colection of useful built-in architectures
 var Architect = {
@@ -2223,9 +2211,9 @@ for (var architecture in Architect)
 }
 
 
-/***********************************************************
-						  EXPORT
-***********************************************************/
+/*******************************************************************************************
+                                         EXPORT
+*******************************************************************************************/
 
 (function(global){
 	var API = {
