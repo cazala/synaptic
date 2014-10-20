@@ -576,16 +576,10 @@ function propagateWorker(target){
 // train the worker
 myWorker.onmessage = function(e){
 	// give control of the memory back to the network - this is mandatory!
-	myNetwork.optimized.memory = e.data.memoryBuffer;
+	myNetwork.optimized.ownership(e.data.memoryBuffer);
+	
 	if (e.data.action == "propagate")
 	{
-		activateWorker(trainingSet[index].input);
-	}
-
-	if (e.data.action == "activate")
-	{
-		propagateWorker(trainingSet[index].output);	
-		index++;
 		if (index >= 4)
 		{
 			index = 0;
@@ -603,10 +597,18 @@ myWorker.onmessage = function(e){
 				console.log("1,1 => ", output11, "\n");
 			}
 		}
+
+		activateWorker(trainingSet[index].input);
+	}
+
+	if (e.data.action == "activate")
+	{
+		propagateWorker(trainingSet[index].output);	
+		index++;
 	}
 }
 
-// kick it off
+// kick it
 var index = 0;
 var iterations = 0;
 activateWorker(trainingSet[index].input);
