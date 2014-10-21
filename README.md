@@ -732,10 +732,10 @@ trainer.train(trainingSet,{
 	log: 1000
 });
 
-+**rate**: learning rate to train the network.
-+**iterations**: maximum number of iterations
-+**error**: minimum error
-+**shuffle**: if true, the training set is shuffled after every iteration, this is useful for training data sequences which order is not meaningful to networks with context memory, like LSTM's.
+- **rate**: learning rate to train the network.
+- **iterations**: maximum number of iterations
+- **error**: minimum error
+- **shuffle**: if true, the training set is shuffled after every iteration, this is useful for training data sequences which order is not meaningful to networks with context memory, like LSTM's.
 +**log**: this commands the trainer to console.log the error and iterations every X number of iterations.
 +**customLog**: you can create custom logs like this one:
 
