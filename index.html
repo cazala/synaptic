@@ -1,13 +1,13 @@
 <html>
 	<head>
-		<title>Synapse - The javascript neural network library</title>
+		<title>Synaptic - The javascript neural network library</title>
 		<link rel="icon" type="image/png" href="img/favicon.png">
 		<meta charset="UTF-8">
 		<meta name="description" content="Javascript neural network library for node.js and the browser.">
-		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
+		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synaptic">
 		<meta name="author" content="Juan Cazala">
 		<script src="js/jquery.js"></script>
-		<script src="js/synapse.js"></script>
+		<script src="js/synaptic.js"></script>
 		<script src="js/vector.js"></script>
 		<script src="js/creature.js"></script>
 		<script src="js/world.js"></script>
@@ -207,16 +207,16 @@
 		</style>
 	</head>
 	<body>
-		<a href="https://github.com/cazala/synapse"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
+		<a href="https://github.com/cazala/synaptic"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
 
 		<div class="container home">
 
 			<div style="height: 12%; position: relative;"> 
-				<div class='title'><b>Synapse</b></div>
+				<div class='title'><b>Synaptic</b></div>
 			</div>
 
 			<div style="height: 12%;position: relative;">
-				<header>Synapse is an architecture-free neural network library for <b>node.js</b> and the <b>browser</b>.<span onclick="window.location='http://github.com/cazala/synapse';" class="download">DOWNLOAD!</span></header>
+				<header>Synaptic is an architecture-free neural network library for <b>node.js</b> and the <b>browser</b>.<span onclick="window.location='http://github.com/cazala/synaptic';" class="download">DOWNLOAD!</span></header>
 			</div>
 
 			<div style="height: 65%;position: relative;">
@@ -225,8 +225,8 @@
 
 						<div class="demo-code">
 							<span>creature.js</span>
-							<div class="pre" style="margin-bottom: 30px;">var synapse = require('synapse');
-this.<b>network</b> = new synapse.Architect.Perceptron(40, 25, 3);
+							<div class="pre" style="margin-bottom: 30px;">var synaptic = require('synaptic');
+this.<b>network</b> = new synaptic.Architect.Perceptron(40, 25, 3);
 					</div>
 					<span>world.js</span>
 					<div class="pre">creatures.forEach(function(creature)
@@ -266,16 +266,16 @@ this.<b>network</b> = new synapse.Architect.Perceptron(40, 25, 3);
 		<div class="container">
 			<div class="features">
 				<div class="feature"><img src="img/neuron.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Neuron</span>
-					<p>Neurons are the basic unit of the neural network. They can be connected to another neuron or gate connections between other neurons. This allows you to create complex and flexible architectures.<br><br><a href="http://github.com/cazala/synapse#neuron">+ Read documentation</a></p></div>
+					<p>Neurons are the basic unit of the neural network. They can be connected to another neuron or gate connections between other neurons. This allows you to create complex and flexible architectures.<br><br><a href="http://github.com/cazala/synaptic#neuron">+ Read documentation</a></p></div>
 				</div>
 				<div class="feature" style="margin-left: 70px;"><img src="img/network.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Network</span>
-					<p>Networks can be imported/exported to JSON, converted to workers or standalone functions. They can be connected to other networks or gate connections.<br><br><a href="http://github.com/cazala/synapse#network">+ Read documentation</a></p></div>
+					<p>Networks can be imported/exported to JSON, converted to workers or standalone functions. They can be connected to other networks or gate connections.<br><br><a href="http://github.com/cazala/synaptic#network">+ Read documentation</a></p></div>
 				</div>
 				<div class="feature"><img src="img/trainer.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Trainer</span>
-					<p>Trainers can take any given network regardless of its architecture and use any training set. It includes built-in tasks to test networks, like learning an XOR, completing a Discrete Sequence Recall task or an Embeded Reber Grammar test.<br><br><a href="http://github.com/cazala/synapse#trainer">+ Read documentation</a></p></div>
+					<p>Trainers can take any given network regardless of its architecture and use any training set. It includes built-in tasks to test networks, like learning an XOR, completing a Discrete Sequence Recall task or an Embeded Reber Grammar test.<br><br><a href="http://github.com/cazala/synaptic#trainer">+ Read documentation</a></p></div>
 				</div>
 				<div class="feature" style="margin-left: 70px;"><img src="img/architect.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Architect</span>
-					<p>The Architect includes built-in useful architectures like <a href='http://en.wikipedia.org/wiki/Multilayer_perceptron'>multilayer perceptrons</a>, multilayer <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>long short-term memory</a> networks (LSTM) and <a href='http://en.wikipedia.org/wiki/Liquid_state_machine'>liquid state machines</a>.<br><br><a href="http://github.com/cazala/synapse#architect">+ Read documentation</a></p></div>
+					<p>The Architect includes built-in useful architectures like <a href='http://en.wikipedia.org/wiki/Multilayer_perceptron'>multilayer perceptrons</a>, multilayer <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>long short-term memory</a> networks (LSTM) and <a href='http://en.wikipedia.org/wiki/Liquid_state_machine'>liquid state machines</a>.<br><br><a href="http://github.com/cazala/synaptic#architect">+ Read documentation</a></p></div>
 				</div>
 			</div>
 
@@ -287,7 +287,7 @@ this.<b>network</b> = new synapse.Architect.Perceptron(40, 25, 3);
 				<a href='paint.html'><div class="image_frame"><img src='img/demo4.png'/><span>Paint an image</span></div></a>
 				<a href='wiki.html'><div class="image_frame"><img src='img/demo5.png'/><span>Read from Wikipedia</span></div></a>
 			</div>
-			<footer><b>Synapse</b> is open source (<a href="https://github.com/cazala/synapse/blob/master/LICENSE">MIT</a>). Based on Derek Monner's <a href="http://www.overcomplete.net/papers/nn2012.pdf">paper</a>. Kindly hosted by <a href="http://github.com">GitHub</a>.</footer>
+			<footer><b>Synaptic</b> is open source (<a href="https://github.com/cazala/synaptic/blob/master/LICENSE">MIT</a>). Based on Derek Monner's <a href="http://www.overcomplete.net/papers/nn2012.pdf">paper</a>. Kindly hosted by <a href="http://github.com">GitHub</a>.</footer>
 		</div>
 	</div>
 	</body>

@@ -1,13 +1,13 @@
 <html>
 	<head>
-		<title>Synapse - Image Filters</title>
+		<title>Training a neural network to learn several image filters - Synaptic</title>
 		<link rel="icon" type="image/png" href="img/favicon.png">
 		<meta charset="UTF-8">
-		<meta name="description" content="Training a neural network to learn several image filters - Synapse">
-		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synapse">
+		<meta name="description" content="Training a neural network to learn several image filters - Synaptic">
+		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synaptic">
 		<meta name="author" content="Juan Cazala">
 		<script src='js/jquery.js'></script>
-		<script src='js/synapse.js'></script>
+		<script src='js/synaptic.js'></script>
 		<style>
 			body { 
 				font-family: 'Open Sans', sans-serif;
@@ -180,7 +180,7 @@
 	</head>
 	<body>
 		
-		<div class="container"><div class='title' onclick="window.location='index.html';"><b>Synapse</b></div><div style="font-weight: bold;">Image Filters</div>
+		<div class="container"><div class='title' onclick="window.location='index.html';"><b>Synaptic</b></div><div style="font-weight: bold;">Image Filters</div>
 		<p> In this demo, a perceptron will be trained to learn how to apply different filters to an image. During the training, the network will receive a picture as an input, and a filtered version of that same picture as an output (RGB values of their pixels). Eventually, the network will be able to take any picture as input and it will output a filtered version of it.</p>
 		<p><b>Training set:</b>&nbsp;&nbsp;<select id="comboA" onchange="document.getElementById('output').src = this.value">
 				<option value="img/cat_bw.png">Grayscale</option>

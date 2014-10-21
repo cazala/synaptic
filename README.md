@@ -1,4 +1,4 @@
-Synapse
-=======
+Synaptic
+========
 
-This is the [Synapse](http://synapse.juancazala.com)'s website.
+This is the [Synaptic](http://synaptic.juancazala.com)'s website.
