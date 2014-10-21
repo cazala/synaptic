@@ -40,6 +40,14 @@ var Neuron = synaptic.Neuron,
 
 Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synaptic#architect).
 
+###Demos
+
+- [Solve an XOR](http://synaptic.juancazala.com/xor.html)
+- [Discrete Sequence Recall Task](http://synaptic.juancazala.com/xor.html)
+- [Learn Image Filters](http://synaptic.juancazala.com/filter.html)
+- [Paint an Image](http://synaptic.juancazala.com/paint.html)
+- [Read from Wikipedia](http://synaptic.juancazala.com/wiki.html)
+
 ###Examples
 
 ######Perceptron
