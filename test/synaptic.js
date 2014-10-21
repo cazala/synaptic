@@ -1,8 +1,8 @@
 var assert = require('assert'),
-	synapse = require('../lib/synapse');
+	synaptic = require('../lib/synaptic');
 
-var Perceptron = synapse.Architect.Perceptron,
-	LSTM = synapse.Architect.LSTM;
+var Perceptron = synaptic.Architect.Perceptron,
+	LSTM = synaptic.Architect.LSTM;
 
 describe("Perceptron - XOR", function(){
 

@@ -1,7 +1,7 @@
-Synapse
-=======
+Synaptic
+========
 
-Synapse is a javascript neural network library for **node.js** and the **browser**, its generalized algorythm is architecture-free, so you can build and train basically any type of first order or even [second order neural network](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network) architectures.
+Synaptic is a javascript neural network library for **node.js** and the **browser**, its generalized algorythm is architecture-free, so you can build and train basically any type of first order or even [second order neural network](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network) architectures.
 
 This library includes a few built-in architectures like [multilayer perceptrons](http://en.wikipedia.org/wiki/Multilayer_perceptron), [multilayer long-short term memory](http://en.wikipedia.org/wiki/Long_short_term_memory) networks (LSTM) or [liquid state machines](http://en.wikipedia.org/wiki/Liquid_state_machine), and a trainer capable of training any given network, which includes built-in training tasks/tests like solving an XOR, completing a Distracted Sequence Recall task or an [Embeded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test, so you can easily test and compare the performance of different architectures.
 
@@ -18,27 +18,27 @@ There are references to the equations in that paper commented through the source
 ###Installation
 
 ######In node
-You can install synapse with [npm](http://npmjs.org):
+You can install synaptic with [npm](http://npmjs.org):
 
 `npm install synaptic --save`
 
 ######In the browser
-Just include the file synapse.js (you can find it in the `/lib` directory) with a script tag in your HTML:
+Just include the file synaptic.js (you can find it in the `/lib` directory) with a script tag in your HTML:
 
-`<script src="synapse.js"></script>`
+`<script src="synaptic.js"></script>`
 
 ###Usage
 
 ```
-var synapse = require('synapse'); // this line is not needed in the browser
-var Neuron = synapse.Neuron,
-	Layer = synapse.Layer,
-	Network = synapse.Network,
-	Trainer = synapse.Trainer,
-	Architect = synapse.Architect;
+var synaptic = require('synaptic'); // this line is not needed in the browser
+var Neuron = synaptic.Neuron,
+	Layer = synaptic.Layer,
+	Network = synaptic.Network,
+	Trainer = synaptic.Trainer,
+	Architect = synaptic.Architect;
 ```
 
-Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synapse#architect).
+Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synaptic#architect).
 
 ###Examples
 
@@ -138,7 +138,7 @@ LSTM.prototype = new Network();
 LSTM.prototype.constructor = LSTM;
 ```
 
-These are examples for explanatory purposes, the [Architect](http://github.com/cazala/synapse#architect) already includes Multilayer Perceptrons and
+These are examples for explanatory purposes, the [Architect](http://github.com/cazala/synaptic#architect) already includes Multilayer Perceptrons and
 Multilayer LSTM networks architectures.
 
 
@@ -352,7 +352,7 @@ The method `neurons()` return an array with all the neurons in the layer, in act
 
 ##Network
 
-Networks are basically an array of layers. They have an input layer, a number of hidden layers, and an output layer. Networks can project and gate connections, activate and propagate in the same fashion as [Layers](http://github.com/cazala/synapse#layer) do. Networks can also be optimized, extended, exported to JSON, converted to Workers or standalone Functions, and cloned.
+Networks are basically an array of layers. They have an input layer, a number of hidden layers, and an output layer. Networks can project and gate connections, activate and propagate in the same fashion as [Layers](http://github.com/cazala/synaptic#layer) do. Networks can also be optimized, extended, exported to JSON, converted to Workers or standalone Functions, and cloned.
 
 ```
 var inputLayer = new Layer(4);
@@ -370,7 +370,7 @@ var myNetwork = new Network({
 ```
 ######project
 
-A network can project a connection to another, or gate a connection between two others networks in the same way [Layers](http://github.com/cazala/synapse#layer) do.
+A network can project a connection to another, or gate a connection between two others networks in the same way [Layers](http://github.com/cazala/synaptic#layer) do.
 You have to provide the network that you want to connect to and the `connectionType`:
 
 ```
@@ -499,7 +499,7 @@ This improves the performance of the network dramatically.
 
 ######extend
 
-You can see how to extend a network in the [Examples](http://github.com/cazala/synapse#examples) section.
+You can see how to extend a network in the [Examples](http://github.com/cazala/synaptic#examples) section.
 
 ######toJSON/fromJSON
 
@@ -616,7 +616,7 @@ activateWorker(trainingSet[index].input);
 
 ######standalone
 
-The network can be exported to a single javascript Function. This can be useful when your network is already trained and you just need to use it, since the standalone functions is just one javascript function with an array and operations within, with no dependencies on Synapse or any other library.
+The network can be exported to a single javascript Function. This can be useful when your network is already trained and you just need to use it, since the standalone functions is just one javascript function with an array and operations within, with no dependencies on Synaptic or any other library.
 
 ```
 var inputLayer = new Layer(4);
@@ -668,7 +668,7 @@ The method `neurons()` return an array with all the neurons in the network, in a
 
 ######set
 
-The method `set(layers)` receives an object with layers in the same format as the constructor of `Network` and sets them as the layers of the Network, this is useful when you are extending the `Network` class to create your own architectures. See the [examples](http://github.com/cazala/synapse#examples) section.
+The method `set(layers)` receives an object with layers in the same format as the constructor of `Network` and sets them as the layers of the Network, this is useful when you are extending the `Network` class to create your own architectures. See the [examples](http://github.com/cazala/synaptic#examples) section.
 
 ```
 var inputLayer = new Layer(4);
@@ -761,7 +761,7 @@ trainer.XOR(); // {error: 0.004999821588193305, iterations: 21333, time: 111}
 
 ######DSR
 
-This method trains the network to complete a [Discrete Sequence Recall](http://synapse.juancazala.com/dsr.html), which is a task for testing context memory in neural networks.
+This method trains the network to complete a [Discrete Sequence Recall](http://synaptic.juancazala.com/dsr.html), which is a task for testing context memory in neural networks.
 
 ```
 trainer.DSR({
@@ -830,6 +830,6 @@ var gates = 10;
 var myLiquidStateMachine = new Architect.Liquid(input, pool, output, connections, gates);
 ```
 
-You can create your own architectures by extending the `Network` class. You can check the [Examples](http://github.com/cazala/synapse#examples) section for more information about this.
+You can create your own architectures by extending the `Network` class. You can check the [Examples](http://github.com/cazala/synaptic#examples) section for more information about this.
 
 
