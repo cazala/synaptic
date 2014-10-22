@@ -842,6 +842,6 @@ You can create your own architectures by extending the `Network` class. You can 
 
 ##Contribute
 
-**Synaptic** is an Open Source project that started in Buens Aires, Argentina. Anybody in the world is welcome to contribute in the development of the project.
+**Synaptic** is an Open Source project that started in Buens Aires, Argentina. Anybody in the world is welcome to contribute to the development of the project.
 
 <3
