@@ -7,9 +7,7 @@ var Perceptron = synaptic.Architect.Perceptron,
 describe("Perceptron - XOR", function(){
 
 	var perceptron = new Perceptron(2,3,1);
-	perceptron.trainer.XOR({
-		log: false
-	});
+	perceptron.trainer.XOR();
 
 	var test00 = Math.round(perceptron.activate([0,0]));
 	it("input: [0,0] output: " + test00, function(){
