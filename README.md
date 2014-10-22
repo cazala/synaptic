@@ -840,4 +840,8 @@ var myLiquidStateMachine = new Architect.Liquid(input, pool, output, connections
 
 You can create your own architectures by extending the `Network` class. You can check the [Examples](http://github.com/cazala/synaptic#examples) section for more information about this.
 
+##Contribute
 
+**Synaptic** is an Open Source project that started in Buens Aires, Argentina. Anybody in the world is welcome to contribute in the development of the project.
+
+<3
