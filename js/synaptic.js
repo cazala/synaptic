@@ -25,12 +25,12 @@ THE SOFTWARE
 
 
 ********************************************************************************************
-                                         SYNAPSE
+                                         SYNAPTIC
 ********************************************************************************************
 
-Synapse.js is a javascript/node.js neural networks library, its generalized algorythm 
-is architecture-free, so you can build and train basically any type of first order or 
-even second order neural network architectures.
+Synaptic is a javascript neural network library for node.js and the browser, its generalized 
+algorythm is architecture-free, so you can build and train basically any type of first order 
+or even second order neural network architectures.
 
 http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network
 
@@ -2234,9 +2234,9 @@ for (var architecture in Architect)
 	} else if (typeof exports !== "undefined") {
 	    module.exports = API;
 	} else {
-		global.Synapse = API;
-		Synapse.ninja = function(){
-			delete global.Synapse;
+		global.Synaptic = API;
+		Synaptic.ninja = function(){
+			delete global.Synaptic;
 		}
 	}
 })(this);
