@@ -3,6 +3,7 @@ var assert = require('assert'),
 
 var Perceptron = synaptic.Architect.Perceptron,
   LSTM = synaptic.Architect.LSTM;
+  Trainer = synaptic.Trainer;
 
 describe("Perceptron - XOR", function() {
 
@@ -145,4 +146,67 @@ describe("LSTM - Discrete Sequence Recall", function() {
         assert(ok);
       });
   }
+});
+
+describe("Optimized and Unoptimized Networks Equivalency", function() {
+  var optimized = new Perceptron(2,3,1);
+
+  var unoptimized = optimized.clone();
+  unoptimized.setOptimize(false);
+
+  // activate networks
+  var output1 = optimized.activate([0,0]);
+  var output2 = unoptimized.activate([0,0]);
+
+  it('1) Same output for both networks', function(){
+    assert((output1 - output2) == 0);
+  });
+
+  // propagate networks
+  optimized.propagate(.1, [0]);
+  unoptimized.propagate(.1, [0]);
+
+  // activate networks
+  var output1 = optimized.activate([1,0]);
+  var output2 = unoptimized.activate([1,0]);
+
+  it('2) Same output for both networks', function(){
+    assert((output1 - output2) == 0);
+  });
+
+  // propagate networks
+  optimized.propagate(.4, [1]);
+  unoptimized.propagate(.4, [1]);
+
+  // activate networks
+  var output1 = optimized.activate([0,1]);
+  var output2 = unoptimized.activate([0,1]);
+
+  it('3) Same output for both networks', function(){
+    assert((output1 - output2) == 0);
+  });
+
+  // propagate networks
+  optimized.propagate(.2, [1]);
+  unoptimized.propagate(.2, [1]);
+
+  // activate networks
+  var output1 = optimized.activate([1,1]);
+  var output2 = unoptimized.activate([1,1]);
+
+  it('4) Same output for both networks', function(){
+    assert((output1 - output2) == 0);
+  });
+
+  // propagate networks
+  optimized.propagate(.3, [0]);
+  unoptimized.propagate(.3, [0]);
+
+  // activate networks
+  var output1 = optimized.activate([1,0]);
+  var output2 = unoptimized.activate([1,0]);
+
+  it('5) Same output for both networks', function(){
+    assert((output1 - output2) == 0);
+  });
 });
