@@ -118,7 +118,7 @@ function LSTM(input, blocks, output)
 	var output = memoryCell.project(outputLayer);
 
 	// self-connection
-	var self = memoryCell.project(memoryCell, Layer.connectionType.ONE_TO_ONE);
+	var self = memoryCell.project(memoryCell);
 
 	// peepholes
 	memoryCell.project(inputGate,  Layer.connectionType.ONE_TO_ONE);
