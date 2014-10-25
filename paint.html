@@ -45,7 +45,7 @@
 				color: black;
 				font-weight: bold;
 			}
-			img, canvas {
+			.image_frame img, canvas {
 				border: 1px solid lightgray;
 				box-shadow: 0 0 10px lightgray;
 				padding: 2px;
@@ -149,7 +149,7 @@
 </script>
 	</head>
 	<body>
-		
+		<a href="https://github.com/cazala/synaptic"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
 		<div class="container"><div class='title' onclick="window.location='index.html';"><b>Synaptic</b></div><div style="font-weight: bold;">Paint an Image</div>
 		<p> In this demo, a <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>Long Short Term Memory</a> network (2 inputs, 14 memory blocks, 3 outputs) will be trained entering the coordinates of every pixel (x, y) of an image as input, and the color as ouput (RGB values). After each iteration, the network will be directed to fill a canvas, the coordinates of every pixel will be provided and the canvas will be painted with the RGB values outputed by the network.</p>
 		<p> Start training: <button onclick="train();">START</button></p><p id="log" class="log"></p>
