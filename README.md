@@ -3,7 +3,7 @@ Synaptic [![Build Status](https://travis-ci.org/cazala/synaptic.svg?branch=maste
 
 Synaptic is a javascript neural network library for **node.js** and the **browser**, its generalized algorithm is architecture-free, so you can build and train basically any type of first order or even [second order neural network](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network) architectures.
 
-This library includes a few built-in architectures like [multilayer perceptrons](http://en.wikipedia.org/wiki/Multilayer_perceptron), [multilayer long-short term memory](http://en.wikipedia.org/wiki/Long_short_term_memory) networks (LSTM) or [liquid state machines](http://en.wikipedia.org/wiki/Liquid_state_machine), and a trainer capable of training any given network, which includes built-in training tasks/tests like solving an XOR, completing a Distracted Sequence Recall task or an [Embeded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test, so you can easily test and compare the performance of different architectures.
+This library includes a few built-in architectures like [multilayer perceptrons](http://en.wikipedia.org/wiki/Multilayer_perceptron), [multilayer long-short term memory](http://en.wikipedia.org/wiki/Long_short_term_memory) networks (LSTM) or [liquid state machines](http://en.wikipedia.org/wiki/Liquid_state_machine), and a trainer capable of training any given network, which includes built-in training tasks/tests like solving an XOR, completing a Distracted Sequence Recall task or an [Embedded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test, so you can easily test and compare the performance of different architectures.
 
 
 The algorithm implemented by this library has been taken from Derek D. Monner's paper:
@@ -155,7 +155,7 @@ Documentation
 
 ##Neuron
 
-Neurons are the basic unit of the neural network. They can be connected together, or used to gate connetions between other neurons. 
+Neurons are the basic unit of the neural network. They can be connected together, or used to gate connections between other neurons. 
 A Neuron can perform basically 4 operations: project connections, gate connections, activate and propagate.
 
 ######project
@@ -385,7 +385,7 @@ You have to provide the network that you want to connect to and the `connectionT
 myNetwork.project(otherNetwork, Layer.connectionType.ALL_TO_ALL); 
 /* 	
 	All the neurons in myNetwork's output layer now project a connection
-	to all the neurons in otherNetowrk's input layer.
+	to all the neurons in otherNetwork's input layer.
 */
 ```
 
@@ -415,7 +415,7 @@ There are three `gateType`'s:
 
 ######activate
 
-When a network is activeted, an input must be provided to activate the input layer, then all the hidden layers are activated in order, and finally the output layer is activated and its activation is returned.
+When a network is activated, an input must be provided to activate the input layer, then all the hidden layers are activated in order, and finally the output layer is activated and its activation is returned.
 
 ```
 var inputLayer = new Layer(4);
@@ -701,11 +701,11 @@ The `Trainer` makes it easier to train any set to any network, no matter its arc
 
 `var trainer = new Trainer(myNetwork);`
 
-The trainer also contains bult-in tasks to test the performance of your network.
+The trainer also contains built-in tasks to test the performance of your network.
 
 ######train
 
-This method allows you to train any training set to a `Network`, the training set must be an `Array` containing object with an **input** and **output** properties, for exmple, this is how you train an XOR to a network using a trainer:
+This method allows you to train any training set to a `Network`, the training set must be an `Array` containing object with an **input** and **output** properties, for example, this is how you train an XOR to a network using a trainer:
 
 ```
 var trainingSet = [
@@ -783,7 +783,7 @@ trainer.DSR({
 
 ######ERG
 
-This method trains the network to pass an [Embeded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test.
+This method trains the network to pass an [Embedded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test.
 
 `trainer.ERG();`
 
@@ -842,6 +842,6 @@ You can create your own architectures by extending the `Network` class. You can 
 
 ##Contribute
 
-**Synaptic** is an Open Source project that started in Buens Aires, Argentina. Anybody in the world is welcome to contribute to the development of the project.
+**Synaptic** is an Open Source project that started in Buenos Aires, Argentina. Anybody in the world is welcome to contribute to the development of the project.
 
 <3
