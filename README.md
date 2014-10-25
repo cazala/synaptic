@@ -155,7 +155,7 @@ Documentation
 
 ##Neuron
 
-Neurons are the basic unit of the neural network. They can be connected together, or used to gate connetions between other neurons. 
+Neurons are the basic unit of the neural network. They can be connected together, or used to gate connections between other neurons. 
 A Neuron can perform basically 4 operations: project connections, gate connections, activate and propagate.
 
 ######project
@@ -385,7 +385,7 @@ You have to provide the network that you want to connect to and the `connectionT
 myNetwork.project(otherNetwork, Layer.connectionType.ALL_TO_ALL); 
 /* 	
 	All the neurons in myNetwork's output layer now project a connection
-	to all the neurons in otherNetowrk's input layer.
+	to all the neurons in otherNetwork's input layer.
 */
 ```
 
@@ -415,7 +415,7 @@ There are three `gateType`'s:
 
 ######activate
 
-When a network is activeted, an input must be provided to activate the input layer, then all the hidden layers are activated in order, and finally the output layer is activated and its activation is returned.
+When a network is activated, an input must be provided to activate the input layer, then all the hidden layers are activated in order, and finally the output layer is activated and its activation is returned.
 
 ```
 var inputLayer = new Layer(4);
@@ -701,11 +701,11 @@ The `Trainer` makes it easier to train any set to any network, no matter its arc
 
 `var trainer = new Trainer(myNetwork);`
 
-The trainer also contains bult-in tasks to test the performance of your network.
+The trainer also contains built-in tasks to test the performance of your network.
 
 ######train
 
-This method allows you to train any training set to a `Network`, the training set must be an `Array` containing object with an **input** and **output** properties, for exmple, this is how you train an XOR to a network using a trainer:
+This method allows you to train any training set to a `Network`, the training set must be an `Array` containing object with an **input** and **output** properties, for example, this is how you train an XOR to a network using a trainer:
 
 ```
 var trainingSet = [
