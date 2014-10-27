@@ -13,6 +13,11 @@ The algorithm implemented by this library has been taken from Derek D. Monner's 
 
 There are references to the equations in that paper commented through the source code.
 
+####Introduction
+
+If you have no prior knowledge about Neural Networks, you should start by [reading this guide](https://github.com/cazala/synaptic/wiki/Neural-Networks-101).
+
+
 ##Overview
 
 ###Installation
