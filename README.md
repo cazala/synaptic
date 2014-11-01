@@ -22,12 +22,12 @@ If you have no prior knowledge about Neural Networks, you should start by [readi
 
 ###Installation
 
-######In node
+#####In node
 You can install synaptic with [npm](http://npmjs.org):
 
 `npm install synaptic --save`
 
-######In the browser
+#####In the browser
 Just include the file synaptic.js (you can find it in the `/lib` directory) with a script tag in your HTML:
 
 `<script src="synaptic.js"></script>`
@@ -55,7 +55,7 @@ Now you can start to create networks, train them, or use built-in networks from 
 
 ###Examples
 
-######Perceptron
+#####Perceptron
 
 This is how you can create a simple [perceptron](http://www.codeproject.com/KB/dotnet/predictor/network.jpg).
 
@@ -98,7 +98,7 @@ myPerceptron.activate([0,1]); // 0.9831714267395621
 myPerceptron.activate([1,1]); // 0.02128894618097928
 ```
 
-######Long Short-Term Memory
+#####Long Short-Term Memory
 
 This is how you can create a simple [long short-term memory](http://people.idsia.ch/~juergen/lstmcell4.jpg) with input gate, forget gate, output gate, and peephole connections.
 
@@ -163,7 +163,7 @@ Documentation
 Neurons are the basic unit of the neural network. They can be connected together, or used to gate connections between other neurons. 
 A Neuron can perform basically 4 operations: project connections, gate connections, activate and propagate.
 
-######project
+#####project
 
 A neuron can project a connection to another neuron (i.e. connect neuron A with neuron B).
 Here is how it's done:
@@ -180,7 +180,7 @@ Neurons can also self-connect:
 
 The method **project** returns a `Connection` object, that can be gated by another neuron.
 
-######gate
+#####gate
 
 A neuron can gate a connection between two neurons, or a neuron's self-connection. This allows you to create [second order neural network](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network) architectures.
 
@@ -194,7 +194,7 @@ C.gate(connection); // now C gates the connection between A and B
 ```
 
 
-######activate
+#####activate
 
 When a neuron activates, it computes it's state from all its input connections and squashes it using its activation function, and returns the output (activation).
 You can provide the activation as a parameter (useful for neurons in the input layer. it has to be a float between 0 and 1). For example:
@@ -209,7 +209,7 @@ B.activate(); // 0.3244554645
 ```
 
 
-######propagate
+#####propagate
 
 After an activation, you can teach the neuron what should have been the correct output (a.k.a. train). This is done by backpropagating the error.
 To use the **propagate** method you have to provide a learning rate, and a target value (float between 0 and 1).
@@ -239,7 +239,7 @@ A.activate(1);
 B.activate(); // 0.0049998578298219975
 ```
 
-######squashing function and bias
+#####squashing function and bias
 
 By default, a neuron uses a [Logistic Sigmoid](http://en.wikipedia.org/wiki/Logistic_function) as its squashing/activation function, and a random bias. 
 You can change those properties the following way:
@@ -265,7 +265,7 @@ To create a layer you just have to specify its size (the number of neurons in th
 
 `var myLayer = new Layer(5);`
 
-######project
+#####project
 
 A layer can project a connection to another layer. You have to provide the layer that you want to connect to and the `connectionType`:
 
@@ -287,7 +287,7 @@ If not specified, the connection type is always `Layer.connectionType.ALL_TO_ALL
 
 The method **project** returns a `LayerConnection` object, that can be gated by another layer.
 
-######gate
+#####gate
 
 A layer can gate a connection between two other layers, or a layers's self-connection.
 
@@ -305,7 +305,7 @@ There are three `gateType`'s:
 - Layer.gateType.OUTPUT_GATE: If layer C is gating connections between layer A and B, all the neurons from C gate all the output connections from A.
 - Layer.gateType.ONE_TO_ONE: If layer C is gating connections between layer A and B, each neuron from C gates one connection from A to B. This is useful for gating self-connected layers. To use this kind of gateType, A, B and C must be the same size.
 
-######activate
+#####activate
 
 When a layer activates, it just activates all the neurons in that layer in order, and returns an array with the outputs. It accepts an array of activations as parameter (for input layers):
 
@@ -318,7 +318,7 @@ A.activate([1,0,1,0,1]); // [1,0,1,0,1]
 B.activate(); // [0.3280457, 0.83243247, 0.5320423]
 ```
 
-######propagate
+#####propagate
 
 After an activation, you can teach the layer what should have been the correct output (a.k.a. train). This is done by backpropagating the error.
 To use the **propagate** method you have to provide a learning rate, and a target value (array of floats between 0 and 1).
@@ -348,7 +348,7 @@ A.activate([1,0,1,0,1]);
 B.activate(); // [0.004999850993267468, 0.00499980138183861]
 ```
 
-######squashing function and bias
+#####squashing function and bias
 
 You can set the squashing function and bias of all the neurons in a layer by using the method **set**:
 
@@ -359,7 +359,7 @@ myLayer.set({
 })
 ```
 
-######neurons
+#####neurons
 
 The method `neurons()` return an array with all the neurons in the layer, in activation order.
 
@@ -381,7 +381,7 @@ var myNetwork = new Network({
 	output: outputLayer
 });
 ```
-######project
+#####project
 
 A network can project a connection to another, or gate a connection between two others networks in the same way [Layers](http://github.com/cazala/synaptic#layer) do.
 You have to provide the network that you want to connect to and the `connectionType`:
@@ -402,7 +402,7 @@ If not specified, the connection type is always `Layer.connectionType.ALL_TO_ALL
 
 The method **project** returns a `LayerConnection` object, that can be gated by another network or layer.
 
-######gate
+#####gate
 
 A Network can gate a connection between two other Networks or Layers, or a Layers's self-connection.
 
@@ -418,7 +418,7 @@ There are three `gateType`'s:
 
 - Layer.gateType.ONE_TO_ONE: If network C is gating connections between network A and B, each neuron from C's output layer gates one connection from A's output layer to B's input layer. To use this kind of gateType, A's output layer, B's input layer and C's output layer must be the same size.
 
-######activate
+#####activate
 
 When a network is activated, an input must be provided to activate the input layer, then all the hidden layers are activated in order, and finally the output layer is activated and its activation is returned.
 
@@ -439,7 +439,7 @@ var myNetwork = new Network({
 myNetwork.activate([1,0,1,0]); // [0.5200553602396137, 0.4792707231811006]
 ```
 
-######propagate
+#####propagate
 
 You can provide a target value and a learning rate to a network and backpropagate the error from the output layer to all the hidden layers in reverse order until reaching the input layer. For example, this is how you train a network how to solve an XOR:
 
@@ -487,7 +487,7 @@ myNetwork.activate([1,0]); // [0.9871822457132193]
 myNetwork.activate([1,1]); // [0.012950087641929467]
 ```
 
-######optimize
+#####optimize
 
 Networks get optimized automatically on the fly after its first activation, if you print in the console the `activate` or `propagate` methods of your Network instance after activating it, it will look something like this:
 
@@ -510,11 +510,11 @@ F[1] = input[0];
 
 This improves the performance of the network dramatically.
 
-######extend
+#####extend
 
 You can see how to extend a network in the [Examples](http://github.com/cazala/synaptic#examples) section.
 
-######toJSON/fromJSON
+#####toJSON/fromJSON
 
 Networks can be stored as JSON's and then restored back:
 
@@ -523,7 +523,7 @@ var exported = myNetwork.toJSON();
 var imported = Network.fromJSON(exported);
 ```
 
-######worker
+#####worker
 
 The network can be converted into a WebWorker. This feature doesn't work in node.js, and it's not supported on every browser (it must support Blob).
 
@@ -627,7 +627,7 @@ var iterations = 0;
 activateWorker(trainingSet[index].input);
 ```
 
-######standalone
+#####standalone
 
 The network can be exported to a single javascript Function. This can be useful when your network is already trained and you just need to use it, since the standalone functions is just one javascript function with an array and operations within, with no dependencies on Synaptic or any other library.
 
@@ -651,7 +651,7 @@ myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
 standalone([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
 ```
 
-######clone
+#####clone
 
 A network can be cloned to a completely new instance, with the same connections and traces.
 
@@ -675,11 +675,11 @@ myNetwork.activate([1,0,1,0]); 	// [0.5466397925108878, 0.5121246668637663]
 clone.activate([1,0,1,0]);	 // [0.5466397925108878, 0.5121246668637663]
 ```
 
-######neurons
+#####neurons
 
 The method `neurons()` return an array with all the neurons in the network, in activation order.
 
-######set
+#####set
 
 The method `set(layers)` receives an object with layers in the same format as the constructor of `Network` and sets them as the layers of the Network, this is useful when you are extending the `Network` class to create your own architectures. See the [examples](http://github.com/cazala/synaptic#examples) section.
 
@@ -708,7 +708,7 @@ The `Trainer` makes it easier to train any set to any network, no matter its arc
 
 The trainer also contains built-in tasks to test the performance of your network.
 
-######train
+#####train
 
 This method allows you to train any training set to a `Network`, the training set must be an `Array` containing object with an **input** and **output** properties, for example, this is how you train an XOR to a network using a trainer:
 
@@ -746,7 +746,7 @@ trainer.train(trainingSet,{
 });
 
 
-######options
+#####options
 
 - **rate**: learning rate to train the network.
 - **iterations**: maximum number of iterations
@@ -766,7 +766,7 @@ customLog: {
 
 When the training is done this method returns an object with the error, the iterations, and the elapsed time of the training.
 
-######workerTrain
+#####workerTrain
 
 This method works the same way as train, but it uses a WebWorker so the training doesn't affect the user interface (a really long training using the `train` method might freeze the UI on the browser, but that doesn't happend using `workerTrain`). This method doesn't work in *node.js*, and it might not work on every browser (it has to support `Blob` and `WebWorker`'s).
 
@@ -804,7 +804,7 @@ myTrainer.workerTrain(trainingSet, callback);
 ```
 
 
-######XOR
+#####XOR
 
 This method trains an XOR to the network, is useful when you are experimenting with different architectures and you want to test and compare their performances:
 
@@ -813,7 +813,7 @@ var trainer = new Trainer(myNetwork);
 trainer.XOR(); // {error: 0.004999821588193305, iterations: 21333, time: 111}
 ```
 
-######DSR
+#####DSR
 
 This method trains the network to complete a [Discrete Sequence Recall](http://synaptic.juancazala.com/dsr.html), which is a task for testing context memory in neural networks.
 
@@ -827,7 +827,7 @@ trainer.DSR({
 ```
 
 
-######ERG
+#####ERG
 
 This method trains the network to pass an [Embedded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test.
 
@@ -838,7 +838,7 @@ This method trains the network to pass an [Embedded Reber Grammar](http://www.wi
 
 The Architect contains built-in architectures, ready to use.
 
-######Perceptron
+#####Perceptron
 
 This architecture allows you to create multilayer perceptrons, also known as feed-forward neural networks. They consists on a sequence of layers, each fully connected to the next one. 
 
@@ -852,7 +852,7 @@ And this is a deep multilayer perceptron with 2 neurons in the input layer, 4 hi
 
 `var myPerceptron = new Architect.Perceptron(2, 10, 10, 10, 10, 1);`
 
-######LSTM
+#####LSTM
 
 The [long short-term memory](http://en.wikipedia.org/wiki/Long_short_term_memory) is an architecture well-suited to learn from experience to classify, process and predict time series when there are very long time lags of unknown size between important events.
 
@@ -868,7 +868,7 @@ Also you can set many layers of memory blocks:
 
 That LSTM network has three memory block assemblies, with 4 memory blocks each, and their own input gates, memory cells, forget gates and output gates.
 
-######Liquid
+#####Liquid
 
 The `Liquid` architecture allows you to create [Liquid State Machines](http://en.wikipedia.org/wiki/Liquid_state_machine). In these networks, neurons are randomly connected to each other. The recurrent nature of the connections turns the time varying input into a spatio-temporal pattern of activations in the network nodes.
 
