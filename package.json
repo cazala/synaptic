@@ -1,6 +1,6 @@
 {
   "name": "synaptic",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Architecture-free neural network library",
   "main": "./lib/synaptic",
   "scripts": {
