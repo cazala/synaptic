@@ -745,6 +745,9 @@ trainer.train(trainingSet,{
 	log: 1000
 });
 
+
+######options
+
 - **rate**: learning rate to train the network.
 - **iterations**: maximum number of iterations
 - **error**: minimum error
@@ -762,6 +765,44 @@ customLog: {
 ```
 
 When the training is done this method returns an object with the error, the iterations, and the elapsed time of the training.
+
+######workerTrain
+
+This method works the same way as train, but it uses a WebWorker so the training doesn't affect the user interface (a really long training using the `train` method might freeze the UI on the browser, but that doesn't happend using `workerTrain`). This method doesn't work in *node.js*, and it might not work on every browser (it has to support `Blob` and `WebWorker`'s).
+
+```
+var trainer = new Trainer(myNetwork);
+trainer.workerTrain(set, callback, options)
+```
+
+the `set` and [options](#options) parameters are the same as the ones used in method [train](#train), and the callback parameter is a function that recieves an object with the `error`, `iterations` and `time` of the training.
+
+```
+var callback = function(result){
+	console.log(result); // {error: 0.00499480123688121, iterations: 2320, time: 2028} 
+}
+```
+
+This is an example of how to train an XOR using the method `workerTrain`:
+
+```
+var myNetwork = new Architect.Perceptron(2,3,1);
+var myTrainer = new Trainer(myNetwork);
+
+var trainingSet = [
+	{ input: [0,0], output: [0] },
+	{ input: [0,1], output: [1] },
+	{ input: [1,0], output: [1] },
+	{ input: [1,1], output: [0] }
+]
+
+var callback = function(result){
+	console.log('error', result.error, 'iterations', result.iterations, 'time', result.time);
+}
+
+myTrainer.workerTrain(trainingSet, callback);
+```
+
 
 ######XOR
 
