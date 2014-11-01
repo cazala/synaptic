@@ -149,64 +149,44 @@ describe("LSTM - Discrete Sequence Recall", function() {
 });
 
 describe("Optimized and Unoptimized Networks Equivalency", function() {
-  var optimized = new Perceptron(2,3,1);
+  var optimized = new Perceptron(10,15,5);
 
   var unoptimized = optimized.clone();
   unoptimized.setOptimize(false);
 
-  // activate networks
-  var output1 = optimized.activate([0,0]);
-  var output2 = unoptimized.activate([0,0]);
+  var learningRate = .5;
+  var iterations = 1000;
 
-  it('1) Same output for both networks', function(){
-    assert((output1 - output2) == 0);
-  });
+  var generateRandomArray = function(size){
+      var array = [];
+      for (var j = 0; j < size; j++)
+          array.push(Math.random() + .5 | 0);
+      return array;
+  }
 
-  // propagate networks
-  optimized.propagate(.1, [0]);
-  unoptimized.propagate(.1, [0]);
+  for (var i = 1; i <= iterations; i++)
+  {
+      //random input
+      var input = generateRandomArray(10);
 
-  // activate networks
-  var output1 = optimized.activate([1,0]);
-  var output2 = unoptimized.activate([1,0]);
+      // activate networks
+      var output1 = optimized.activate(input);
+      var output2 = unoptimized.activate(input);
 
-  it('2) Same output for both networks', function(){
-    assert((output1 - output2) == 0);
-  });
+      if (i % 100 == 0)
+        it(' Same output for both networks after ' + i + ' iterations', function(){
+          var diff = false;
+          for (var k in output1)
+            if (output1[k] - output2[k] != 0)
+              diff = true;
+          assert(!diff);
+        });
 
-  // propagate networks
-  optimized.propagate(.4, [1]);
-  unoptimized.propagate(.4, [1]);
+      // random target
+      var target = generateRandomArray(5);
 
-  // activate networks
-  var output1 = optimized.activate([0,1]);
-  var output2 = unoptimized.activate([0,1]);
-
-  it('3) Same output for both networks', function(){
-    assert((output1 - output2) == 0);
-  });
-
-  // propagate networks
-  optimized.propagate(.2, [1]);
-  unoptimized.propagate(.2, [1]);
-
-  // activate networks
-  var output1 = optimized.activate([1,1]);
-  var output2 = unoptimized.activate([1,1]);
-
-  it('4) Same output for both networks', function(){
-    assert((output1 - output2) == 0);
-  });
-
-  // propagate networks
-  optimized.propagate(.3, [0]);
-  unoptimized.propagate(.3, [0]);
-
-  // activate networks
-  var output1 = optimized.activate([1,0]);
-  var output2 = unoptimized.activate([1,0]);
-
-  it('5) Same output for both networks', function(){
-    assert((output1 - output2) == 0);
-  });
+      // propagate networks
+      optimized.propagate(learningRate, target);
+      unoptimized.propagate(learningRate, target);
+  }
 });
