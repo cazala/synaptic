@@ -845,7 +845,7 @@ This method trains the network to pass an [Embedded Reber Grammar](http://www.wi
 
 The Architect contains built-in architectures, ready to use.
 
-#####Perceptron
+####Perceptron
 
 This architecture allows you to create multilayer perceptrons, also known as feed-forward neural networks. They consists on a sequence of layers, each fully connected to the next one. 
 
@@ -859,7 +859,7 @@ And this is a deep multilayer perceptron with 2 neurons in the input layer, 4 hi
 
 `var myPerceptron = new Architect.Perceptron(2, 10, 10, 10, 10, 1);`
 
-#####LSTM
+####LSTM
 
 The [long short-term memory](http://en.wikipedia.org/wiki/Long_short_term_memory) is an architecture well-suited to learn from experience to classify, process and predict time series when there are very long time lags of unknown size between important events.
 
@@ -875,7 +875,7 @@ Also you can set many layers of memory blocks:
 
 That LSTM network has three memory block assemblies, with 4 memory blocks each, and their own input gates, memory cells, forget gates and output gates.
 
-#####Liquid
+####Liquid
 
 The `Liquid` architecture allows you to create [Liquid State Machines](http://en.wikipedia.org/wiki/Liquid_state_machine). In these networks, neurons are randomly connected to each other. The recurrent nature of the connections turns the time varying input into a spatio-temporal pattern of activations in the network nodes.
 
@@ -891,7 +891,7 @@ var gates = 10;
 var myLiquidStateMachine = new Architect.Liquid(input, pool, output, connections, gates);
 ```
 
-#####Hopfield
+####Hopfield
 
 The [Hopfield](http://en.wikipedia.org/wiki/Hopfield_network) architecture serves as content-addressable memory. They are trained to remember patterns and then when feeding new patterns to the network it returns the most most similar one from the patterns it was trained to remember.
 
