@@ -17,6 +17,14 @@ There are references to the equations in that paper commented through the source
 
 If you have no prior knowledge about Neural Networks, you should start by [reading this guide](https://github.com/cazala/synaptic/wiki/Neural-Networks-101).
 
+####Demos
+
+- [Solve an XOR](http://synaptic.juancazala.com/xor.html)
+- [Discrete Sequence Recall Task](http://synaptic.juancazala.com/dsr.html)
+- [Learn Image Filters](http://synaptic.juancazala.com/filter.html)
+- [Paint an Image](http://synaptic.juancazala.com/paint.html)
+- [Read from Wikipedia](http://synaptic.juancazala.com/wiki.html)
+
 
 ##Overview
 
@@ -47,18 +55,10 @@ var Neuron = synaptic.Neuron,
 
 - **gulp** or **gulp build**: builds the source code from `/src` into the `/dist` directory (bundled and minified).
 - **gulp debug**: builds the source code from `/src` into the `/dist` directory (not minifed and with source maps for debugging).
-- **gulp dev**: same as debug but it watched for changes in the source files and rebuilds when any change is detected.
+- **gulp dev**: same as debug but it watches for changes in the source files and rebuilds when any change is detected.
 - **gulp test**: runs all the tests.
 
 Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synaptic#architect).
-
-###Demos
-
-- [Solve an XOR](http://synaptic.juancazala.com/xor.html)
-- [Discrete Sequence Recall Task](http://synaptic.juancazala.com/dsr.html)
-- [Learn Image Filters](http://synaptic.juancazala.com/filter.html)
-- [Paint an Image](http://synaptic.juancazala.com/paint.html)
-- [Read from Wikipedia](http://synaptic.juancazala.com/wiki.html)
 
 ###Examples
 
