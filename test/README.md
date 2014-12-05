@@ -1,3 +1,3 @@
-Test using mocha, from root directory:
+Test using gulp, from root directory:
 
-`mocha test`
+`gulp test`
