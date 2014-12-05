@@ -4,7 +4,7 @@
   "description": "Architecture-free neural network library",
   "main": "./src/synaptic",
   "scripts": {
-    "test": "mocha test"
+    "test": "gulp test"
   },
   "devDependencies": {
     "browserify": "^6.3.3",
