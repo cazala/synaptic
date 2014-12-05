@@ -1,5 +1,5 @@
 var assert = require('assert'),
-  synaptic = require('../lib/synaptic');
+  synaptic = require('../src/synaptic');
 
 var Perceptron = synaptic.Architect.Perceptron,
   LSTM = synaptic.Architect.LSTM;

@@ -3,7 +3,7 @@ Synaptic [![Build Status](https://travis-ci.org/cazala/synaptic.svg?branch=maste
 
 Synaptic is a javascript neural network library for **node.js** and the **browser**, its generalized algorithm is architecture-free, so you can build and train basically any type of first order or even [second order neural network](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network) architectures.
 
-This library includes a few built-in architectures like [multilayer perceptrons](http://en.wikipedia.org/wiki/Multilayer_perceptron), [multilayer long-short term memory](http://en.wikipedia.org/wiki/Long_short_term_memory) networks (LSTM) or [liquid state machines](http://en.wikipedia.org/wiki/Liquid_state_machine), and a trainer capable of training any given network, which includes built-in training tasks/tests like solving an XOR, completing a Distracted Sequence Recall task or an [Embedded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test, so you can easily test and compare the performance of different architectures.
+This library includes a few built-in architectures like [multilayer perceptrons](http://en.wikipedia.org/wiki/Multilayer_perceptron), [multilayer long-short term memory](http://en.wikipedia.org/wiki/Long_short_term_memory) networks (LSTM), [liquid state machines](http://en.wikipedia.org/wiki/Liquid_state_machine) or [Hopfield](http://en.wikipedia.org/wiki/Hopfield_network) networks, and a trainer capable of training any given network, which includes built-in training tasks/tests like solving an XOR, completing a Distracted Sequence Recall task or an [Embedded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test, so you can easily test and compare the performance of different architectures.
 
 
 The algorithm implemented by this library has been taken from Derek D. Monner's paper:
@@ -28,7 +28,7 @@ You can install synaptic with [npm](http://npmjs.org):
 `npm install synaptic --save`
 
 #####In the browser
-Just include the file synaptic.js (you can find it in the `/lib` directory) with a script tag in your HTML:
+Just include the file synaptic.js from `/dist` directory with a script tag in your HTML:
 
 `<script src="synaptic.js"></script>`
 
@@ -42,6 +42,13 @@ var Neuron = synaptic.Neuron,
 	Trainer = synaptic.Trainer,
 	Architect = synaptic.Architect;
 ```
+
+###Gulp Tasks
+
+- **gulp** or **gulp build**: builds the source code from `/src` into the `/dist` directory (bundled and minified).
+- **gulp debug**: builds the source code from `/src` into the `/dist` directory (not minifed and with source maps for debugging).
+- **gulp dev**: same as debug but it watched for changes in the source files and rebuilds when any change is detected.
+- **gulp test**: runs all the tests.
 
 Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synaptic#architect).
 
@@ -882,6 +889,24 @@ var connections = 30;
 var gates = 10;
 
 var myLiquidStateMachine = new Architect.Liquid(input, pool, output, connections, gates);
+```
+
+#####Hopfield
+
+The [Hopfield](http://en.wikipedia.org/wiki/Hopfield_network) architecture serves as content-addressable memory. They are trained to remember patterns and then when feeding new patterns to the network it returns the most most similar one from the patterns it was trained to remember.
+
+```
+var hopfield = new Architect.Hopfield(10) // create a network for 10-bit patterns
+
+// teach the network two different patterns
+hopfield.learn([
+	[0, 1, 0, 1, 0, 1, 0, 1, 0, 1],
+	[1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
+])
+
+// feed new patterns to the network and it will return the most similar to the ones it was trained to remember
+hopfield.feed([0,1,0,1,0,1,0,1,1,1]) // [0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+hopfield.feed([1,1,1,1,1,0,0,1,0,0]) // [1, 1, 1, 1, 1, 0, 0, 0, 0, 0]
 ```
 
 You can create your own architectures by extending the `Network` class. You can check the [Examples](http://github.com/cazala/synaptic#examples) section for more information about this.
