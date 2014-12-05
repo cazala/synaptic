@@ -7,13 +7,13 @@
     "test": "mocha test"
   },
   "devDependencies": {
-    "browserify": "^6.3.3",
-    "gulp": "^3.4.0",
-    "gulp-insert": "^0.4.0",
-    "gulp-mocha": "^2.0.0",
-    "gulp-uglify": "^1.0.1",
-    "mocha": "^2.0.1",
-    "vinyl-transform": "0.0.1"
+    "browserify": "*",
+    "gulp": "*",
+    "gulp-insert": "*",
+    "gulp-mocha": "*",
+    "gulp-uglify": "*",
+    "mocha": "*",
+    "vinyl-transform": "*"
   },
   "repository": {
     "type": "git",
