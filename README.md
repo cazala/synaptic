@@ -221,29 +221,28 @@ B.activate(); // 0.3244554645
 After an activation, you can teach the neuron what should have been the correct output (a.k.a. train). This is done by backpropagating the error.
 To use the **propagate** method you have to provide a learning rate, and a target value (float between 0 and 1).
 
-For example, if I want to train neuron B to output a value close to 0 when neuron A activates a value of 1, with an error smaller than 0.005:
+For example, this is how you can train neuron B to activate 0 when neuron A activates 1:
 
 ```
 var A = new Neuron();
 var B = new Neuron();
 A.project(B);
 
-var learningRate = .3,
-	targetOutput = 0,
-	error = 0.005,
-	output = 1;
+var learningRate = .3;
 
-while(output - targetOutput > error)
+for(var i = 0; i < 20000; i++)
 {
+	// when A activates 1
 	A.activate(1);
-
-	output = B.activate();
-	B.propagate(learningRate, targetOutput);
+	
+	// train B to activate 0
+	B.activate();
+	B.propagate(learningRate, 0); 
 }
 
 // test it
 A.activate(1);
-B.activate(); // 0.0049998578298219975
+B.activate(); // 0.006540565760853365
 ```
 
 #####squashing function and bias
@@ -330,29 +329,28 @@ B.activate(); // [0.3280457, 0.83243247, 0.5320423]
 After an activation, you can teach the layer what should have been the correct output (a.k.a. train). This is done by backpropagating the error.
 To use the **propagate** method you have to provide a learning rate, and a target value (array of floats between 0 and 1).
 
-For example, if I want to train layer B to output [0,0] when layer A activates [1,0,1,0,1], with an error smaller than 0.005:
+For example, if I want to train layer B to output [0,0] when layer A activates [1,0,1,0,1]:
 
 ```
 var A = new Layer(5);
 var B = new Layer(2);
 A.project(B);
 
-var learningRate = .3,
-	targetOutput = [0,0],
-	error = 0.005
-	output = [1,1];
+var learningRate = .3;
 
-while(output[0] - targetOutput[0] > error && output[1] - targetOutput[1] > error)
+for (var i = 0; i < 20000; i++)
 {
+	// when A activates [1, 0, 1, 0, 1]
 	A.activate([1,0,1,0,1]);
 
-	output = B.activate();
-	B.propagate(learningRate, targetOutput);
+	// train B to activate [0,0]
+	B.activate();
+	B.propagate(learningRate, [0,0]);
 }
 
 // test it
 A.activate([1,0,1,0,1]);
-B.activate(); // [0.004999850993267468, 0.00499980138183861]
+B.activate(); // [0.004606949693864496, 0.004606763721459169]
 ```
 
 #####squashing function and bias
