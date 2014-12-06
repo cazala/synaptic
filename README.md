@@ -159,7 +159,7 @@ LSTM.prototype.constructor = LSTM;
 ```
 
 These are examples for explanatory purposes, the [Architect](http://github.com/cazala/synaptic#architect) already includes Multilayer Perceptrons and
-Multilayer LSTM networks architectures.
+Multilayer LSTM network architectures.
 
 
 Documentation
@@ -871,7 +871,7 @@ Also you can set many layers of memory blocks:
 
 `var myLSTM = new Architect.LSTM(2,4,4,4,1);` 
 
-That LSTM network has three memory block assemblies, with 4 memory blocks each, and their own input gates, memory cells, forget gates and output gates.
+That LSTM network has 3 memory block assemblies, with 4 memory cells each, and their own input gates, memory cells, forget gates and output gates.
 
 ####Liquid
 
