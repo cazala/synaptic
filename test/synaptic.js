@@ -64,7 +64,7 @@ describe("LSTM - Discrete Sequence Recall", function() {
     distractors: distractors,
     prompts: prompts,
     length: length,
-    rate: .3,
+    rate: .17,
     iterations: 250000
   });
 

@@ -5,9 +5,10 @@
 function Trainer(network, options) {
   options = options || {};
   this.network = network;
-  this.rate = options.rate || .5;
+  this.rate = options.rate || .2;
   this.iterations = options.iterations || 100000;
   this.error = options.error || .005
+  this.cost = options.cost || Trainer.cost.CROSS_ENTROPY;
 }
 
 Trainer.prototype = {
@@ -26,8 +27,7 @@ Trainer.prototype = {
         //+ Jonas Raoni Soares Silva
         //@ http://jsfromhell.com/array/shuffle [v1.0]
         function shuffle(o) { //v1.0
-          for (var j, x, i = o.length; i; j = Math.floor(Math.random() *
-              i), x = o[--i], o[i] = o[j], o[j] = x);
+          for (var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
           return o;
         };
       }
@@ -37,6 +37,8 @@ Trainer.prototype = {
         this.error = options.error;
       if (options.rate)
         this.rate = options.rate;
+      if (options.cost)
+        this.cost = options.cost;
     }
 
     while (iterations < this.iterations && error > this.error) {
@@ -49,11 +51,7 @@ Trainer.prototype = {
         output = this.network.activate(input);
         this.network.propagate(this.rate, target);
 
-        var delta = 0;
-        for (var i in output)
-          delta += Math.pow(target[i] - output[i], 2);
-
-        error += delta / output.length;
+        error += this.cost(target, output);
       }
 
       // check error
@@ -111,6 +109,8 @@ Trainer.prototype = {
         this.error = options.error;
       if (options.rate)
         this.rate = options.rate;
+      if (options.cost)
+        this.cost = options.cost;
     }
 
     // create a worker
@@ -182,11 +182,7 @@ Trainer.prototype = {
 
         if (e.data.action == "activate")
         {
-            var delta = 0;
-            for (var i in e.data.output)
-              delta += Math.pow(set[index].output - e.data.output[i], 2);
-            error += delta / e.data.output.length;
-
+            error += that.cost([Math.pow(set[index].output], [e.data.output[i]]);
             propagateWorker(set[index].output); 
             index++;
         }
@@ -207,7 +203,8 @@ Trainer.prototype = {
     var defaults = {
       iterations: 100000,
       log: false,
-      shuffle: true
+      shuffle: true,
+      cost: Trainer.cost.MSE
     }
 
     if (options)
@@ -547,6 +544,25 @@ Trainer.prototype = {
     }
   }
 };
+
+// Built-in cost functions
+Trainer.cost = {
+  // Eq. 9
+  CROSS_ENTROPY: function(target, output)
+  {
+    var crossentropy = 0;
+    for (var i in output)
+      crossentropy -= (target[i] * Math.log(output[i]+1e-15)) + ((1-target[i]) * Math.log((1+1e-15)-output[i])); // +1e-15 is a tiny push away to avoid Math.log(0)
+    return crossentropy;
+  },
+  MSE: function(target, output)
+  {
+    var mse = 0;
+    for (var i in output)
+      mse += Math.pow(target[i] - output[i], 2);
+    return mse / output.length;
+  }
+}
 
 // export
 if (module) module.exports = Trainer;
