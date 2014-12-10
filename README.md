@@ -747,7 +747,8 @@ trainer.train(trainingSet,{
 	iterations: 20000,
 	error: .005,
 	shuffle: true,
-	log: 1000
+	log: 1000,
+	cost: Trainer.cost.CROSS_ENTROPY
 });
 
 
@@ -759,6 +760,7 @@ trainer.train(trainingSet,{
 - **shuffle**: if true, the training set is shuffled after every iteration, this is useful for training data sequences which order is not meaningful to networks with context memory, like LSTM's.
 - **log**: this commands the trainer to console.log the error and iterations every X number of iterations.
 - **customLog**: you can create custom logs like this one:
+- **cost**: you can set what cost function to use for the training, there are two built-in cost functions (Trainer.cost.CROSS_ENTROPY and Trainer.cost.MSE) to choose from crossentropy or mean squared error. You can also use you own cost function(targetValues, outputValues).
 
 ```
 customLog: {
