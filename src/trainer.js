@@ -182,7 +182,7 @@ Trainer.prototype = {
 
         if (e.data.action == "activate")
         {
-            error += that.cost([Math.pow(set[index].output], [e.data.output[i]]);
+            error += that.cost([set[index].output], [e.data.output[i]]);
             propagateWorker(set[index].output); 
             index++;
         }
