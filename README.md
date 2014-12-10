@@ -742,6 +742,7 @@ trainer.train(trainingSet);
 ```
 You can also set different options for the training in an object as a second parameter, like:
 
+```
 trainer.train(trainingSet,{
 	rate: .1,
 	iterations: 20000,
@@ -750,7 +751,7 @@ trainer.train(trainingSet,{
 	log: 1000,
 	cost: Trainer.cost.CROSS_ENTROPY
 });
-
+```
 
 #####options
 
