@@ -65,7 +65,7 @@ $(function()
 			creature.moveTo(output);
 
 			// learn
-			var learningRate = .9;
+			var learningRate = .3;
 			var target = [targetX(creature), targetY(creature), targetAngle(creature)];
 			creature.network.propagate(learningRate, target);
 
