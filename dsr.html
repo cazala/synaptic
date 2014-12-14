@@ -154,7 +154,7 @@
 				{
 					var inputs = symbols;
 					var outputs = targets.length;
-					var hidden = inputs * 0.8 | 0;
+					var hidden = inputs * .8 | 0;
 					LSTM = new Architect.LSTM(inputs,hidden,outputs);
 
 					var results = LSTM.trainer.DSR({
@@ -163,7 +163,7 @@
 						prompts: prompts,
 						length: length,
 						iterations: 250000,
-						rate: .3
+						rate: .17
 					});
 					if (results.iterations < 250000)
 					{
