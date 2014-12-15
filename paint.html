@@ -102,9 +102,10 @@
 				{
 					for(var y = 0; y < 125; y+=1)
 					{
+						var dynamicRate =  .01/(1+.0005*iteration);
 						px = pixel(twitter,x,y)
 						perceptron.activate([x/125,y/125]);
-						perceptron.propagate(.01, pixel(twitter_data,x,y));
+						perceptron.propagate(dynamicRate, pixel(twitter_data,x,y));
 					}
 				}
 				preview();
