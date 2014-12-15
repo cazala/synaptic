@@ -90,7 +90,7 @@
 			var train = function(){
 				iteration = 0;
 				to && clearTimeout(to);
-				perceptron = new Architect.LSTM(2,14,3);
+				perceptron = new Architect.Perceptron(2,15,3);
 		        twitter_data = getData(document.getElementById('twitter'));
 		        $(".train").show();
 				preview();
@@ -104,7 +104,7 @@
 					{
 						px = pixel(twitter,x,y)
 						perceptron.activate([x/125,y/125]);
-						perceptron.propagate(.005, pixel(twitter_data,x,y));
+						perceptron.propagate(.01, pixel(twitter_data,x,y));
 					}
 				}
 				preview();
@@ -133,7 +133,7 @@
 					}
 				}
 				context.putImageData(imageData,0,0);
-				to = setTimeout(iterate,16);
+				requestAnimationFrame(iterate);
 			}
 
 		</script>
@@ -151,7 +151,7 @@
 	<body>
 		<a href="https://github.com/cazala/synaptic"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
 		<div class="container"><div class='title' onclick="window.location='index.html';"><b>Synaptic</b></div><div style="font-weight: bold;">Paint an Image</div>
-		<p> In this demo, a <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>Long Short Term Memory</a> network (2 inputs, 14 memory blocks, 3 outputs) will be trained entering the coordinates of every pixel (x, y) of an image as input, and the color as ouput (RGB values). After each iteration, the network will be directed to fill a canvas, the coordinates of every pixel will be provided and the canvas will be painted with the RGB values outputed by the network.</p>
+		<p> In this demo, a <a href='http://en.wikipedia.org/wiki/Feedforward_neural_network'>Feedforward Network</a> (2 inputs, 15 hidden units, 3 outputs) will be trained entering the coordinates of every pixel (x, y) of an image as input, and the color as ouput (RGB values). After each iteration, the network will be directed to fill a canvas, the coordinates of every pixel will be provided and the canvas will be painted with the RGB values outputed by the network.</p>
 		<p> Start training: <button onclick="train();">START</button></p><p id="log" class="log"></p>
 		<div class="train">
 		<div class="image_frame"><img src='img/twitter.png' id='twitter'/><span>original</span></div>
