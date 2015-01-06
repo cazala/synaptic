@@ -72,6 +72,13 @@ if (module && module.exports)
 // Browser
 if (typeof window == 'object')
 {
-	Synaptic.ninja = function(){ delete window['synaptic']; };
+  (function(){ 
+    var oldSynaptic = window['synaptic'];
+    Synaptic.ninja = function(){ 
+      window['synaptic'] = oldSynaptic; 
+      return Synaptic;
+    };	
+  })();
+
   window['synaptic'] = Synaptic;
 }
