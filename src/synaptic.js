@@ -58,13 +58,13 @@ var Synaptic = {
 };
 
 // CommonJS & AMD
-if (define && define.amd)
+if (typeof define !== 'undefined' && define.amd)
 {
   define([], function(){ return Synaptic });
 }
 
 // Node.js
-if (module && module.exports)
+if (typeof module !== 'undefined' && module.exports)
 {
   module.exports = Synaptic;
 }
