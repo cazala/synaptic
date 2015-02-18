@@ -58,9 +58,9 @@ var Synaptic = {
 };
 
 // CommonJS & AMD
-if (this.define && this.define.amd)
+if (define && define.amd)
 {
-  define([], Synaptic);
+  define([], function(){ return Synaptic });
 }
 
 // Node.js
