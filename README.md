@@ -755,7 +755,7 @@ trainer.train(trainingSet,{
 
 #####options
 
-- **rate**: learning rate to train the network.
+- **rate**: learning rate to train the network. If `rate` is an array, then it will divide the total number of `iterations` by the length of the `rate` array and use different rates depending on the iteration
 - **iterations**: maximum number of iterations
 - **error**: minimum error
 - **shuffle**: if true, the training set is shuffled after every iteration, this is useful for training data sequences which order is not meaningful to networks with context memory, like LSTM's.
@@ -766,7 +766,7 @@ trainer.train(trainingSet,{
 customLog: {
 	every: 500,
 	do: function(error, iterations) {
-		console.log("error", error, "iterations", iterations);
+		console.log("error", error, "iterations", iterations, "rate", rate);
 	}
 }
 ```
