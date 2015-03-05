@@ -13,40 +13,6 @@ The algorithm implemented by this library has been taken from Derek D. Monner's 
 
 There are references to the equations in that paper commented through the source code.
 
-##Table Of Contents
-
-  - [Introduction](#introduction)
-  - [Demos](#demos)
-  - [Overview](#overview)
-    - [Installation](#installation)
-        - [In node](#in-node)
-        - [In the browser](#in-the-browser)
-    - [Usage](#usage)
-    - [Gulp Tasks](#gulp-tasks)
-    - [Examples](#examples)
-        - [Perceptron](#perceptron)
-        - [Long Short-Term Memory](#long-short-term-memory)
-- [Documentation](#documentation)
-  - [Neuron](#neuron)
-        - [project](#project)
-        - [gate](#gate)
-        - [activate](#activate)
-        - [propagate](#propagate)
-        - [squashing function and bias](#squashing-function-and-bias)
-  - [Layer](#layer)
-        - [project](#project-1)
-        - [gate](#gate-1)
-        - [activate](#activate-1)
-        - [propagate](#propagate-1)
-        - [squashing function and bias](#squashing-function-and-bias-1)
-        - [neurons](#neurons)
-  - [Network](#network)
-        - [project](#project-2)
-        - [gate](#gate-2)
-        - [activate](#activate-2)
-        - [propagate](#propagate-2)
-        - [optimize](#optimize)
-
 ####Introduction
 
 If you have no prior knowledge about Neural Networks, you should start by [reading this guide](https://github.com/cazala/synaptic/wiki/Neural-Networks-101).
