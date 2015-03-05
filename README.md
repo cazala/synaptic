@@ -1,3 +1,42 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Synaptic [![Build Status](https://travis-ci.org/cazala/synaptic.svg?branch=master)](https://travis-ci.org/cazala/synaptic)](#synaptic-build-statushttpstravis-ciorgcazalasynapticsvgbranchmasterhttpstravis-ciorgcazalasynaptic)
+      - [Introduction](#introduction)
+      - [Demos](#demos)
+  - [Overview](#overview)
+    - [Installation](#installation)
+        - [In node](#in-node)
+        - [In the browser](#in-the-browser)
+    - [Usage](#usage)
+    - [Gulp Tasks](#gulp-tasks)
+    - [Examples](#examples)
+        - [Perceptron](#perceptron)
+        - [Long Short-Term Memory](#long-short-term-memory)
+- [Documentation](#documentation)
+  - [Neuron](#neuron)
+        - [project](#project)
+        - [gate](#gate)
+        - [activate](#activate)
+        - [propagate](#propagate)
+        - [squashing function and bias](#squashing-function-and-bias)
+  - [Layer](#layer)
+        - [project](#project-1)
+        - [gate](#gate-1)
+        - [activate](#activate-1)
+        - [propagate](#propagate-1)
+        - [squashing function and bias](#squashing-function-and-bias-1)
+        - [neurons](#neurons)
+  - [Network](#network)
+        - [project](#project-2)
+        - [gate](#gate-2)
+        - [activate](#activate-2)
+        - [propagate](#propagate-2)
+        - [optimize](#optimize)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 Synaptic [![Build Status](https://travis-ci.org/cazala/synaptic.svg?branch=master)](https://travis-ci.org/cazala/synaptic)
 ========
 
@@ -755,7 +794,7 @@ trainer.train(trainingSet,{
 
 #####options
 
-- **rate**: learning rate to train the network.
+- **rate**: learning rate to train the network. If `rate` is an array, then it will divide the total number of `iterations` by the length of the `rate` array and use different rates depending on the iteration
 - **iterations**: maximum number of iterations
 - **error**: minimum error
 - **shuffle**: if true, the training set is shuffled after every iteration, this is useful for training data sequences which order is not meaningful to networks with context memory, like LSTM's.
@@ -766,7 +805,7 @@ trainer.train(trainingSet,{
 customLog: {
 	every: 500,
 	do: function(error, iterations) {
-		console.log("error", error, "iterations", iterations);
+		console.log("error", error, "iterations", iterations, "rate", rate);
 	}
 }
 ```
