@@ -17,8 +17,8 @@ Trainer.prototype = {
   train: function(set, options) {
 
     var error = 1;
-    var iterations = 0;
-    var input, output, target;
+    var iterations = bucketSize = 0;
+    var input, output, target, currentRate;
 
     var start = Date.now();
 
@@ -41,15 +41,26 @@ Trainer.prototype = {
         this.cost = options.cost;
     }
 
+    currentRate = this.rate;
+    if(Array.isArray(this.rate)) {
+      bucketSize = Math.floor(this.iterations / this.rate.length);
+    }
+
+
     while (iterations < this.iterations && error > this.error) {
       error = 0;
+
+      if(bucketSize > 0) {
+        var currentBucket = Math.floor(iterations / bucketSize);
+        currentRate = this.rate[currentBucket];
+      }
 
       for (var train in set) {
         input = set[train].input;
         target = set[train].output;
 
         output = this.network.activate(input);
-        this.network.propagate(this.rate, target);
+        this.network.propagate(currentRate, target);
 
         error += this.cost(target, output);
       }
@@ -63,10 +74,11 @@ Trainer.prototype = {
           options.customLog.every == 0)
           options.customLog.do({
             error: error,
-            iterations: iterations
+            iterations: iterations,
+            rate: currentRate
           });
         else if (options.log && iterations % options.log == 0) {
-          console.log('iterations', iterations, 'error', error);
+          console.log('iterations', iterations, 'error', error, 'rate', currentRate);
         };
         if (options.shuffle)
           shuffle(set);
