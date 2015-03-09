@@ -99,8 +99,8 @@ Trainer.prototype = {
 
     var that = this;
     var error = 1;
-    var iterations = 0;
-    var input, output, target;
+    var iterations = bucketSize = 0;
+    var input, output, target, currentRate;
     var length = set.length;
 
     var start = Date.now();
@@ -125,6 +125,12 @@ Trainer.prototype = {
         this.cost = options.cost;
     }
 
+    // dynamic learning rate
+    currentRate = this.rate;
+    if(Array.isArray(this.rate)) {
+      bucketSize = Math.floor(this.iterations / this.rate.length);
+    }
+
     // create a worker
     var worker = this.network.worker();
 
@@ -140,10 +146,14 @@ Trainer.prototype = {
 
     // backpropagate the network
     function propagateWorker(target){
+        if(bucketSize > 0) {
+          var currentBucket = Math.floor(iterations / bucketSize);
+          currentRate = this.rate[currentBucket];
+        }
         worker.postMessage({ 
             action: "propagate",
             target: target,
-            rate: that.rate,
+            rate: currentRate,
             memoryBuffer: that.network.optimized.memory
         }, [that.network.optimized.memory.buffer]);
     }
@@ -194,7 +204,7 @@ Trainer.prototype = {
 
         if (e.data.action == "activate")
         {
-            error += that.cost([set[index].output], [e.data.output[i]]);
+            error += that.cost(set[index].output, e.data.output);
             propagateWorker(set[index].output); 
             index++;
         }
