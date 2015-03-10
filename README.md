@@ -148,7 +148,7 @@ function LSTM(input, blocks, output)
 	// set the layers of the neural network
 	this.set({
 		input: inputLayer,
-		hidden: hiddenLayers,
+		hidden: [inputGate, forgetGate, memoryCell, outputGate],
 		output: outputLayer
 	});
 }
