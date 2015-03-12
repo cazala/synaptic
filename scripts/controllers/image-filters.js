@@ -67,7 +67,6 @@ angular.module('gitHubApp')
 	
 	var iteration = function(){
 		trial++;
-		$scope.iteration = trial;
 
 		for (index = 0; index < size; index+=2)
 		{
@@ -103,6 +102,8 @@ angular.module('gitHubApp')
 	}
 
 	var preview = function(){
+		$('#iterations').text(trial);
+		
 		var imageData = context.getImageData(0, 0, 125, 125);
 		for (index = 0; index < size; index++)
 		{
@@ -123,6 +124,6 @@ angular.module('gitHubApp')
 		context.putImageData(imageData,0,0);
 		
 		if ($location.$$path == '/image-filters')
-			$timeout(iteration, 16);
+			setTimeout(iteration, 100);
 	}
   });

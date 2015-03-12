@@ -70,7 +70,7 @@ angular.module('gitHubApp')
 	}
 
 	var preview = function(){
-		$scope.iteration = ++iteration;
+		$('#iterations').text(++iteration);
 		var imageData = context.getImageData(0, 0, 125, 125);
 		for (var x = 0; x < 125; x++)
 		{
@@ -85,6 +85,6 @@ angular.module('gitHubApp')
 		context.putImageData(imageData,0,0);
 
 		if ($location.$$path == '/paint-an-image')
-			$timeout(iterate, 16);
+			requestAnimationFrame(iterate);
 	}
   });
