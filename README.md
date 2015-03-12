@@ -19,11 +19,11 @@ If you have no prior knowledge about Neural Networks, you should start by [readi
 
 ####Demos
 
-- [Solve an XOR](http://synaptic.juancazala.com/xor.html)
-- [Discrete Sequence Recall Task](http://synaptic.juancazala.com/dsr.html)
-- [Learn Image Filters](http://synaptic.juancazala.com/filter.html)
-- [Paint an Image](http://synaptic.juancazala.com/paint.html)
-- [Read from Wikipedia](http://synaptic.juancazala.com/wiki.html)
+- [Solve an XOR](http://synaptic.juancazala.com/#/xor)
+- [Discrete Sequence Recall Task](http://synaptic.juancazala.com/#/dsr)
+- [Learn Image Filters](http://synaptic.juancazala.com/#/image-filters)
+- [Paint an Image](http://synaptic.juancazala.com/#/paint-an-image)
+- [Read from Wikipedia](http://synaptic.juancazala.com/#/wikipedia)
 
 ####Documentation
 
