@@ -1,0 +1,16 @@
+{
+  "name": "animate.css",
+  "version": "3.2.1",
+  "main": "./animate.css",
+  "homepage": "https://github.com/daneden/animate.css",
+  "_release": "3.2.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "3.2.1",
+    "commit": "1adcdbfbc1322782d0673ca381688393b7deb288"
+  },
+  "_source": "git://github.com/daneden/animate.css.git",
+  "_target": "~3.2.1",
+  "_originalSource": "animate.css",
+  "_direct": true
+}

@@ -1,294 +1,121 @@
-<html>
-	<head>
-		<title>Synaptic - The javascript neural network library</title>
-		<link rel="icon" type="image/png" href="img/favicon.png">
-		<meta charset="UTF-8">
-		<meta name="description" content="Javascript neural network library for node.js and the browser.">
-		<meta name="keywords" content="javascript,node.js,neural networks,lstm,long short term memory,library,synaptic">
-		<meta name="author" content="Juan Cazala">
-		<script src="js/jquery.js"></script>
-		<script src="js/synaptic.js"></script>
-		<script src="js/vector.js"></script>
-		<script src="js/creature.js"></script>
-		<script src="js/world.js"></script>
-		<script>
-		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-		  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+<!doctype html>
+<html class="no-js">
+  <head>
+    <meta charset="utf-8">
+    <title>Synaptic - The javascript neural network library</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+    <!-- build:css(.) styles/vendor.css -->
+    <!-- bower:css -->
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.css" />
+    <!-- endbower -->
+    <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="bower_components/bootswatch-dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/animate.css/3.2.1/animate.min.css" />
+    <!-- endbuild -->
+    <!-- build:css(.tmp) styles/main.css -->
+    <link rel="stylesheet" href="styles/main.css">
+    <!-- endbuild -->
+    <link rel="icon" 
+      type="image/png" 
+      href="favicon.png">
+  </head>
+  <body ng-app="gitHubApp">
+    <!--[if lt IE 7]>
+      <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
 
-		  ga('create', 'UA-54879338-2', 'auto');
-		  ga('send', 'pageview');
-		</script>
-		<style>
-			.download {
-				position: absolute;
-				font-size: 10px;
-				color: white;
-				background-color: rgb(255, 97, 97);
-				padding: 0px 6px;
-				border-radius: 30px;
-				margin-left: 9px;
-				margin-top: -1px;
-				cursor: pointer;
-				font-style: normal;
-			}
-			.download:hover {
-				background-color: red;
-			}
-			body { 
-				font-family: 'Open Sans', sans-serif;
-				position: relative;
-				line-height: 120%;
-				margin: 0px;
-			}
-			.container {
-				width: 1000px;
-				margin: 0 auto;
-			}
-			.home {
-				height: 100%;
-				margin-bottom: 100px;
-			}
-			.title {
-				text-align: center;
-				color: rgb(125, 125, 125);
-				font-size: 34px;
-				position: absolute;
-				left: 50%;
-				top: 70%;
-				margin-left: -70px;
-				margin-top: -10px;
-			}
+    <!-- Add your site or application content here -->
+      <div class="navbar navbar-inverse navbar-fixed-top" role="navigation" ng-controller="NavbarCtrl">
+        <div class="container-fluid">
+          <div class="navbar-header">
 
-			.title b{
-				color:rgb(50, 50, 50);;
-			}
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#js-navbar-collapse">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
 
-			header {
-				font-style: italic;
-				text-align: center;
-				color: rgb(50,50,50);
-				position: absolute;
-				left: 50%;
-				top: 40%;
-				margin-left: -330px;
-				margin-top: -10px;
-			}
-			.demo span {
-				color: gray;
-			}
-			.demo-code{
-				width: 497px;
-				display: inline-block;
-				margin-left: 10px;
-				vertical-align: text-top;
-			}
-			.pre {
-				border-left: 5px solid rgb(220, 220, 220);
-				padding-left: 20px;
-				color: rgb(150, 150, 150);
-				line-height: 1.2;
-				white-space: pre;
-				font-family: "Lucida Console", Monaco, monospace;
-				font-size: 12px;
-			}
+            <a class="navbar-brand" href="#/"><strong>synaptic</strong>.js</a>
+          </div>
 
-			.feature {
-				display: inline-block;
-				vertical-align: top;
-				margin-bottom: 60px;
-			}
+          <div class="collapse navbar-collapse" id="js-navbar-collapse">
 
-			.feature div {
-				display: inline-block;
-				width: 360px;
-				padding-left: 20px;
-			}
+            <ul class="nav navbar-nav">
+              <li ng-class="{ active: navbarActive == 'home' }"><a href="#/">Home</a></li>
+              <li class="dropdown" ng-class="{ active: navbarActive == 'demos' }">
+                <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Demos <span class="caret"></span></a>
+                <ul class="dropdown-menu" role="menu">
+                  <li><a href="#/xor">Learn XOR</a></li>
+                  <li><a href="#/dsr">Discrete Sequence Recall</a></li>
+                  <li><a href="#/image-filters">Learn Image Filters</a></li>
+                  <li><a href="#/paint-an-image">Paint An Image</a></li>
+                  <li><a href="#/wikipedia">Read From Wikipedia</a></li>
+                </ul>
+              </li>
+              <li class="dropdown">
+                <a class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Documentation <span class="caret"></span></a>
+                <ul class="dropdown-menu" role="menu">
+                  <li><a href="https://github.com/cazala/synaptic/wiki/Neurons" target="_blank">Neurons</a></li>
+                  <li><a href="https://github.com/cazala/synaptic/wiki/Networks" target="_blank">Networks</a></li>
+                  <li><a href="https://github.com/cazala/synaptic/wiki/Layers" target="_blank">Layers</a></li>
+                  <li><a href="https://github.com/cazala/synaptic/wiki/Trainer" target="_blank">Trainer</a></li>
+                  <li><a href="https://github.com/cazala/synaptic/wiki/Architect" target="_blank">Architect</a></li>
+                </ul>
+              </li>
+            </ul>
+            <ul class="nav navbar-form navbar-right hidden-xs hidden-sm">
+              <a href="https://github.com/cazala/synaptic" target="_blank" class="btn btn-default"><i class="fa fa-lg fa-github"></i> Download</a>
+            </ul>
+          </div>
+        </div>
+      </div>
 
-			b{
-				color: black;
-			}
-			p, li {
-				padding: 2px;
-				font-size: 14px;
-				text-align: justify;
-			}
-
-			canvas {
-				box-shadow: 0 0 10px rgb(220,220,220);
-				vertical-align: text-top;;
-			}
-			.description{
-				margin: 30px;
-				text-align: center;
-				font-style: italic;
-				font-size: 14px;
-				color: rgb(100, 100, 100);
-				margin-bottom: 10px;
-			}
-			.quote{
-				font-style: italic;
-				color: rgb(162, 162, 162);
-				font-size: 12px;
-				text-align: center;
-			}
-			#footer {
-				position: absolute;
-				font-size: 11px;
-				bottom: 10px;
-				margin-left: 50%;
-				left: -245px;
-			}
-			.subtitle{
-				text-align: center;
-				font-size: 22px;
-				font-weight: bold;
-				height: 60px;
-			}
-			.demo-list {
-				text-align: center;
-				height: 200px;
-			}
-			a{
-				color: black;
-				font-weight: bold;
-				text-decoration: none;
-			}
-			a:hover{
-				text-decoration: underline;
-			}
-
-			.image_frame {
-				display: inline-block;
-				text-align: center;
-				font-size: 12px;
-				vertical-align: text-top;
-				max-width: 135px;
-				text-decoration: underline;
-				box-shadow: 0 0 10px lightgray;
-				padding: 5px;
-				margin: 0 17px;
-				color: rgb(30, 30, 30);;
-				font-weight: normal;
-				border: 1px solid lightgray;
-			}
-
-			.image_frame span {
-				display: none;
-			}
-
-			.image_frame:hover span {
-				display: inline-block;
-			}
-
-			
-
-			.image_frame:hover img {
-				margin-bottom: 8px;
-
-			}
-
-			.arrow{
-				display: inline-block;
-				width: 30px;
-				height: 20px;
-				background-image: url(img/arrow.png);
-				bottom: 0px;
-				position: absolute;
-				margin-left: -15px;
-			}
-
-			footer {
-				text-align: center;
-				font-size: 11px;
-				margin: 10px;
-			}
-		</style>
-	</head>
-	<body>
-		<a href="https://github.com/cazala/synaptic"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png"></a>
-
-		<div class="container home">
-
-			<div style="height: 12%; position: relative;"> 
-				<div class='title'><b>Synaptic</b></div>
-			</div>
-
-			<div style="height: 12%;position: relative;">
-				<header>Synaptic is an architecture-free neural network library for <b>node.js</b> and the <b>browser</b>.<span onclick="window.location='http://github.com/cazala/synaptic';" class="download">DOWNLOAD!</span></header>
-			</div>
-
-			<div style="height: 65%;position: relative;">
-				<div style="position: absolute;left: 50%;top: 50%;margin-left: -512px;margin-top: -225px;">
-					<div class="demo">
-
-						<div class="demo-code">
-							<span>creature.js</span>
-							<div class="pre" style="margin-bottom: 30px;">var synaptic = require('synaptic');
-this.<b>network</b> = new synaptic.Architect.Perceptron(40, 25, 3);
-					</div>
-					<span>world.js</span>
-					<div class="pre">creatures.forEach(function(creature)
-{
-    // move
-    var input = [];
-    for (var i in creatures)
-    {
-    	input.push(creatures[i].location.x);
-    	input.push(creatures[i].location.y);
-    	input.push(creatures[i].velocity.x);
-    	input.push(creatures[i].velocity.y);
-    }
-    var output = creature.<b>network.activate</b>(input);
-    creature.moveTo(output);
+    <div style="position: relative">
+    <div class="main-view" ng-view=""></div>
+  </div>
     
-    // learn
-    var learningRate = .3;
-    var target = [
-    	targetX(creature), 
-    	targetY(creature), 
-    	targetAngle(creature)];
-    creature.<b>network.propagate</b>(learningRate, target);
-});</div>
-						</div>
-						<canvas id="canvas" width="500" height="418"></canvas>
-					</div>
-					<div class="description"> In this demo the creatures <b>learn</b> how to explore the screen together.</div>
-				</div>
-			</div>
 
-			<div style="height: 10%;position: relative;text-align: center;">
-				<span class="arrow"></span>
-			</div>
 
-		</div>
-		<div class="container">
-			<div class="features">
-				<div class="feature"><img src="img/neuron.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Neuron</span>
-					<p>Neurons are the basic unit of the neural network. They can be connected to another neuron or gate connections between other neurons. This allows you to create complex and flexible architectures.<br><br><a href="http://github.com/cazala/synaptic#neuron">+ Read documentation</a></p></div>
-				</div>
-				<div class="feature" style="margin-left: 70px;"><img src="img/network.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Network</span>
-					<p>Networks can be imported/exported to JSON, converted to workers or standalone functions. They can be connected to other networks or gate connections.<br><br><a href="http://github.com/cazala/synaptic#network">+ Read documentation</a></p></div>
-				</div>
-				<div class="feature"><img src="img/trainer.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Trainer</span>
-					<p>Trainers can take any given network regardless of its architecture and use any training set. It includes built-in tasks to test networks, like learning an XOR, completing a Discrete Sequence Recall task or an Embeded Reber Grammar test.<br><br><a href="http://github.com/cazala/synaptic#trainer">+ Read documentation</a></p></div>
-				</div>
-				<div class="feature" style="margin-left: 70px;"><img src="img/architect.png" style="vertical-align: top;"/><div><span style="font-weight: bold;">Architect</span>
-					<p>The Architect includes built-in useful architectures like <a href='http://en.wikipedia.org/wiki/Multilayer_perceptron'>multilayer perceptrons</a>, multilayer <a href='http://en.wikipedia.org/wiki/Long_short_term_memory'>long short-term memory</a> networks (LSTM) and <a href='http://en.wikipedia.org/wiki/Liquid_state_machine'>liquid state machines</a>.<br><br><a href="http://github.com/cazala/synaptic#architect">+ Read documentation</a></p></div>
-				</div>
-			</div>
+    <!-- Google Analytics: change UA-XXXXX-X to be your site's ID -->
+     <script>
+       !function(A,n,g,u,l,a,r){A.GoogleAnalyticsObject=l,A[l]=A[l]||function(){
+       (A[l].q=A[l].q||[]).push(arguments)},A[l].l=+new Date,a=n.createElement(g),
+       r=n.getElementsByTagName(g)[0],a.src=u,r.parentNode.insertBefore(a,r)
+       }(window,document,'script','//www.google-analytics.com/analytics.js','ga');
 
-			<div class="subtitle">Demos</div>
-			<div class="demo-list">
-				<a href='xor.html'><div class="image_frame"><img src='img/demo1.png'/><span>Learn XOR</span></div></a>
-				<a href='dsr.html'><div class="image_frame"><img src='img/demo2.png'/><span>Discrete Sequence Recall</span></div></a>
-				<a href='filter.html'><div class="image_frame"><img src='img/demo3.png'/><span>Learn image filters</span></div></a>
-				<a href='paint.html'><div class="image_frame"><img src='img/demo4.png'/><span>Paint an image</span></div></a>
-				<a href='wiki.html'><div class="image_frame"><img src='img/demo5.png'/><span>Read from Wikipedia</span></div></a>
-			</div>
-			<footer><b>Synaptic</b> is open source (<a href="https://github.com/cazala/synaptic/blob/master/LICENSE">MIT</a>). Based on Derek Monner's <a href="http://www.overcomplete.net/papers/nn2012.pdf">paper</a>. Kindly hosted by <a href="http://github.com">GitHub</a>.</footer>
-		</div>
-	</div>
-	</body>
+       ga('create', 'UA-XXXXX-X');
+       ga('send', 'pageview');
+    </script>
+
+    <!-- build:js(.) scripts/vendor.js -->
+    <!-- bower:js -->
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/angular/angular.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.js"></script>
+    <script src="bower_components/angular-animate/angular-animate.js"></script>
+    <script src="bower_components/angular-cookies/angular-cookies.js"></script>
+    <script src="bower_components/angular-resource/angular-resource.js"></script>
+    <script src="bower_components/angular-route/angular-route.js"></script>
+    <script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
+    <script src="bower_components/angular-touch/angular-touch.js"></script>
+    <!-- endbower -->
+    <script src="bower_components/angular-bootstrap/ui-bootstrap.min.js"></script>
+    <!-- endbuild -->
+
+        <!-- build:js({.tmp,app}) scripts/scripts.js -->
+        <script src="scripts/homepage/synaptic.js"></script>
+        <script src="scripts/app.js"></script>
+        <script src="scripts/controllers/main.js"></script>
+        <script src="scripts/controllers/about.js"></script>
+        <script src="scripts/controllers/wikipedia.js"></script>
+        <script src="scripts/controllers/navbar.js"></script>
+        <script src="scripts/controllers/xor.js"></script>
+        <script src="scripts/controllers/dsr.js"></script>
+        <script src="scripts/controllers/image-filters.js"></script>
+        <script src="scripts/controllers/paint-an-image.js"></script>
+        <!-- endbuild -->
+</body>
 </html>

@@ -1,0 +1,45 @@
+<div class="container demo-page">
+	<div class="row">
+		<div class="col-md-12">
+		<h1 class="page-header">XOR</h1>
+		<div>
+
+			<p class="text-justify">In this sample, a simple perceptron (2 inputs, 3 hidden and 1 output neurons) will be trained to learn how to solve an XOR.</p>
+			<div class="col-md-6">
+			<pre>var perceptron = new Architect.Perceptron(2,3,1);
+perceptron.trainer.XOR(); </pre>
+</div>
+			
+		</div>
+	</div>
+	</div>
+	<div class="row text-center">
+		<div class="col-md-12">
+			<button class="btn btn-primary run-demo" ng-click="train()">START TRAINING</a>
+		</div>
+	</div>
+	<hr>
+	<div ng-if="outputs.length > 0" class="row">
+		<div ng-repeat="result in outputs">
+			<div class="col-xs-12 text-center">
+			<p><strong>input:</strong>&nbsp;<span class="label label-default label-lg">{{result.input}}</span>
+			&nbsp;&nbsp;
+			<strong>output:</strong>&nbsp;<span 
+				class="label label-lg" 
+				ng-class="{ 'label-success': result.target == 0 ? result.output < .5 : result.output > .5, 'label-danger': result.target == 1 ? result.output < .5 : result.output > .5 }"
+			>{{ result.output }}</span>
+			&nbsp;<span class="label label-default label-lg">{{ result.target }}</span>
+			&nbsp;<i ng-show="result.target == 0 ? result.output < .5 : result.output > .5" class="fa fa-check text-success"></i>
+			 <i ng-show="result.target == 1 ? result.output < .5 : result.output > .5" class="fa fa-check text-danger"></i>
+			</div>
+			</p>
+		</div>
+	</div>
+	<hr ng-if="outputs.length > 0">
+	<div ng-if="outputs.length > 0" class="row text-center">
+		<strong>Iterations:</strong> {{results.iterations}} - 
+		<strong title='Mean Square Error'>MSE:</strong> {{results.error.toFixed(4)}} - 
+		<strong>Time:</strong> {{results.time}} ms 
+	</div>
+	<hr ng-if="outputs.length > 0">
+</div>

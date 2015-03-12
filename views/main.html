@@ -1,0 +1,174 @@
+<div class="jumbotron">
+  <div class="container">
+    <div class="row text-center">
+  <p class="lead">The javascript architecture-free neural network library for <strong>node.js</strong> and the <strong>browser</strong></p>
+    </div>
+    <div class="row text-center">
+     <button class="btn btn-primary btn-lg hidden-md hidden-lg"><i class="fa fa-github fa-lg"></i> Download</button>
+    </div>
+    <div class="row">
+      <div class="col-md-6">
+        <p>creature.js</p>
+        <pre>
+var synaptic = require('synaptic');
+this.network = new synaptic.Architect.Perceptron(40, 25, 3);
+</pre>
+<p>world.js</p>
+<pre>
+creatures.forEach(function(creature)
+{
+    // move
+    var input = [];
+    for (var i in creatures)
+    {
+      input.push(creatures[i].location.x);
+      input.push(creatures[i].location.y);
+      input.push(creatures[i].velocity.x);
+      input.push(creatures[i].velocity.y);
+    }
+    var output = creature.network.activate(input);
+    creature.moveTo(output);
+    
+    // learn
+    var learningRate = .3;
+    var target = [
+      targetX(creature), 
+      targetY(creature), 
+      targetAngle(creature)];
+    creature.network.propagate(learningRate, target);
+});</pre>
+      </div>
+      <div id="canvas-container" class="col-md-6"><canvas id="canvas" width="100%" height="550"></canvas></div>
+</div>
+</div>
+<div class="row">
+  <h5 class="text-center"><em>In this demo the creatures <strong>learn</strong> how to explore the screen together</em></h5>
+</div>
+</div>
+
+<div class="container">
+  <div class="row">
+    <div class="col-md-6">
+      <div class="media">
+        <div class="media-left">
+          <a href="">
+            <div class="fa fa-stack fa-5x">
+              <i class="fa fa-circle fa-stack-2x"></i>
+              <i class="fa fa-asterisk fa-stack-1x fa-inverse"></i>
+            </div>
+          </a>
+        </div>
+        <div class="media-body">
+          <h4 class="media-heading">Neurons</h4>
+          <p>Neurons are the basic unit of the neural network. They can be connected to another neuron or gate connections between other neurons. This allows you to create complex and flexible architectures.</p>
+          <a href="https://github.com/cazala/synaptic/wiki/Neurons" target="_blank"  class="btn btn-default p">Learn More</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="media">
+        <div class="media-left">
+          <a href="">
+            <div class="fa fa-stack fa-5x">
+              <i class="fa fa-circle fa-stack-2x"></i>
+              <i class="fa fa-sitemap fa-stack-1x fa-inverse"></i>
+            </div>
+          </a>
+        </div>
+        <div class="media-body">
+          <h4 class="media-heading">Networks</h4>
+          <p>Networks can be imported/exported to JSON, converted to workers or standalone functions. They can be connected to other networks or gate connections.</p>
+          <a href="https://github.com/cazala/synaptic/wiki/Networks" target="_blank"  class="btn btn-default">Learn More</a>
+        </div>
+      </div>
+    </div>
+    </div>
+  <div class="row">
+    <div class="col-md-6">
+      <div class="media">
+        <div class="media-left">
+          <a href="">
+            <div class="fa fa-stack fa-5x">
+              <i class="fa fa-circle fa-stack-2x"></i>
+              <i class="fa fa-graduation-cap fa-stack-1x fa-inverse"></i>
+            </div>
+          </a>
+        </div>
+        <div class="media-body">
+          <h4 class="media-heading">Trainer</h4>
+          <p>Trainers can take any given network regardless of its architecture and use any training set. It includes built-in tasks to test networks, like learning an XOR, completing a Discrete Sequence Recall task or an Embeded Reber Grammar test.</p>
+          <a href="https://github.com/cazala/synaptic/wiki/Trainer" target="_blank" class="btn btn-default">Learn More</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="media">
+        <div class="media-left">
+          <a href="">
+            <div class="fa fa-stack fa-5x">
+              <i class="fa fa-circle fa-stack-2x"></i>
+              <i class="fa fa-bank fa-stack-1x fa-inverse"></i>
+            </div>
+          </a>
+        </div>
+        <div class="media-body">
+          <h4 class="media-heading">Architect</h4>
+          <p>The Architect includes built-in useful architectures such as multilayer <a href="http://en.wikipedia.org/wiki/Multilayer_perceptron">perceptrons</a>, multilayer <a href="http://en.wikipedia.org/wiki/Long_short_term_memory">long short-term memory</a> networks (LSTM) and <a href="http://en.wikipedia.org/wiki/Liquid_state_machine">liquid state machines</a>.</p>
+          <a href="https://github.com/cazala/synaptic/wiki/Architect" target="_blank"  class="btn btn-default">Learn More</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <hr>
+</div>
+
+<div class="container">
+    <div class="row">
+  <h1 class="text-center demos-header">Demos</h1>
+  </div>
+  <div class="row">
+    <div class="col-xs-offset-0 col-xs-4 col-sm-offset-1 col-sm-2">
+      <a href="#/xor" class="thumbnail" >
+        <img src="images/demo1.png" alt="Learn XOR">
+      </a>
+      <p class="text-center"><small>Learn XOR</small></p>
+    </div>
+    <div class="col-xs-4 col-sm-2">
+      <a href="#/dsr" class="thumbnail">
+        <img src="images/demo2.png" alt="Discrete Sequence Recall">
+      </a>
+      <p class="text-center"><small>Discrete Sequence Recall</small></p>
+    </div>
+    <div class="col-xs-4 col-sm-2">
+      <a href="#/image-filters" class="thumbnail">
+        <img src="images/demo3.png" alt="Learn Image Filters">
+      </a>
+      <p class="text-center"><small>Learn Image Filters</small></p>
+    </div>
+    <div class="col-xs-6 col-sm-2">
+      <a href="#/paint-an-image" class="thumbnail">
+        <img src="images/demo4.png" alt="Paint An Image">
+      </a>
+      <p class="text-center"><small>Paint An Image</small></p>
+    </div>
+    <div class="col-xs-6 col-sm-2">
+      <a href="#/wikipedia" class="thumbnail">
+        <img src="images/demo5.png" alt="Read From Wikipedia">
+      </a>
+      <p class="text-center"><small>Read From Wikipedia</small></p>
+    </div>
+  </div>
+  <hr>
+</div>
+
+<div class="footer">
+      <div class="container reveal">
+        <p class="text-center text-muted"><strong>Synaptic<strong> is open source (<a href="https://github.com/cazala/synaptic/blob/master/LICENSE">MIT</a>)</p>
+      </div>
+    </div>
+
+<!-- build:js({.tmp,app}) ../scripts/scripts.js -->
+        <script src="scripts/homepage/vector.js"></script>
+        <script src="scripts/homepage/creature.js"></script>
+        <script src="scripts/homepage/world.js"></script>
+        <!-- endbuild -->

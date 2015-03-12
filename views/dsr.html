@@ -1,0 +1,75 @@
+<div class="container demo-page">
+	<div class="row">
+		<div class="col-md-12">
+		<h1 class="page-header">Discrete Sequence Recall</h1>
+		<div>
+			<p class="text-justify">This sample is a simplified version of <a href="http://www.overcomplete.net/papers/nn2012.pdf">Derek D. Monner's Distracted Sequence Recall</a> task, which involves 6 symbols, each represented locally in an input layer of 6 neurons:</p>
+			<ul>
+				<li><strong>Targets:</strong>&nbsp;<i class="fa fa-circle text-info"></i>&nbsp;<i class="fa fa-circle text-success"></i><small> - must be recognized and remembered by the network.</small></li>
+				<li><strong>Distractors:</strong>&nbsp;<i class="fa fa-circle text-warning"></i>&nbsp;<i class="fa fa-circle text-danger"></i><small> - never need to be remembered.</small></li>
+				<li><strong>Prompts:</strong>&nbsp;<i class="fa fa-circle text-muted"></i>&nbsp;<i class="fa fa-circle text-black"></i><small> - direct the network to give an answer.</small></li>
+			</ul>
+			<p>A single trial consists of the presentation of a temporal sequence of 10 input symbols. The first 8 consist of 2 randomly chosen target symbols and 6 randomly chosen distractor symbols, all in random order; the remaining two symbols are the two prompts, which direct the network to produce the first and second target in the sequence, in order, regardless of when they occurred. A sample sequence would look like this:</p>
+			<ul>
+				<li><strong>Sequence:</strong>&nbsp;<i class="fa fa-circle text-danger"></i>&nbsp;<i class="fa fa-circle text-warning"></i>&nbsp;<i class="fa fa-circle text-warning"></i>&nbsp;<i class="fa fa-circle text-success"></i>&nbsp;<i class="fa fa-circle text-danger"></i>&nbsp;<i class="fa fa-circle text-warning"></i>&nbsp;<i class="fa fa-circle text-info"></i>&nbsp;<i class="fa fa-circle text-muted"></i>&nbsp;<i class="fa fa-circle" style="color:black"></i>
+			</ul>
+			<p>Note that the targets may appear at any point in the sequence, so the network cannot rely on their temporal position; rather, the network must recognize the symbols as targets and preferentially save them, along with temporal order information, in order to produce the correct output sequence.</p>
+			<p>The network is trained to produce <strong>no output</strong> ( <i class="fa fa-circle-o text-muted"></i> ) for all symbols except for the prompts, and for each prompt symbol the network must produce the output symbol which corresponds to the appropriate target from the sequence. For the sequence shown above, the prompts should output <i class="fa fa-circle text-success"></i>&nbsp;<i class="fa fa-circle text-info"></i>, respectively.</p>
+			<p>The network doesn't have any prior knowledge of which are the target, distractor or prompt symbols, nor what is the length of the sequence, it has to learn all this information during its training process.</p>
+			<p>In this sample a <a href="http://en.wikipedia.org/wiki/Long_short_term_memory">Long Short Term Memory</a> network (6 input neurons, 7 memory blocks, and 2 output neurons) will be trained to complete the Distracted Sequence Recall task with a success rate of at least 95%.</p>
+			<div class="col-md-6">
+			<pre>var LSTM = new Architect.LSTM(6,7,2);
+LSTM.trainer.DSR({		
+    targets: [2,4],		
+    distractors: [3,5],		
+    prompts: [0,1],	
+    length: 10	
+});</pre>
+</div>
+			
+		</div>
+	</div>
+	</div>
+	<div class="row text-center">
+		<div class="col-md-12">
+			<button ng-show="!trainingSuccess" class="btn btn-primary run-demo" ng-click="train()" ng-disabled="trainingStarted">START TRAINING</a>
+			<button ng-show="trainingSuccess" class="btn btn-primary run-demo" ng-click="validate()">TRY ANOTHER SEQUENCE</a>
+		</div>
+	</div>
+
+	<hr>
+	<div ng-if="trainingStarted" class="row text-center">
+		<span ng-show="trainingNetwork"><strong>Training Network&hellip;</strong></span>
+		<span ng-show="!trainingNetwork"><strong>Sequence:</strong>
+			<span ng-repeat="steps in sequence">
+				&nbsp;
+				<i 
+				class="fa fa-circle"
+				ng-class="getColor(steps.input)"
+				title="[{{steps.input}}]"
+				></i>
+			</span>
+		</span>
+	</div>
+	<hr ng-if="trainingStarted">
+
+	<div ng-if="trainingStarted && !trainingNetwork" class="row">
+		<div ng-repeat="steps in sequence">
+			<div class="col-xs-12 text-center">
+			<p><strong>input:</strong>&nbsp;<i title="[{{getTitle(steps.input)}}]" ng-class="getColor(steps.input)"></i>
+			&nbsp;&nbsp;
+			<strong>output:</strong>&nbsp;<i title="[{{getTitle(steps.output)}}]" ng-class="getColor(steps.output)"></i>
+			&nbsp;<i ng-show="steps.ok" class="fa fa-check text-success"></i>
+			 <i ng-show="!steps.ok" class="fa fa-check text-danger"></i>
+			</div>
+			</p>
+		</div>
+	</div>
+	<hr ng-if="trainingStarted && !trainingNetwork">
+	<div ng-if="trainingSuccess" class="row text-center">
+		<strong>Iterations:</strong> {{results.iterations}} - 
+		<strong>Success Rate:</strong> {{(results.success * 100).toFixed(2)}}%  - 
+		<strong>Time:</strong> {{results.time}} ms 
+	</div>
+	<hr ng-if="trainingSuccess">
+</div>

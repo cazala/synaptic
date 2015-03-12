@@ -1,0 +1,65 @@
+<div class="container demo-page">
+	<div class="row">
+		<div class="col-md-12">
+		<h1 class="page-header">Learn Image Filters</h1>
+		<div>
+			<p class="text-justify">In this demo, a perceptron will be trained to learn how to apply different filters to an image. During the training, the network will receive a picture as an input, and a filtered version of that same picture as an output (RGB values of their pixels). Eventually, the network will be able to take any picture as input and it will output a filtered version of it.</p>
+		</div>
+	</div>
+	</div>
+	<div class="row text-center">
+		<div class="col-md-12">
+			<div class="btn-group" style="margin: 5px 5px 0px 0px" dropdown>
+		      <button type="button" class="btn btn-default">{{filter}}</button>
+		      <button type="button" class="btn btn-default dropdown-toggle" dropdown-toggle>
+		        <span class="caret"></span>
+		        <span class="sr-only">Training Set</span>
+		      </button>
+		      <ul class="dropdown-menu" role="menu">
+		        <li><a ng-click="setFilter('Grayscale')">Grayscale</a></li>
+		        <li><a ng-click="setFilter('Blur')">Blur</a></li>
+		        <li><a ng-click="setFilter('Glowing Edges')">Glowing Edges</a></li>
+		        <li><a ng-click="setFilter('Texture')">Texture</a></li>
+		        <li><a ng-click="setFilter('Neon Glow')">Neon Glow</a></li>
+		      </ul>
+		    </div>
+		    <div class="btn-group">
+				<button class="btn btn-primary run-demo" ng-click="train()" ng-disabled="disableTrain">START TRAINING</button>
+			</div>
+		</div>
+		<div class="col-sm-2 col-sm-offset-4">
+			<a class="thumbnail">
+		        <img id="input" src="images/cat.png" alt="Original">
+		    </a>
+		    <p class="text-center"><small>Original</small></p>
+		</div>   
+		<div class="col-sm-2"> 
+		    <a class="thumbnail">
+		        <img id="output" src="{{url}}" alt="Filtered">
+		    </a>
+		    <p class="text-center"><small>Filtered</small></p>
+		</div>
+	</div>
+
+
+	<hr>
+		<div ng-show="trainingStarted" class="row text-center">
+			<div class="col-sm-2 col-sm-offset-4">
+				<a class="thumbnail">
+			        <img id="original" src="images/cat_original.png" alt="Input">
+			    </a>
+			    <p class="text-center"><small>Network Input</small></p>
+			</div>   
+			<div class="col-sm-2"> 
+				<a class="thumbnail canvas-fix">
+			        <canvas id="canvas-demo3" width="125" height="125"></canvas>
+			    </a>
+			    <p class="text-center"><small>Network Output</small></p>
+			</div>
+		</div>
+	<hr ng-show="trainingStarted">
+	<div ng-if="trainingStarted" class="row text-center">
+		<strong>Iterations:</strong> {{iteration}}
+	</div>
+	<hr ng-show="trainingStarted">
+</div>

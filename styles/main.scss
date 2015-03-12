@@ -1,0 +1,163 @@
+// bower:scss
+// endbower
+
+.browsehappy {
+  margin: 0.2em 0;
+  background: #ccc;
+  color: #000;
+  padding: 0.2em 0;
+}
+
+body {
+  padding: 0;
+}
+
+/* Everything but the jumbotron gets side spacing for mobile first views */
+.header,
+.marketing,
+.footer {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* Custom page header */
+.header {
+  border-bottom: 1px solid #e5e5e5;
+  margin-bottom: 10px;
+
+  /* Make the masthead heading the same height as the navigation */
+  h3 {
+    margin-top: 0;
+    margin-bottom: 0;
+    line-height: 40px;
+    padding-bottom: 19px;
+  }
+}
+
+/* Custom page footer */
+.footer {
+  padding-top: 19px;
+  color: #777;
+
+}
+
+.container-narrow > hr {
+  margin: 30px 0;
+}
+
+/* Main marketing message and sign up button */
+
+
+/* Supporting marketing content */
+.marketing {
+  margin: 40px 0;
+
+  p + h4 {
+    margin-top: 28px;
+  }
+}
+
+/* Responsive: Portrait tablets and up */
+@media screen and (min-width: 768px) {
+
+
+  /* Remove the padding we set earlier */
+  .header,
+  .marketing,
+  .footer {
+    padding-left: 0;
+    padding-right: 0;
+    margin-bottom: 20px;
+  }
+  /* Space out the masthead */
+  /* Remove the bottom border on the jumbotron for visual effect */
+  .jumbotron {
+    border-bottom: 0;
+  }
+}
+
+.media .btn {
+  margin-bottom:30px;
+}
+
+
+.ng-enter, .ng-leave {
+  -webkit-transition:0.5s linear all;
+  transition:0.5s linear all;
+}
+
+.main-view.ng-enter, .main-view.ng-leave {
+  -webkit-transition:0.5s linear all;
+  transition:0.5s linear all;
+  position: absolute;
+  width: 100%;
+}
+
+.ng-enter { opacity: 0;}        /* starting animations for enter */
+.ng-enter.ng-enter-active { opacity: 1;} /* terminal animations for enter */
+.main-view.ng-leave { opacity: 1;}        /* starting animations for leave */
+.main-view.ng-leave.ng-leave-active { opacity: 0;} /* terminal animations for leave */
+.ng-leave { display: none;}
+
+.nav li a {
+  cursor: pointer;
+}
+
+.jumbotron {
+  padding-bottom: 12px;
+}
+
+.main-view{
+  padding-top: 30px;
+  -webkit-transition: opacity .5s ease;
+  transition: opacity .5s ease;
+}
+
+.thumbnail {
+  background-color: white!important;
+}
+
+.jumbotron .btn{
+  margin-bottom: 20px;
+}
+
+.jumbotron pre {
+  background-color: #FDFDFD;
+}
+
+.demos-header {
+  margin-bottom: 30px;
+}
+
+.demo-page{
+  margin-top: 15px;
+}
+
+.run-demo{
+  margin-top: 15px;
+  margin-bottom: 10px;
+}
+
+.demo-page pre {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.text-black {
+  color: black
+};
+
+li a {
+  cursor: pointer;
+}
+
+.thumbnail {
+  margin: 20px auto;
+  max-width: 135px;
+}
+
+.thumbnail.canvas-fix{
+  padding-bottom: 0px;
+}
+
+
