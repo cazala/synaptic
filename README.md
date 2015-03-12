@@ -25,7 +25,7 @@ If you have no prior knowledge about Neural Networks, you should start by [readi
 - [Paint an Image](http://synaptic.juancazala.com/#/paint-an-image)
 - [Read from Wikipedia](http://synaptic.juancazala.com/#/wikipedia)
 
-####Documentation
+####Getting started
 
 - [Neurons](https://github.com/cazala/synaptic/wiki/Neurons/)
 - [Layers](https://github.com/cazala/synaptic/wiki/Layers/)
