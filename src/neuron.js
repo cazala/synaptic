@@ -291,13 +291,14 @@ Neuron.prototype = {
 
   // hardcodes the behaviour of the neuron into an optimized function
   optimize: function(optimized, layer) {
-
+    
     optimized = optimized || {};
     var that = this;
     var store_activation = [];
     var store_trace = [];
     var store_propagation = [];
-    var varID = optimized.memory | 0;
+    var varID = optimized.memory || 0;
+    var neurons = optimized.neurons || 1;
     var inputs = optimized.inputs || [];
     var targets = optimized.targets || [];
     var outputs = optimized.outputs || [];
@@ -305,6 +306,21 @@ Neuron.prototype = {
     var activation_sentences = optimized.activation_sentences || [];
     var trace_sentences = optimized.trace_sentences || [];
     var propagation_sentences = optimized.propagation_sentences || [];
+    var layers = optimized.layers || { __count: 0, __neuron: 0 };
+
+    // allocate sentences
+    var allocate = function(store){
+      var allocated = layer in layers && store[layers.__count];
+      if (!allocated)
+      {
+        layers.__count = store.push([]) - 1;
+        layers[layer] = layers.__count;
+      }
+    }
+    allocate(activation_sentences);
+    allocate(trace_sentences);
+    allocate(propagation_sentences);
+    var currentLayer = layers.__count;
 
     // get/reserve space in memory by creating a unique ID for a variablel
     var getVar = function() {
@@ -357,6 +373,7 @@ Neuron.prototype = {
           sentence += args[i];
         else
           sentence += 'F[' + args[i].id + ']';
+
       store.push(sentence + ';');
     }
 
@@ -381,9 +398,9 @@ Neuron.prototype = {
     if (isInput)
       inputs.push(activation.id);
     else {
-      activation_sentences.push(store_activation);
-      trace_sentences.push(store_trace);
-      propagation_sentences.push(store_propagation);
+      activation_sentences[currentLayer].push(store_activation);
+      trace_sentences[currentLayer].push(store_trace);
+      propagation_sentences[currentLayer].push(store_propagation);
       var old = getVar(this, 'old');
       var state = getVar(this, 'state');
       var bias = getVar(this, 'bias');
@@ -678,13 +695,15 @@ Neuron.prototype = {
     }
     return {
       memory: varID,
+      neurons: neurons + 1,
       inputs: inputs,
       outputs: outputs,
       targets: targets,
       variables: variables,
       activation_sentences: activation_sentences,
       trace_sentences: trace_sentences,
-      propagation_sentences: propagation_sentences
+      propagation_sentences: propagation_sentences,
+      layers: layers
     }
   }
 }

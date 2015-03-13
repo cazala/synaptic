@@ -131,6 +131,8 @@ Network.prototype = {
         neuron = neuron.neuron;
       optimized = neuron.optimize(optimized, layer);
     }
+    for (var i in optimized.propagation_sentences)
+      optimized.propagation_sentences[i].reverse();
     optimized.propagation_sentences.reverse();
 
     var hardcode = "";
@@ -142,9 +144,14 @@ Network.prototype = {
     hardcode += "var activate = function(input){\n";
     for (var i in optimized.inputs)
       hardcode += "F[" + optimized.inputs[i] + "] = input[" + i + "]; ";
-    for (var i in optimized.activation_sentences) {
-      hardcode += optimized.activation_sentences[i].join(" ");
-      hardcode += optimized.trace_sentences[i].join(" ");
+    for (var currentLayer in optimized.activation_sentences) {
+      if (optimized.activation_sentences[currentLayer].length > 0)
+      {
+        for (var currentNeuron in optimized.activation_sentences[currentLayer]){
+          hardcode += optimized.activation_sentences[currentLayer][currentNeuron].join(" ");
+          hardcode += optimized.trace_sentences[currentLayer][currentNeuron].join(" ");
+        }
+      }
     }
     hardcode += " var output = []; "
     for (var i in optimized.outputs)
@@ -154,8 +161,9 @@ Network.prototype = {
     hardcode += "F[" + optimized.variables.rate.id + "] = rate; ";
     for (var i in optimized.targets)
       hardcode += "F[" + optimized.targets[i] + "] = target[" + i + "]; ";
-    for (var i in optimized.propagation_sentences)
-      hardcode += optimized.propagation_sentences[i].join(" ") + " ";
+    for (var currentLayer in optimized.propagation_sentences)
+      for (var currentNeuron in optimized.propagation_sentences[currentLayer])
+        hardcode += optimized.propagation_sentences[currentLayer][currentNeuron].join(" ") + " ";
     hardcode += " };\n";
     hardcode +=
       "var ownership = function(memoryBuffer){\nF = memoryBuffer;\nthis.memory = F;\n};\n";
