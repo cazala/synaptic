@@ -2,7 +2,9 @@ var assert = require('assert'),
   synaptic = require('../src/synaptic');
 
 var Perceptron = synaptic.Architect.Perceptron,
-  LSTM = synaptic.Architect.LSTM;
+  LSTM = synaptic.Architect.LSTM,
+  Layer = synaptic.Layer,
+  Network = synaptic.Network,
   Trainer = synaptic.Trainer;
 
 describe("Perceptron - XOR", function() {
@@ -189,4 +191,24 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
       optimized.propagate(learningRate, target);
       unoptimized.propagate(learningRate, target);
   }
+});
+
+describe('Basic Neural Network with Layers', function() {
+  var inputLayer = new Layer(2),
+      outputLayer = new Layer(1),
+      network;
+
+  inputLayer.project(outputLayer);
+
+  network = new Network({
+    input: inputLayer,
+    output: outputLayer
+  });
+
+
+  it.only("trains a basic AND gate", function() {
+    a = network.activate([0,0]);
+    console.log(a);
+    assert(true);
+  });
 });
