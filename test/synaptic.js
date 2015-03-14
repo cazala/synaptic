@@ -207,8 +207,30 @@ describe('Basic Neural Network with Layers', function() {
 
 
   it.only("trains a basic AND gate", function() {
-    a = network.activate([0,0]);
-    console.log(a);
-    assert(true);
+    var and_gate_training = [{
+      input: [0, 0],
+      output: [0]
+    }, {
+      input: [0, 1],
+      output: [0]
+    }, {
+      input: [1, 0],
+      output: [0]
+    }, {
+      input: [1, 1],
+      output: [1]
+    }];
+
+    var iterations = 0;
+
+    while(iterations++ < 1000) {
+      for(var i = 0; i < and_gate_training.length; i++) {
+        network.activate(and_gate_training[i].input);
+        network.propagate(0.1, and_gate_training[i].output);
+      }      
+    }
+
+    var test00 = Math.round(network.activate([0, 0]));
+    assert.equal(test00, 0, "[0,0] did not output 0");
   });
 });
