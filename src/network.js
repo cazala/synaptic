@@ -184,6 +184,7 @@ Network.prototype = {
       check_activation: this.activate,
       check_propagation: this.propagate
     }
+
     network.reset = function() {
       if (that.optimized) {
         that.optimized = null;

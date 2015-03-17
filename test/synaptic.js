@@ -2,7 +2,9 @@ var assert = require('assert'),
   synaptic = require('../src/synaptic');
 
 var Perceptron = synaptic.Architect.Perceptron,
-  LSTM = synaptic.Architect.LSTM;
+  LSTM = synaptic.Architect.LSTM,
+  Layer = synaptic.Layer,
+  Network = synaptic.Network,
   Trainer = synaptic.Trainer;
 
 describe("Perceptron - XOR", function() {
@@ -189,4 +191,46 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
       optimized.propagate(learningRate, target);
       unoptimized.propagate(learningRate, target);
   }
+});
+
+describe('Basic Neural Network with Layers', function() {
+  var inputLayer = new Layer(2),
+      outputLayer = new Layer(1),
+      network;
+
+  inputLayer.project(outputLayer);
+
+  network = new Network({
+    input: inputLayer,
+    output: outputLayer
+  });
+
+
+  it("trains a basic AND gate", function() {
+    var and_gate_training = [{
+      input: [0, 0],
+      output: [0]
+    }, {
+      input: [0, 1],
+      output: [0]
+    }, {
+      input: [1, 0],
+      output: [0]
+    }, {
+      input: [1, 1],
+      output: [1]
+    }];
+
+    var iterations = 0;
+
+    while(iterations++ < 1000) {
+      for(var i = 0; i < and_gate_training.length; i++) {
+        network.activate(and_gate_training[i].input);
+        network.propagate(0.1, and_gate_training[i].output);
+      }      
+    }
+
+    var test00 = Math.round(network.activate([0, 0]));
+    assert.equal(test00, 0, "[0,0] did not output 0");
+  });
 });
