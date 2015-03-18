@@ -72,7 +72,9 @@ Now you can start to create networks, train them, or use built-in networks from 
 
 #####Perceptron
 
-This is how you can create a simple [perceptron](http://www.codeproject.com/KB/dotnet/predictor/network.jpg).
+This is how you can create a simple **perceptron**:
+
+![perceptron](http://www.codeproject.com/KB/dotnet/predictor/network.jpg).
 
 ```
 function Perceptron(input, hidden, output)
@@ -115,7 +117,9 @@ myPerceptron.activate([1,1]); // 0.02128894618097928
 
 #####Long Short-Term Memory
 
-This is how you can create a simple [long short-term memory](http://people.idsia.ch/~juergen/lstmcell4.jpg) with input gate, forget gate, output gate, and peephole connections.
+This is how you can create a simple **long short-term memory** network with input gate, forget gate, output gate, and peephole connections:
+
+![long short-term memory](http://people.idsia.ch/~juergen/lstmcell4.jpg)
 
 ```
 function LSTM(input, blocks, output)
