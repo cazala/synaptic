@@ -48,6 +48,10 @@ angular
         templateUrl: 'views/paint-an-image.html',
         controller: 'PaintAnImageCtrl'
       })
+      .when('/self-organizing-map', {
+        templateUrl: 'views/self-organizing-map.html',
+        controller: 'SelfOrganizingMapCtrl'
+      })
       .otherwise({
         redirectTo: '/'
       });

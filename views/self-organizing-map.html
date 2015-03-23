@@ -1,0 +1,41 @@
+<div class="container demo-page">
+	<div class="row">
+		<div class="col-md-12">
+			<h1 class="page-header">Self Organizing Map</h1>
+			<div>
+				<p class="text-justify">In this demo, a <a href="http://en.wikipedia.org/wiki/Hopfield_network" target="_blank">hopfield network<a/> will be fed with patterns (words) and the outputs will be used as a key to store the patterns in a map. The patterns that the network finds similiar will be recognized and grouped under the same key. Try typing <strong>sat</strong>, <strong>mat</strong>, <strong>juan</strong>, <strong>browser</strong> to see what I'm talking about.</p>
+			</div>
+		</div>
+	</div>
+	<div class="row text-center" style="margin-top: 30px;">
+		<div class="col-md-8 col-md-offset-2">
+			<form name="wordForm">
+				<div class="form-group" ng-class="{ 'has-error': !valid() }">
+		          <input 
+		          	name="word"
+		          	type="text" 
+		          	class="form-control text-lowercase" 
+		          	placeholder="Type a word and press Enter..."
+		          	ng-keyup="keyup($event)"
+		          	ng-model="word"
+		          	ng-pattern="/^[a-z]{0,10}$/">
+		        </div>
+			</form>
+		</div>
+	</div>
+
+
+	<hr>
+		<div class="row text-center" ng-repeat="row in draw" style="margin-top: 20px;">
+			<h4><span ng-repeat="item in row" class="label" style="margin-right: 10px;"
+			ng-class="{
+			'label-default': $parent.$index % 6 == 0,
+			'label-primary': $parent.$index % 6 == 1,
+			'label-success': $parent.$index % 6 == 2,
+			'label-info': $parent.$index % 6 == 3,
+			'label-warning': $parent.$index % 6 == 4,
+			'label-danger': $parent.$index % 6 == 5,
+			}">{{ item }}</span></h4>
+		</div>
+	<hr>
+</div>
