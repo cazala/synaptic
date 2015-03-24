@@ -23,6 +23,7 @@ If you have no prior knowledge about Neural Networks, you should start by [readi
 - [Discrete Sequence Recall Task](http://synaptic.juancazala.com/#/dsr)
 - [Learn Image Filters](http://synaptic.juancazala.com/#/image-filters)
 - [Paint an Image](http://synaptic.juancazala.com/#/paint-an-image)
+- [Self Organizing Map](http://synaptic.juancazala.com/#/self-organizing-map)
 - [Read from Wikipedia](http://synaptic.juancazala.com/#/wikipedia)
 
 ####Getting started
