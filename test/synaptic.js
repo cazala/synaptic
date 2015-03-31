@@ -1,3 +1,5 @@
+// import
+
 var assert = require('assert'),
   synaptic = require('../src/synaptic');
 
@@ -6,6 +8,163 @@ var Perceptron = synaptic.Architect.Perceptron,
   Layer = synaptic.Layer,
   Network = synaptic.Network,
   Trainer = synaptic.Trainer;
+
+
+// utils
+
+var noRepeat = function(range, avoid) {
+  var number = Math.random() * range | 0;
+  var used = false;
+  for (var i in avoid)
+    if (number == avoid[i])
+      used = true;
+  return used ? noRepeat(range, avoid) : number;
+};
+
+var equal = function(prediction, output) {
+  for (var i in prediction)
+    if (Math.round(prediction[i]) != output[i])
+      return false;
+  return true;
+};
+
+var generateRandomArray = function(size){
+    var array = [];
+    for (var j = 0; j < size; j++)
+        array.push(Math.random() + .5 | 0);
+    return array;
+}
+
+// specs
+
+describe('Basic Neural Network', function() {
+
+  it("trains an AND gate", function() {
+
+    var inputLayer = new Layer(2),
+        outputLayer = new Layer(1);
+
+    inputLayer.project(outputLayer);
+
+    var network = new Network({
+      input: inputLayer,
+      output: outputLayer
+    });
+
+    var trainer = new Trainer(network);
+
+    var trainingSet = [{
+      input: [0, 0],
+      output: [0]
+    }, {
+      input: [0, 1],
+      output: [0]
+    }, {
+      input: [1, 0],
+      output: [0]
+    }, {
+      input: [1, 1],
+      output: [1]
+    }];
+
+    trainer.train(trainingSet, {
+      iterations: 1000,
+      error: .001
+    });
+
+    var test00 = Math.round(network.activate([0, 0]));
+    assert.equal(test00, 0, "[0,0] did not output 0");
+
+    var test01 = Math.round(network.activate([0, 1]));
+    assert.equal(test01, 0, "[0,1] did not output 0");
+
+    var test10 = Math.round(network.activate([0, 1]));
+    assert.equal(test10, 0, "[1,0] did not output 0");
+
+    var test11 = Math.round(network.activate([1, 1]));
+    assert.equal(test11, 1, "[1,1] did not output 1");
+  });
+
+  it("trains an OR gate", function() {
+
+    var inputLayer = new Layer(2),
+      outputLayer = new Layer(1);
+
+    inputLayer.project(outputLayer);
+
+    var network = new Network({
+      input: inputLayer,
+      output: outputLayer
+    });
+
+    var trainer = new Trainer(network);
+
+    var trainingSet = [{
+      input: [0, 0],
+      output: [0]
+    }, {
+      input: [0, 1],
+      output: [1]
+    }, {
+      input: [1, 0],
+      output: [1]
+    }, {
+      input: [1, 1],
+      output: [1]
+    }];
+
+    trainer.train(trainingSet, {
+      iterations: 1000,
+      error: .001
+    });
+
+    var test00 = Math.round(network.activate([0, 0]));
+    assert.equal(test00, 0, "[0,0] did not output 0");
+
+    var test01 = Math.round(network.activate([0, 1]));
+    assert.equal(test01, 1, "[0,1] did not output 1");
+
+    var test10 = Math.round(network.activate([0, 1]));
+    assert.equal(test10, 1, "[1,0] did not output 1");
+
+    var test11 = Math.round(network.activate([1, 1]));
+    assert.equal(test11, 1, "[1,1] did not output 1");
+  });
+
+  it("trains a NOT gate", function() {
+
+    var inputLayer = new Layer(1),
+      outputLayer = new Layer(1),
+      network;
+
+    inputLayer.project(outputLayer);
+
+    var network = new Network({
+      input: inputLayer,
+      output: outputLayer
+    });
+
+    var trainer = new Trainer(network);
+    var trainingSet = [{
+      input: [0],
+      output: [1]
+    }, {
+      input: [1],
+      output: [0]
+    }];
+
+    trainer.train(trainingSet, {
+      iterations: 1000,
+      error: .001
+    });
+
+    var test0 = Math.round(network.activate([0]));
+    assert.equal(test0, 1, "0 did not output 1");
+
+    var test1 = Math.round(network.activate([1]));
+    assert.equal(test1, 0, "1 did not output 0");
+  });
+});
 
 describe("Perceptron - XOR", function() {
 
@@ -36,22 +195,6 @@ describe("Perceptron - XOR", function() {
     assert.equal(test11, 0, "[1,1] did not output 0");
   });
 });
-
-var noRepeat = function(range, avoid) {
-  var number = Math.random() * range | 0;
-  var used = false;
-  for (var i in avoid)
-    if (number == avoid[i])
-      used = true;
-  return used ? noRepeat(range, avoid) : number;
-};
-
-var equal = function(prediction, output) {
-  for (var i in prediction)
-    if (Math.round(prediction[i]) != output[i])
-      return false;
-  return true;
-};
 
 describe("LSTM - Discrete Sequence Recall", function() {
 
@@ -159,13 +302,6 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
   var learningRate = .5;
   var iterations = 1000;
 
-  var generateRandomArray = function(size){
-      var array = [];
-      for (var j = 0; j < size; j++)
-          array.push(Math.random() + .5 | 0);
-      return array;
-  }
-
   for (var i = 1; i <= iterations; i++)
   {
       //random input
@@ -176,7 +312,7 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
       var output2 = unoptimized.activate(input);
 
       if (i % 100 == 0)
-        it(' Same output for both networks after ' + i + ' iterations', function(){
+        it(' same output for both networks after ' + i + ' iterations', function(){
           var diff = false;
           for (var k in output1)
             if (output1[k] - output2[k] != 0)
@@ -193,44 +329,72 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
   }
 });
 
-describe('Basic Neural Network with Layers', function() {
-  var inputLayer = new Layer(2),
-      outputLayer = new Layer(1),
-      network;
+describe("toJSON/fromJSON Networks Equivalency", function() {
+  var original = new Perceptron(10,15,5);
 
-  inputLayer.project(outputLayer);
+  var exported = original.toJSON();
+  var imported = Network.fromJSON(exported);
 
-  network = new Network({
-    input: inputLayer,
-    output: outputLayer
-  });
+  var learningRate = .5;
+  var iterations = 1000;
 
+  for (var i = 1; i <= iterations; i++)
+  {
+      //random input
+      var input = generateRandomArray(10);
 
-  it("trains a basic AND gate", function() {
-    var and_gate_training = [{
-      input: [0, 0],
-      output: [0]
-    }, {
-      input: [0, 1],
-      output: [0]
-    }, {
-      input: [1, 0],
-      output: [0]
-    }, {
-      input: [1, 1],
-      output: [1]
-    }];
+      // activate networks
+      var output1 = original.activate(input);
+      var output2 = imported.activate(input);
 
-    var iterations = 0;
+      if (i % 100 == 0)
+        it(' same output for both networks after ' + i + ' iterations', function(){
+          var diff = false;
+          for (var k in output1)
+            if (output1[k] - output2[k] != 0)
+              diff = true;
+          assert(!diff);
+        });
 
-    while(iterations++ < 1000) {
-      for(var i = 0; i < and_gate_training.length; i++) {
-        network.activate(and_gate_training[i].input);
-        network.propagate(0.1, and_gate_training[i].output);
-      }      
-    }
+      // random target
+      var target = generateRandomArray(5);
 
-    var test00 = Math.round(network.activate([0, 0]));
-    assert.equal(test00, 0, "[0,0] did not output 0");
-  });
+      // propagate networks
+      original.propagate(learningRate, target);
+      imported.propagate(learningRate, target);
+  }
+});
+
+describe("Cloned Networks Equivalency", function() {
+  var original = new Perceptron(10,15,5);
+  var cloned = original.clone();
+
+  var learningRate = .5;
+  var iterations = 1000;
+
+  for (var i = 1; i <= iterations; i++)
+  {
+      //random input
+      var input = generateRandomArray(10);
+
+      // activate networks
+      var output1 = original.activate(input);
+      var output2 = cloned.activate(input);
+
+      if (i % 100 == 0)
+        it(' same output for both networks after ' + i + ' iterations', function(){
+          var diff = false;
+          for (var k in output1)
+            if (output1[k] - output2[k] != 0)
+              diff = true;
+          assert(!diff);
+        });
+
+      // random target
+      var target = generateRandomArray(5);
+
+      // propagate networks
+      original.propagate(learningRate, target);
+      cloned.propagate(learningRate, target);
+  }
 });
