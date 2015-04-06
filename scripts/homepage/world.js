@@ -9,7 +9,7 @@ $(function()
 	canvas.width = $('#canvas-container').width();
 	$(window).resize(function(){
 		var width =  $('#canvas-container').width();;
-		canvas.width = witdh;
+		canvas.width = width;
 		world.width = width;
 	})
 
