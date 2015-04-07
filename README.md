@@ -26,6 +26,8 @@ If you have no prior knowledge about Neural Networks, you should start by [readi
 - [Self Organizing Map](http://synaptic.juancazala.com/#/self-organizing-map)
 - [Read from Wikipedia](http://synaptic.juancazala.com/#/wikipedia)
 
+The source code of these demos can be found in [this branch](https://github.com/cazala/synaptic/tree/gh-pages).
+
 ####Getting started
 
 - [Neurons](https://github.com/cazala/synaptic/wiki/Neurons/)
