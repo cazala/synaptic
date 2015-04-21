@@ -953,7 +953,7 @@ Network.prototype = {
       return 'F[' + ids[index.match(/\d+/)[0]] + ']'
     }).replace("{\n", "{\n" + hardcode + "") + ";\n";
     hardcode += "return run";
-
+    hardcode = hardcode.replace(/,F/g, "F")
     // return standalone function
     return new Function(hardcode)();
   },
