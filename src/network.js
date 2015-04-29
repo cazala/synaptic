@@ -142,6 +142,7 @@ Network.prototype = {
       hardcode += "F[" + optimized.variables[i].id + "] = " + (optimized.variables[
         i].value || 0) + "; ";
     hardcode += "var activate = function(input){\n";
+    hardcode += "influences = [];";
     for (var i in optimized.inputs)
       hardcode += "F[" + optimized.inputs[i] + "] = input[" + i + "]; ";
     for (var currentLayer in optimized.activation_sentences) {
