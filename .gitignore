@@ -3,3 +3,14 @@
 
 # Node.
 node_modules
+
+# Tmp files.
+*~
+
+# Dot.
+*.dot
+*.png
+
+# Demo.
+demo.js
+

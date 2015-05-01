@@ -9,6 +9,7 @@ function Layer(size, label) {
   this.size = size | 0;
   this.list = [];
   this.label = label || null;
+  this.connectedto = [];
 
   while (size--) {
     var neuron = new Neuron();
@@ -115,6 +116,7 @@ Layer.prototype = {
         gater.gate(gated);
       }
     }
+    connection.gatedfrom.push({layer: this, type: type});
   },
 
   // true or false whether the whole layer is self-connected or not
@@ -211,6 +213,7 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
   this.connections = {};
   this.list = [];
   this.size = 0;
+  this.gatedfrom = [];
 
   if (typeof this.type == 'undefined')
   {
@@ -220,11 +223,14 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
       this.type = Layer.connectionType.ALL_TO_ALL;
   }
 
-  if (this.type == Layer.connectionType.ALL_TO_ALL) {
+  if (this.type == Layer.connectionType.ALL_TO_ALL ||
+      this.type == Layer.connectionType.ALL_TO_ELSE) {
     for (var here in this.from.list) {
       for (var there in this.to.list) {
         var from = this.from.list[here];
         var to = this.to.list[there];
+        if(this.type == Layer.connectionType.ALL_TO_ELSE && from == to)
+          continue;
         var connection = from.project(to, weights);
 
         this.connections[connection.ID] = connection;
@@ -242,12 +248,15 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
       this.size = this.list.push(connection);
     }
   }
+  
+  fromLayer.connectedto.push(this);
 }
 
 // types of connections
 Layer.connectionType = {};
 Layer.connectionType.ALL_TO_ALL = "ALL TO ALL";
 Layer.connectionType.ONE_TO_ONE = "ONE TO ONE";
+Layer.connectionType.ALL_TO_ELSE = "ALL TO ELSE";
 
 // types of gates
 Layer.gateType = {};
