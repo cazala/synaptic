@@ -9,6 +9,7 @@ function Layer(size, label) {
   this.size = size | 0;
   this.list = [];
   this.label = label || null;
+  this.connectedto = [];
 
   while (size--) {
     var neuron = new Neuron();
@@ -115,6 +116,7 @@ Layer.prototype = {
         gater.gate(gated);
       }
     }
+    connection.gatedfrom.push({layer: this, type: type});
   },
 
   // true or false whether the whole layer is self-connected or not
@@ -211,6 +213,7 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
   this.connections = {};
   this.list = [];
   this.size = 0;
+  this.gatedfrom = [];
 
   if (typeof this.type == 'undefined')
   {
@@ -242,6 +245,8 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
       this.size = this.list.push(connection);
     }
   }
+  
+  fromLayer.connectedto.push(this);
 }
 
 // types of connections
