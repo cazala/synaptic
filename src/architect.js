@@ -55,8 +55,30 @@ var Architect = {
     if (args.length < 3)
       throw "Error: not enough layers (minimum 3) !!";
 
+    var last = args.pop();
+    var option = {
+      peepholes: Layer.connectionType.ALL_TO_ALL,
+      hiddentohidden: false,
+      outtohidden: false,
+      outtogates: false,
+      intoout: true,
+    };
+    if (typeof last != 'number') {
+      var outputs = args.pop();
+      if (last.hasOwnProperty('peepholes'))
+        option.peepholes = last.peepholes;
+      if (last.hasOwnProperty('hiddentohidden'))
+        option.hiddentohidden = last.hiddentohidden;
+      if (last.hasOwnProperty('outtohidden'))
+        option.outtohidden = last.outtohidden;
+      if (last.hasOwnProperty('outtogates'))
+        option.outtogates = last.outtogates;
+      if (last.hasOwnProperty('intoout'))
+        option.intoout = last.intoout;
+    } else
+      var outputs = last;
+
     var inputs = args.shift();
-    var outputs = args.pop();
     var layers = args;
 
     var inputLayer = new Layer(inputs);
@@ -106,10 +128,25 @@ var Architect = {
       // self-connection
       var self = memoryCell.project(memoryCell);
 
+      // hidden to hidden recurrent connection
+      if (option.hiddentohidden)
+        memoryCell.project(memoryCell, Layer.connectionType.ALL_TO_ELSE);
+
+      // out to hidden recurrent connection
+      if (option.outtohidden)
+        outputLayer.project(memoryCell);
+
+      // out to gates recurrent connection
+      if (option.outtogates) {
+        outputLayer.project(inputGate);
+        outputLayer.project(outputGate);
+        outputLayer.project(forgetGate);
+      }
+      
       // peepholes
-      memoryCell.project(inputGate, Layer.connectionType.ONE_TO_ONE);
-      memoryCell.project(forgetGate, Layer.connectionType.ONE_TO_ONE);
-      memoryCell.project(outputGate, Layer.connectionType.ONE_TO_ONE);
+      memoryCell.project(inputGate, option.peepholes);
+      memoryCell.project(forgetGate, option.peepholes);
+      memoryCell.project(outputGate, option.peepholes);
 
       // gates
       inputGate.gate(input, Layer.gateType.INPUT);
@@ -122,7 +159,8 @@ var Architect = {
     }
 
     // input to output direct connection
-    inputLayer.project(outputLayer);
+    if (option.intoout)
+      inputLayer.project(outputLayer);
 
     // set the layers of the neural network
     this.set({
