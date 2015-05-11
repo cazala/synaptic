@@ -410,11 +410,8 @@ describe("Manual Override", function() {
       customLog: {
           every: 1000,
           do: function(data) {
-            // console.log( data.iterations, 'e', data.error )
             if( data.iterations == 2000){
               return false
-            }else{
-              return true
             }
           }
         }
