@@ -402,6 +402,23 @@ describe("Cloned Networks Equivalency", function() {
 describe("Manual Override", function() {
   var perceptron = new Perceptron(2, 3, 1);
 
+  it('iterations ended at full 3000', function(){
+    var final_stats = perceptron.trainer.XOR({
+      iterations: 3000,
+      rate: 0.000001,
+      error: 0.000001,
+      customLog: {
+          every: 1000,
+          do: function(data) {
+            if( data.iterations == 20000){
+              return true
+            }
+          }
+        }
+    });
+    assert.equal( final_stats.iterations, 3000 )
+  });
+
   it('iterations ended at 2000, not full 3000', function(){
     var final_stats = perceptron.trainer.XOR({
       iterations: 3000,
@@ -411,11 +428,25 @@ describe("Manual Override", function() {
           every: 1000,
           do: function(data) {
             if( data.iterations == 2000){
-              return false
+              return true
             }
           }
         }
     });
     assert.equal( final_stats.iterations, 2000 )
   });
+
+  it('training works even when customLog() has no return value', function(){
+    var final_stats = perceptron.trainer.XOR({
+      iterations: 3000,
+      rate: 0.000001,
+      error: 0.000001,
+      customLog: {
+          every: 1000,
+          do: function(data) {}
+        }
+    });
+    assert.equal( final_stats.iterations, 3000 )
+  });
+
 });
