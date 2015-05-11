@@ -175,7 +175,7 @@ Trainer.prototype = {
                 // log
                 if (options) {
                   if (options.customLog && options.customLog.every && iterations % options.customLog.every == 0)
-                    allow_training = allow_training = options.customLog.do({
+                    allow_training = options.customLog.do({
                       error: error,
                       iterations: iterations
                     });
