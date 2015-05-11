@@ -43,7 +43,7 @@ Trainer.prototype = {
       if (options.schedule)
         this.schedule = options.schedule;
       if (options.customLog){
-        // for back-compat to code that may have use customLog
+        // for backward compatibility with code that used customLog
         console.log('Deprecated: use schedule instead of customLog')
         this.schedule = options.customLog;
       }
@@ -134,7 +134,7 @@ Trainer.prototype = {
       if (options.schedule)
         this.schedule = options.schedule;
       if (options.customLog)
-        // for back-compat to code that may have use customLog
+        // for backward compatibility with code that used customLog
         console.log('Deprecated: use schedule instead of customLog')
         this.schedule = options.customLog;
     }
