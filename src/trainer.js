@@ -18,6 +18,7 @@ Trainer.prototype = {
 
     var error = 1;
     var iterations = bucketSize = 0;
+    var allow_training = true;
     var input, output, target, currentRate;
 
     var start = Date.now();
@@ -47,7 +48,7 @@ Trainer.prototype = {
     }
 
 
-    while (iterations < this.iterations && error > this.error) {
+    while (allow_training && iterations < this.iterations && error > this.error) {
       error = 0;
 
       if(bucketSize > 0) {
@@ -72,7 +73,7 @@ Trainer.prototype = {
       if (options) {
         if (options.customLog && options.customLog.every && iterations %
           options.customLog.every == 0)
-          options.customLog.do({
+          allow_training = options.customLog.do({
             error: error,
             iterations: iterations,
             rate: currentRate
@@ -174,7 +175,7 @@ Trainer.prototype = {
                 // log
                 if (options) {
                   if (options.customLog && options.customLog.every && iterations % options.customLog.every == 0)
-                    options.customLog.do({
+                    allow_training = allow_training = options.customLog.do({
                       error: error,
                       iterations: iterations
                     });
@@ -185,7 +186,7 @@ Trainer.prototype = {
                     shuffle(set);
                 }
 
-                if (iterations < that.iterations && error > that.error)
+                if (allow_training && iterations < that.iterations && error > that.error)
                 {
                     activateWorker(set[index].input);
                 } else {

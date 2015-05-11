@@ -398,3 +398,27 @@ describe("Cloned Networks Equivalency", function() {
       cloned.propagate(learningRate, target);
   }
 });
+
+describe("Manual Override", function() {
+  var perceptron = new Perceptron(2, 3, 1);
+
+  it('iterations ended at 2000, not full 3000', function(){
+    var final_stats = perceptron.trainer.XOR({
+      iterations: 3000,
+      rate: 0.000001,
+      error: 0.000001,
+      customLog: {
+          every: 1000,
+          do: function(data) {
+            // console.log( data.iterations, 'e', data.error )
+            if( data.iterations == 2000){
+              return false
+            }else{
+              return true
+            }
+          }
+        }
+    });
+    assert.equal( final_stats.iterations, 2000 )
+  });
+});
