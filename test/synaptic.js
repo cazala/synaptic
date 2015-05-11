@@ -407,7 +407,7 @@ describe("Manual Override", function() {
       iterations: 3000,
       rate: 0.000001,
       error: 0.000001,
-      customLog: {
+      schedule: {
           every: 1000,
           do: function(data) {
             if( data.iterations == 20000){
@@ -424,7 +424,7 @@ describe("Manual Override", function() {
       iterations: 3000,
       rate: 0.000001,
       error: 0.000001,
-      customLog: {
+      schedule: {
           every: 1000,
           do: function(data) {
             if( data.iterations == 2000){
@@ -436,17 +436,31 @@ describe("Manual Override", function() {
     assert.equal( final_stats.iterations, 2000 )
   });
 
-  it('training works even when customLog() has no return value', function(){
+  it('training works even when schedule() has no return value', function(){
+    var final_stats = perceptron.trainer.XOR({
+      iterations: 3000,
+      rate: 0.000001,
+      error: 0.000001,
+      schedule: {
+          every: 1000,
+          do: function(data) {}
+        }
+    });
+    assert.equal( final_stats.iterations, 3000 )
+  });
+
+  it('using depreciated customLog still works', function(){
+    var counter = 0
     var final_stats = perceptron.trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
       error: 0.000001,
       customLog: {
           every: 1000,
-          do: function(data) {}
+          do: function(data) { counter++ }
         }
     });
-    assert.equal( final_stats.iterations, 3000 )
+    assert.equal( counter, 3 )
   });
 
 });

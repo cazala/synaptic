@@ -40,6 +40,13 @@ Trainer.prototype = {
         this.rate = options.rate;
       if (options.cost)
         this.cost = options.cost;
+      if (options.schedule)
+        this.schedule = options.schedule;
+      if (options.customLog){
+        // for back-compat to code that may have use customLog
+        console.log('Deprecated: use schedule instead of customLog')
+        this.schedule = options.customLog;
+      }
     }
 
     currentRate = this.rate;
@@ -71,9 +78,9 @@ Trainer.prototype = {
       error /= set.length;
 
       if (options) {
-        if (options.customLog && options.customLog.every && iterations %
-          options.customLog.every == 0)
-          abort_training = options.customLog.do({
+        if (this.schedule && this.schedule.every && iterations %
+          this.schedule.every == 0)
+          abort_training = this.schedule.do({
             error: error,
             iterations: iterations,
             rate: currentRate
@@ -124,6 +131,12 @@ Trainer.prototype = {
         this.rate = options.rate;
       if (options.cost)
         this.cost = options.cost;
+      if (options.schedule)
+        this.schedule = options.schedule;
+      if (options.customLog)
+        // for back-compat to code that may have use customLog
+        console.log('Deprecated: use schedule instead of customLog')
+        this.schedule = options.customLog;
     }
 
     // dynamic learning rate
@@ -174,8 +187,8 @@ Trainer.prototype = {
 
                 // log
                 if (options) {
-                  if (options.customLog && options.customLog.every && iterations % options.customLog.every == 0)
-                    abort_training = options.customLog.do({
+                  if (this.schedule && this.schedule.every && iterations % this.schedule.every == 0)
+                    abort_training = this.schedule.do({
                       error: error,
                       iterations: iterations
                     });
@@ -261,7 +274,7 @@ Trainer.prototype = {
     var iterations = options.iterations || 100000;
     var rate = options.rate || .1;
     var log = options.log || 0;
-    var customLog = options.customLog || {};
+    var schedule = options.schedule || {};
 
     var trial = correct = i = j = success = 0,
       error = 1,
@@ -359,8 +372,8 @@ Trainer.prototype = {
       if (log && trial % log == 0)
         console.log("iterations:", trial, " success:", success, " correct:",
           correct, " time:", Date.now() - start, " error:", error);
-      if (customLog.do && customLog.every && trial % customLog.every == 0)
-        customLog.do({
+      if (schedule.do && schedule.every && trial % schedule.every == 0)
+        schedule.do({
           iterations: trial,
           success: success,
           error: error,
