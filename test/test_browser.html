@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>test</title>
+  <script src="../dist/synaptic.js"></script>
+</head>
+<body>
+
+</body>
+<script type="text/javascript">
+  var Neuron = synaptic.Neuron,
+    Layer = synaptic.Layer,
+    Network = synaptic.Network,
+    Trainer = synaptic.Trainer,
+    Architect = synaptic.Architect;
+
+  var myPerceptron = new Architect.Perceptron(2,3,1);
+  document.body.innerHTML += JSON.stringify(myPerceptron.trainer.XOR())+'<br>'
+  document.body.innerHTML += JSON.stringify(myPerceptron.trainer.XOR())+'<br>'
+
+  if(document.body.innerHTML.length > 0){
+    document.body.innerHTML += '<br>if you see this, then synaptic works'
+  }
+
+</script>
+</html>

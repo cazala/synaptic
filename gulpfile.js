@@ -30,6 +30,8 @@ gulp.task('debug', function () {
     .bundle()
     .pipe(source('synaptic.js'))
     .pipe(buffer())
+    .pipe(prepend(license))
+    .pipe(append(globals))
     .pipe(gulp.dest('./dist'));
 });
 
