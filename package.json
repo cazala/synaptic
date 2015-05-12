@@ -13,7 +13,8 @@
     "gulp-mocha": "*",
     "gulp-uglify": "*",
     "mocha": "*",
-    "vinyl-transform": "*"
+    "vinyl-source-stream": "*",
+    "vinyl-buffer": "*"
   },
   "repository": {
     "type": "git",
