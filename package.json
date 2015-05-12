@@ -16,7 +16,7 @@
     "gulp-util": "^3.0.4",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
-    "mocha": "*"
+    "mocha": "^2.2.4"
   },
   "repository": {
     "type": "git",
