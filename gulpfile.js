@@ -13,10 +13,22 @@ var append = require('gulp-insert').append;
 var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
 
+// redular build for web, easy to read
 gulp.task('default', function () {
   return browserify({ entries: ['./src/synaptic.js'] })
     .bundle()
     .pipe(source('synaptic.js'))
+    .pipe(buffer())
+    .pipe(prepend(license))
+    .pipe(append(globals))
+    .pipe(gulp.dest('./dist'));
+});
+
+// minified build for web
+gulp.task('min', function () {
+  return browserify({ entries: ['./src/synaptic.js'] })
+    .bundle()
+    .pipe(source('synaptic.min.js'))
     .pipe(buffer())
     .pipe(uglify())
     .pipe(prepend(license))
@@ -24,7 +36,7 @@ gulp.task('default', function () {
     .pipe(gulp.dest('./dist'));
 });
 
-// uncompressed build
+// uncompressed build for the web with sourcemaps
 gulp.task('debug', function () {
   return browserify({ entries: ['./src/synaptic.js'], debug: true })
     .bundle()
