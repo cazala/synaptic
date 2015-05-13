@@ -66,8 +66,9 @@ Now you can start to create networks, train them, or use built-in networks from 
 
 ###Gulp Tasks
 
-- **gulp** or **gulp build**: builds the source code from `/src` into the `/dist` directory (bundled and minified).
-- **gulp debug**: builds the source code from `/src` into the `/dist` directory (not minifed and with source maps for debugging).
+- **gulp**: builds the source code from `/src` into `/dist/synaptic.js`.
+- **gulp min**: builds and minifies the source code from `/src` into `/dist/synaptic.min.js`.
+- **gulp debug**: builds the source code from `/src` into `/dist/synaptic.js` with sourcemapas for debugging.
 - **gulp dev**: same as debug but it watches for changes in the source files and rebuilds when any change is detected.
 - **gulp test**: runs all the tests.
 
