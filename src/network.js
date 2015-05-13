@@ -407,7 +407,7 @@ Network.prototype = {
               $ node example.js > example.dot
               $ dot example.dot -Tpng > out.png
   */
-  toDotLang: function(edgeconnection) {
+  toDot: function(edgeconnection) {
     if (! typeof edgeconnection)
       edgeconnection = false;
     var code = "digraph nn {\n    rankdir = BT\n";
@@ -450,7 +450,10 @@ Network.prototype = {
       }
     }
     code += "}\n";
-    return code;
+    return {
+      code: code,
+      link: "https://chart.googleapis.com/chart?chl=" + escape(code.replace("/ /g", "+")) + "&cht=gv"
+    }
   },
 
   // returns a function that works as the activation of the network and can be used without depending on the library
