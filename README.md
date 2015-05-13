@@ -149,9 +149,9 @@ function LSTM(input, blocks, output)
 	var self = memoryCell.project(memoryCell);
 
 	// peepholes
-	memoryCell.project(inputGate,  Layer.connectionType.ONE_TO_ONE);
-	memoryCell.project(forgetGate, Layer.connectionType.ONE_TO_ONE);
-	memoryCell.project(outputGate, Layer.connectionType.ONE_TO_ONE);
+	memoryCell.project(inputGate);
+	memoryCell.project(forgetGate);
+	memoryCell.project(outputGate);
 
 	// gates
 	inputGate.gate(input, Layer.gateType.INPUT);
