@@ -53,7 +53,7 @@ Just include the file synaptic.js from `/dist` directory with a script tag in yo
 
 ###Usage
 
-```
+```javascript
 var synaptic = require('synaptic'); // this line is not needed in the browser
 var Neuron = synaptic.Neuron,
 	Layer = synaptic.Layer,
@@ -80,7 +80,7 @@ This is how you can create a simple **perceptron**:
 
 ![perceptron](http://www.codeproject.com/KB/dotnet/predictor/network.jpg).
 
-```
+```javascript
 function Perceptron(input, hidden, output)
 {
 	// create the layers
@@ -107,7 +107,7 @@ Perceptron.prototype.constructor = Perceptron;
 
 Now you can test your new network by creating a trainer and teaching the perceptron to learn an XOR
 
-```
+```javascript
 var myPerceptron = new Perceptron(2,3,1);
 var myTrainer = new Trainer(myPerceptron);
 
@@ -125,7 +125,7 @@ This is how you can create a simple **long short-term memory** network with inpu
 
 ![long short-term memory](http://people.idsia.ch/~juergen/lstmcell4.jpg)
 
-```
+```javascript
 function LSTM(input, blocks, output)
 {
 	// create the layers
