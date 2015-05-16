@@ -70,7 +70,7 @@ Now you can start to create networks, train them, or use built-in networks from 
 
 ###Gulp Tasks
 
-- **gulp**: builds the source code from `/src` into `/dist/synaptic.js`.
+- **gulp**: runs all the tests and builds both minified and unminified versions from the source into `/dist`.
 - **gulp min**: builds and minifies the source code from `/src` into `/dist/synaptic.min.js`.
 - **gulp debug**: builds the source code from `/src` into `/dist/synaptic.js` with sourcemaps.
 - **gulp dev**: same as debug but it watches for changes in the source files and rebuilds when any change is detected.
@@ -184,5 +184,7 @@ Multilayer LSTM network architectures.
 ##Contribute
 
 **Synaptic** is an Open Source project that started in Buenos Aires, Argentina. Anybody in the world is welcome to contribute to the development of the project.
+
+If you want to contribute feel free to send PR's, just make sure to run the default **gulp** task before, to run all the tests and build the web distribution files before submiting the request.
 
 <3
