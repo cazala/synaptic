@@ -185,6 +185,6 @@ Multilayer LSTM network architectures.
 
 **Synaptic** is an Open Source project that started in Buenos Aires, Argentina. Anybody in the world is welcome to contribute to the development of the project.
 
-If you want to contribute feel free to send PR's, just make sure to run the default **gulp** task before, to run all the tests and build the web distribution files before submiting the request.
+If you want to contribute feel free to send PR's, just make sure to run the default **gulp** task before submiting it. This way you'll run all the test specs and build the web distribution files.
 
 <3
