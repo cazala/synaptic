@@ -22,7 +22,6 @@ gulp.task('build', function () {
     .bundle()
     .pipe(source('synaptic.js'))
     .pipe(buffer())
-    .pipe(prepend(license))
     .pipe(append(globals))
     .pipe(gulp.dest('./dist'));
 });
