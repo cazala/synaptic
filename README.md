@@ -44,7 +44,9 @@ The source code of these demos can be found in [this branch](https://github.com/
 #####In node
 You can install synaptic with [npm](http://npmjs.org):
 
-`npm install synaptic --save`
+```cmd
+npm install synaptic --save
+```
 
 #####In the browser
 Just include the file synaptic.js from `/dist` directory with a script tag in your HTML:
