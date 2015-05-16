@@ -110,6 +110,7 @@ Trainer.prototype = {
     var iterations = bucketSize = 0;
     var input, output, target, currentRate;
     var length = set.length;
+    var abort_training = false;
 
     var start = Date.now();
 
