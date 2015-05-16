@@ -13,8 +13,11 @@ var append = require('gulp-insert').append;
 var source = require('vinyl-source-stream');
 var buffer = require('vinyl-buffer');
 
-// redular build for web, easy to read
-gulp.task('default', function () {
+// default task: runs all the tests, and builds all the files into dist (minified and unminifed)
+gulp.task('default', ['test', 'build', 'min']);
+
+// build source into /dist for the web
+gulp.task('build', function () {
   return browserify({ entries: ['./src/synaptic.js'] })
     .bundle()
     .pipe(source('synaptic.js'))
@@ -24,7 +27,7 @@ gulp.task('default', function () {
     .pipe(gulp.dest('./dist'));
 });
 
-// minified build for web
+// build source into /dist for web (minified)
 gulp.task('min', function () {
   return browserify({ entries: ['./src/synaptic.js'] })
     .bundle()
@@ -36,7 +39,7 @@ gulp.task('min', function () {
     .pipe(gulp.dest('./dist'));
 });
 
-// uncompressed build for the web with sourcemaps
+// build source into /dist with sourcemaps for debugging
 gulp.task('debug', function () {
   return browserify({ entries: ['./src/synaptic.js'], debug: true })
     .bundle()
@@ -47,7 +50,7 @@ gulp.task('debug', function () {
     .pipe(gulp.dest('./dist'));
 });
 
-// run tests with mocha
+// run all the tests with mocha
 gulp.task('test', function () {
     return gulp.src('test/synaptic.js', {read: false})
         .pipe(mocha());
