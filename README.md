@@ -49,7 +49,9 @@ You can install synaptic with [npm](http://npmjs.org):
 #####In the browser
 Just include the file synaptic.js from `/dist` directory with a script tag in your HTML:
 
-`<script src="synaptic.js"></script>`
+```html
+<script src="synaptic.js"></script>
+```
 
 ###Usage
 
