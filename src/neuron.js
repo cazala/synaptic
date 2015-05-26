@@ -289,9 +289,9 @@ Neuron.prototype = {
   reset: function() {
     this.clear();
 
-    for (var type in this.connection)
-      for (var connection in this.connection[type])
-        this.connection[type][connection].weight = Math.random() * .2 - .1;
+    for (var type in this.connections)
+      for (var connection in this.connections[type])
+        this.connections[type][connection].weight = Math.random() * .2 - .1;
     this.bias = Math.random() * .2 - .1;
 
     this.old = this.state = this.activation = 0;
