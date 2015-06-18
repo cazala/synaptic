@@ -14,11 +14,12 @@ var Perceptron = synaptic.Architect.Perceptron,
 
 var noRepeat = function(range, avoid) {
   var number = Math.random() * range | 0;
-  var used = false;
-  for (var i in avoid)
-    if (number == avoid[i])
-      used = true;
-  return used ? noRepeat(range, avoid) : number;
+  for (var i in avoid){
+    if (number == avoid[i]){
+      return noRepeat(range,avoid);
+    }
+  }
+  return number;
 };
 
 var equal = function(prediction, output) {
