@@ -16,7 +16,11 @@
     "gulp-util": "^3.0.4",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
-    "mocha": "^2.2.4"
+    "mocha": "^2.2.4",
+    "typescript": "~1.5.0",
+    "gulp-typescript": "*",
+    "merge2": "*",
+    "tsify": "*"
   },
   "repository": {
     "type": "git",

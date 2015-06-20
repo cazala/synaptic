@@ -1,0 +1,23 @@
+{
+	"compilerOptions": {
+        "module": "commonjs",
+        "preserveConstEnums": true,
+		"declaration": true,
+        "sourceMap": true,
+        "target": "ES5",
+        "outDir": "./"
+    },
+    "files": [
+        "src/synaptic.ts",
+        "src/squash.ts",
+        "src/neuron.ts",
+        "src/layer.ts",
+        "src/network.ts",
+        "src/trainer.ts",
+        "src/architect.ts",
+        "src/architect/Perceptron.ts",
+        "src/architect/LSTM.ts",
+        "src/architect/Liquid.ts",
+        "src/architect/Hopfield.ts"
+    ]
+}
