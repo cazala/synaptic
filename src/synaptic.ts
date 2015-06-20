@@ -40,7 +40,7 @@ module Synaptic {
 		[id: string] : T;
 	}
 	
-	var oldSynaptic = window && window['Synaptic'];
+	var oldSynaptic = typeof window != "undefined" && window && window['Synaptic'];
 	
 	export function ninja() {
       window['synaptic'] = oldSynaptic; 
