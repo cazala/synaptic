@@ -27,12 +27,11 @@ var tsProject = ts.createProject('tsconfig.json');
 gulp.task('node', function () {
     var tsResult = tsProject.src() // instead of gulp.src(...) 
         .pipe(sm.init())
-        .pipe(ts(tsProject))
-        ;
+        .pipe(ts(tsProject));
     
     return merge2([
-        tsResult.js.pipe(sm.write()).pipe(gulp.dest('.')),
-        tsResult.dts.pipe(gulp.dest('./dist'))
+        tsResult.js.pipe(sm.write()).pipe(gulp.dest('./node-dist')),
+        tsResult.dts.pipe(gulp.dest('./node-dist'))
     ]);
 });
 
@@ -82,5 +81,5 @@ gulp.task('test', ['node'], function () {
 
 // watch for changed and re-build (debug)
 gulp.task('dev', function () {
-   gulp.watch('./src/*.js', ['debug']);
+   gulp.watch('./src/*.ts', ['debug']);
 });

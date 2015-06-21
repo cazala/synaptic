@@ -2,5 +2,32 @@
     "version": "0.1.0",
     "command": "gulp",
     "isShellCommand": true,
-    "problemMatcher": "$tsc"
+    "tasks": [
+        {
+            "taskName": "node",
+            "problemMatcher": "$tsc"
+        },
+        {
+            "taskName": "test",
+            "isTestCommand": true,
+            "problemMatcher": "$tsc"
+        },
+        {
+            "isBuildCommand": true,
+            "taskName": "build",
+            "problemMatcher": "$tsc"
+        },
+        {
+            "taskName": "default",
+            "problemMatcher": "$tsc"
+        },
+        {
+            "taskName": "min",
+            "problemMatcher": "$tsc"
+        },
+        {
+            "taskName": "debug",
+            "problemMatcher": "$tsc"
+        }
+    ]
 }

@@ -76,6 +76,7 @@ Now you can start to create networks, train them, or use built-in networks from 
 - **gulp debug**: builds the bundle `/dist/synaptic.js` with sourcemaps.
 - **gulp dev**: same as `gulp debug`, but watches the source files and rebuilds when any change is detected.
 - **gulp test**: runs all the tests.
+- **gulp node**: builds the typescipt code into `/src` 
 
 ###Examples
 
