@@ -51,7 +51,7 @@ function blastoff()
 	{
 		// fade effect
 		ctx.globalAlpha=0.2;
-		ctx.fillStyle='rgb(244, 244, 244);';
+		ctx.fillStyle='#f4f4f4';
 		ctx.fillRect(0,0,world.width, world.height);
 		ctx.globalAlpha=1;
 
