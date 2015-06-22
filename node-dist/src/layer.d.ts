@@ -1,4 +1,5 @@
 import neuron = require('./neuron');
+import network = require('./network');
 import Synaptic = require('./synaptic');
 /*******************************************************************************************
                                             LAYER
@@ -8,10 +9,11 @@ export declare class Layer {
     label: string;
     connectedto: any[];
     size: number;
+    currentActivation: Float64Array;
     constructor(size: number, label?: string);
-    activate(input: any): any[];
-    propagate(rate: any, target: any): void;
-    project(layer: any, type?: any, weights?: any): Layer.LayerConnection;
+    activate(input?: Synaptic.INumericArray): Float64Array;
+    propagate(rate: number, target?: Synaptic.INumericArray): void;
+    project(layer: network.Network | Layer, type?: any, weights?: Synaptic.INumericArray): Layer.LayerConnection;
     gate(connection: any, type: any): void;
     selfconnected(): boolean;
     connected(layer: any): string;

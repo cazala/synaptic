@@ -1,4 +1,4 @@
-import net =require('./network');
+import net = require('./network');
 
 /*******************************************************************************************
                                         TRAINER
@@ -86,14 +86,20 @@ export class Trainer {
       error /= set.length;
 
       if (options) {
-        if (this.schedule && this.schedule.every && iterations %
-          this.schedule.every == 0)
+        if (this.schedule && this.schedule.every && iterations % this.schedule.every == 0) {
+
           abort_training = this.schedule.do({
             error: error,
             iterations: iterations,
             rate: currentRate
           });
-        else if (options.log && iterations % options.log == 0) {
+
+          requestAnimationFrame(() => {
+            this.iterations -= iterations;
+            this.train(set, options);
+          });
+          return;
+        } else if (options.log && iterations % options.log == 0) {
           console.log('iterations', iterations, 'error', error, 'rate', currentRate);
         };
         if (options.shuffle)
@@ -379,7 +385,7 @@ export class Trainer {
       if (log && trial % log == 0)
         console.log("iterations:", trial, " success:", success, " correct:",
           correct, " time:", Date.now() - start, " error:", error);
-      if (schedule.do && schedule.every && trial % schedule.every == 0)
+      if (schedule.do && schedule.every && trial % schedule.every == 0) {
         schedule.do({
           iterations: trial,
           success: success,
@@ -387,6 +393,14 @@ export class Trainer {
           time: Date.now() - start,
           correct: correct
         });
+
+        requestAnimationFrame(() => {
+          this.iterations -= trial;
+          this.DSR(options);
+        });
+
+        return;
+      }
     }
 
     return {

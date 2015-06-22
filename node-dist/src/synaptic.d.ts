@@ -21,6 +21,10 @@ declare module Synaptic {
         propagation_sentences?: any[];
         layers?: any;
     }
+    interface INumericArray {
+        [index: number]: number;
+        length: number;
+    }
     var Neuron: typeof neuron.Neuron;
     var Layer: typeof layer.Layer;
     var Network: typeof network.Network;

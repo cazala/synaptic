@@ -62,7 +62,7 @@ gulp.task('min', function () {
 });
 
 // build source into /dist with sourcemaps for debugging
-gulp.task('debug', ['tsc'], function () {
+gulp.task('debug', function () {
   return browserify({ debug: true })
     .add('./src/synaptic.ts')
     .plugin('tsify')

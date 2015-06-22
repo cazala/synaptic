@@ -24,12 +24,11 @@ export class Network {
 				hidden: {},
 				output: null
 			};
-			this.optimized = null;
 		}
 	}
 
 	// feed-forward activation of all the layers to produce an ouput
-	activate(input) {
+	activate(input : Synaptic.INumericArray) {
 
 		if (this.optimized === false) {
 			this.layers.input.activate(input);
@@ -45,7 +44,7 @@ export class Network {
 	}
 
 	// back-propagate the error thru the network
-	propagate(rate: number, target?) {
+	propagate(rate: number, target?: Synaptic.INumericArray) {
 
 		if (this.optimized === false) {
 			this.layers.output.propagate(rate, target);

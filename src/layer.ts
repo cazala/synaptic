@@ -10,12 +10,16 @@ export class Layer {
 		label: string = null;
 		connectedto = [];
 		size = 0;
+		
+		currentActivation: Float64Array;
 
 		constructor(size: number, label?: string) {
 			this.size = size | 0;
 			this.list = [];
 			this.label = label || null;
 			this.connectedto = [];
+			
+			this.currentActivation = new Float64Array(size);
 
 			while (size--) {
 				var theNeuron = new neuron.Neuron();
@@ -25,32 +29,31 @@ export class Layer {
 
 	
 		// activates all the neurons in the layer
-		activate(input) {
+		activate(input?: Synaptic.INumericArray) : Float64Array {
 
-			var activations = [];
+			if(this.currentActivation.length != this.list.length)
+				this.currentActivation = new Float64Array(this.list.length);
+
+			var activationIndex = 0;
 
 			if (typeof input != 'undefined') {
 				if (input.length != this.size)
 					throw "INPUT size and LAYER size must be the same to activate!";
 
 				for (var id in this.list) {
-					var neuron = this.list[id];
-					var activation = neuron.activate(input[id]);
-					activations.push(activation);
+					this.currentActivation[activationIndex++] = this.list[id].activate(input[id]);
 				}
 			} else {
 				for (var id in this.list) {
-					var neuron = this.list[id];
-					var activation = neuron.activate();
-					activations.push(activation);
+					this.currentActivation[activationIndex++] = this.list[id].activate();
 				}
 			}
-			return activations;
+			
+			return this.currentActivation;
 		}
 
 		// propagates the error on all the neurons of the layer
-		propagate(rate, target) {
-
+		propagate(rate: number, target? : Synaptic.INumericArray) {
 			if (typeof target != 'undefined') {
 				if (target.length != this.size)
 					throw "TARGET size and LAYER size must be the same to propagate!";
@@ -68,10 +71,10 @@ export class Layer {
 		}
 
 		// projects a connection from this layer to another one
-		project(layer, type?, weights?) {
+		project(layer : network.Network | Layer, type?, weights? : Synaptic.INumericArray) {
 
 			if (layer instanceof network.Network)
-				layer = layer.layers.input;
+				layer = (<network.Network>layer).layers.input;
 
 			if (layer instanceof Layer) {
 				if (!this.connected(layer))

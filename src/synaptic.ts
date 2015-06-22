@@ -60,6 +60,11 @@ module Synaptic {
 		layers?: any;
 	}
 	
+	export interface INumericArray {
+	  [index: number] : number;
+	  length : number;
+	}
+	
 	export var Neuron = neuron.Neuron;
 	export var Layer = layer.Layer;
 	export var Network = network.Network;
