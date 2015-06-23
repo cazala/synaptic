@@ -512,6 +512,7 @@ var Head = (function () {
         Utils.sharpArray(this.w_weightings, this.wc_focusedWeights, this.Y_focus);
         /// we got wt!
         // since ∑ w = 1, we have to softmax the array
+        Utils.softMax(this.w_weightings);
         // reading
         for (var index = 0; index < this.memory.blocks; index++) {
             this.readVector[index] = 0;
@@ -2132,7 +2133,6 @@ var Trainer = (function () {
     }
     // trains any given set to a network
     Trainer.prototype.train = function (set, options) {
-        var _this = this;
         var error = 1;
         var iterations = 0, bucketSize = 0;
         var abort_training = false;
@@ -2192,11 +2192,6 @@ var Trainer = (function () {
                         iterations: iterations,
                         rate: currentRate
                     });
-                    setTimeout(function () {
-                        _this.iterations -= iterations;
-                        _this.train(set, options);
-                    });
-                    return;
                 }
                 else if (options.log && iterations % options.log == 0) {
                     console.log('iterations', iterations, 'error', error, 'rate', currentRate);
@@ -2357,7 +2352,6 @@ var Trainer = (function () {
     };
     // trains the network to pass a Distracted Sequence Recall test
     Trainer.prototype.DSR = function (options) {
-        var _this = this;
         options = options || {};
         var targets = options.targets || [2, 4, 7, 8];
         var distractors = options.distractors || [3, 5, 6, 9];
@@ -2458,11 +2452,6 @@ var Trainer = (function () {
                     time: Date.now() - start,
                     correct: correct
                 });
-                setTimeout(function () {
-                    _this.iterations -= trial;
-                    _this.DSR(options);
-                });
-                return;
             }
         }
         return {

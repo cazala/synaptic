@@ -373,6 +373,7 @@ export class Head {
     /// we got wt!
     
     // since ∑ w = 1, we have to softmax the array
+    Utils.softMax(this.w_weightings);
     
     // reading
     for (var index = 0; index < this.memory.blocks; index++) {

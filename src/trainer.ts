@@ -93,12 +93,7 @@ export class Trainer {
             iterations: iterations,
             rate: currentRate
           });
-
-          requestAnimationFrame(() => {
-            this.iterations -= iterations;
-            this.train(set, options);
-          });
-          return;
+     
         } else if (options.log && iterations % options.log == 0) {
           console.log('iterations', iterations, 'error', error, 'rate', currentRate);
         };
@@ -394,12 +389,6 @@ export class Trainer {
           correct: correct
         });
 
-        requestAnimationFrame(() => {
-          this.iterations -= trial;
-          this.DSR(options);
-        });
-
-        return;
       }
     }
 
