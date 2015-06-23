@@ -130,7 +130,7 @@
 				ctx.fillStyle = 'black';
 				ctx.fillRect(0,0,512,128);
 				
-				var memory = LSTM.memoryTape.data;
+				var memory = LSTM.data;
 				
 				for (var memBlock = 0; memBlock < memory.length; memBlock++) {
 					var mem = memory[memBlock];
@@ -176,7 +176,9 @@
 					var outputs = targets.length;
 					var hidden = inputs * .8 | 0;
 					
-					LSTM = new Architect.MemoryBlock(inputs,10,hidden,outputs);
+					LSTM = new Architect.NTM(inputs,outputs,symbols,symbols,1,hidden);
+					
+
 
 					var results = LSTM.trainer.DSR({
 						targets: targets,
@@ -189,7 +191,7 @@
 							every: 2,
 							do: function(obj){
 								drawMemory();
-								console.log('Mem index: ', LSTM.memoryTape.memoryAttentionLocation, LSTM.memoryTape.memoryAttentionWeight, ' Error: ' + obj.error);
+								console.log(' Error: ' + obj.error);
 							}
 						}
 					});

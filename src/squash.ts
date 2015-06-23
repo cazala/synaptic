@@ -24,3 +24,9 @@ export function IDENTITY(x: number, derivate?: boolean) {
 export function HLIM(x: number, derivate?: boolean) {
 	return derivate ? 1 : +(x > 0);
 }
+
+export function SOFTPLUS(x: number, derivate?: boolean) {
+	if (derivate)
+		return 1 - 1 / 1 + Math.exp(x);
+	return Math.log(1 + Math.exp(x));
+}

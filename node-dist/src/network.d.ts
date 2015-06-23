@@ -7,7 +7,7 @@ export declare class Network {
         hidden: {};
         output: any;
     };
-    constructor(layers: any);
+    constructor(layers?: any);
     activate(input: Synaptic.INumericArray): any;
     propagate(rate: number, target?: Synaptic.INumericArray): void;
     project(unit: any, type: any, weights: any): any;

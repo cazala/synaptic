@@ -17,7 +17,7 @@ export class Network {
 		hidden: {},
 		output: null
 	};
-	constructor(layers) {
+	constructor(layers?) {
 		if (typeof layers != 'undefined') {
 			this.layers = layers || {
 				input: null,
