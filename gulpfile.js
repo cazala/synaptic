@@ -79,6 +79,13 @@ gulp.task('test', ['node'], function () {
         .pipe(mocha());
 });
 
+// run all the tests with mocha
+gulp.task('test-ntm', ['node'], function () {
+    return gulp.src('test/ntm.js', {read: false})
+        .pipe(mocha());
+});
+
+
 // watch for changed and re-build (debug)
 gulp.task('dev', function () {
    gulp.watch('./src/*.ts', ['debug']);

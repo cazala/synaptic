@@ -117,6 +117,8 @@
 			var symbols = targets.length + distractors.length + prompts.length;
 			var json = null;
 			
+			var i = 0;
+			
 			var canv = null;
 			var ctx = null;
 
@@ -185,7 +187,7 @@
 						distractors: distractors,
 						prompts: prompts,
 						length: length,
-						iterations: 1000,
+						iterations: 100,
 						rate: .17,
 						schedule: {
 							every: 2,
@@ -255,7 +257,7 @@
 			var next = function(){
 				// generate input from sequence
 				var input = [];
-				for (j = 0; j < symbols; j++)
+				for (var j = 0; j < symbols; j++)
 					input[j] = 0;
 				input[sequence[symbol]] = 1;
 
@@ -274,7 +276,7 @@
 				var prediction = LSTM.activate(input);
 				var ok = equal(prediction, output);
 				if (ok)
-					if (i < sequenceLength)
+					if (symbol < sequenceLength)
 						distractorsCorrect++;
 					else
 						targetsCorrect++;

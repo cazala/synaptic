@@ -6,7 +6,27 @@ import Synaptic = require('../synaptic');
 import Squash = require('../squash');
 
 export class Utils {
-  static softMax<T extends Synaptic.INumericArray>(array: T, sharpen = 1): T {
+  static softMax<T extends Synaptic.INumericArray>(array: T): T {
+    // for all i ∈ array
+    // sum = ∑ array[n]^e
+    // i = î^e / sum
+    // where the result ∑ array[0..n] = 1
+
+    if (!array.length) return array;
+
+    var sum = 0;
+
+    // sum = ∑ array[n]^e
+    for (var i = 0; i < array.length; i++) {
+      array[i] = Math.exp(array[i]);
+      sum += array[i];
+    }
+
+    for (var i = 0; i < array.length; i++) array[i] /= sum;
+
+    return array;
+  }
+  static softMaxSharpen<T extends Synaptic.INumericArray>(array: T, sharpen = 1): T {
     // for all i ∈ array
     // sum = ∑ array[n]^e
     // i = î^e / sum
@@ -33,6 +53,7 @@ export class Utils {
 
     return array;
   }
+
 
   static getCosineSimilarity(arrayA: Synaptic.INumericArray, arrayB: Synaptic.INumericArray): number {
     // http://en.wikipedia.org/wiki/Cosine_similarity
@@ -107,23 +128,70 @@ export class Utils {
     return wn;
   }
 
-  static vectorShifting(wg: Float64Array, shiftings: Synaptic.INumericArray) {
+  static normalizeShift(shift: Float64Array) {
+    var sum = 0;
+    for (var i = 0; i < shift.length; i++) {
+      sum += shift[i];
+    }
+    for (var j = 0; j < shift.length; j++) {
+      shift[j] /= sum;
+    }
+  }
+
+  static vectorInvertedShifting(wg: Float64Array, shiftings: Synaptic.INumericArray) {
     // w~ 3.3.2 (8)
 
-    var wn = new Float64Array(wg.length);
+    
+    var ret = new Float64Array(wg.length);
 
-    for (var i = 0; i < wn.length; i++) {
-      var acum = 0;
-      for (var j = 0; j < wn.length; j++) {
-        if ((i - j) < 0)
-          acum += wg[j] * shiftings[shiftings.length - Math.abs(i - j)];
-        else
-          acum += wg[j] * shiftings[(i - j) % shiftings.length];
+    var corrimientoIndex = -((shiftings.length - 1) / 2) | 0;
+
+    var circulantMatrix = Utils.buildCirculantMatrix(wg.length);
+
+    for (var i = 0; i < wg.length; i++) {
+      for (var x = 0; x < wg.length; x++) {
+        var tmp = 0;
+
+        for (var shift = 0; shift < shiftings.length; shift++) {
+
+          var matRow = i - x + corrimientoIndex + shift;
+
+          while (matRow < 0)
+            matRow += wg.length;
+
+          matRow %= wg.length;
+
+          tmp += wg[circulantMatrix[x][matRow]] * shiftings[shift];
+        }
+
+        ret[i] = tmp;
       }
-      wn[i] = acum;
+
     }
 
-    wg.set(wn);
+    wg.set(ret);
+  }
+
+  static initRandomSoftmaxArray(array: Float64Array): void {
+    for (var i = 0; i < array.length; i++) {
+      array[i] = Math.random();
+    }
+
+    Utils.softMax(array);
+  }
+
+  static buildCirculantMatrix(length: number, offset: number = 0): Float64Array[] {
+    var ret = [];
+
+    for (var i = 0; i < length; i++) {
+      var arr = new Float64Array(length);
+      ret.push(arr);
+      for (var n = 0; n < length; n++) {
+        arr[n] = ((i + n) % length);
+      }
+    }
+
+    return ret;
   }
 }
 
@@ -131,86 +199,86 @@ export class Utils {
 
 export class NTM extends network.Network {
   trainer: trainer.Trainer;
-  
+
   data: Float64Array[];
 
   blockWidth: number;
   blocks: number;
 
   heads: Head[] = new Array();
-  
+
   inputValues: Float64Array;
-  
+
   inputLayer: Layer.Layer;
   hiddenLayer: Layer.Layer;
   outputLayer: Layer.Layer;
-  
+
   dirty = false;
 
   constructor(inputs: number, outputs: number, memBlocks: number, blockWidth: number, heads: number, hiddenSize: number) {
     // build the memory
     
     super();
-    
+
     this.trainer = new trainer.Trainer(this);
-    
+
     this.blocks = memBlocks;
     this.blockWidth = blockWidth;
 
     this.data = new Array(this.blocks);
+    for (var index = 0; index < this.data.length; index++) {
+      this.data[index] = new Float64Array(blockWidth);
+
+    }
 
     this.clean();
     
     // build the network
     
     var inputLength = inputs + heads * memBlocks;
-    
+
     this.inputValues = new Float64Array(inputLength);
-    
+
     this.layers.input = this.inputLayer = new Layer.Layer(inputLength);
     this.hiddenLayer = new Layer.Layer(hiddenSize);
     this.layers.output = this.outputLayer = new Layer.Layer(outputs);
-    
-    
+
+
 
     this.inputLayer.project(this.hiddenLayer, Layer.Layer.connectionType.ALL_TO_ALL);
     this.hiddenLayer.project(this.outputLayer, Layer.Layer.connectionType.ALL_TO_ALL);
-    
+
     var inputCounter = inputs - 1;
-    
+
     for (var headIndex = 0; headIndex < heads; headIndex++) {
       this.addHead(this.inputValues.subarray(inputCounter, inputCounter + memBlocks));
       inputCounter += memBlocks;
     }
-    
+
     this.optimized = false;
   }
-  
-  clean(){
+
+  clean() {
     for (var location = 0; location < this.blocks; location++) {
-      var array = this.data[location] = new Float64Array(this.blockWidth);
-      for (var i = 0; i < array.length; i++) {
-        array[i] = Math.random();
-      }
-      Utils.softMax(array);
+      Utils.initRandomSoftmaxArray(this.data[location]);
     }
     this.dirty = false;
   }
-  
-  activate(input: Synaptic.INumericArray){
+
+  activate(input: Synaptic.INumericArray) {
     this.inputValues.set(<any>input);
-    
+
     this.inputLayer.activate(this.inputValues);
     this.hiddenLayer.activate();
-    
+
     this.doTimeStep();
-    
+
     return this.outputLayer.activate();
   }
-  
-  propagate(rate: number, target: Synaptic.INumericArray){
+
+  propagate(rate: number, target: Synaptic.INumericArray) {
     this.outputLayer.propagate(rate, target);
-    for(var i = this.heads.length - 1; i >= 0; i--){
+    for (var i = this.heads.length - 1; i >= 0; i--) {
       this.heads[i].layer.propagate(rate);
     }
     this.hiddenLayer.propagate(rate);
@@ -260,20 +328,11 @@ export class NTM extends network.Network {
   }
 }
 
-function normalizeShift(shift: Float64Array) {
 
-        var sum = 0;
-        for (var i = 0; i < shift.length; i++) {
-            sum += shift[i];
-        }
-        for (var j = 0; j < shift.length; j++) {
-            shift[j] /= sum;
-        }
-    }
 
 export class Head {
   static ADDITIONAL_INPUT_VALUES = 3;
-  
+
   memory: NTM;
 
   w_weightings: Float64Array;
@@ -288,71 +347,63 @@ export class Head {
   readVector: Float64Array;
   ß_keyStrength: number;
   prevFocus: number = 1;
-  
+
+  shiftLength: number;
+
   layer: Layer.Layer;
+
+  circulantMatrix: Float64Array[];
 
   constructor(memory: NTM, destinationArray?: Float64Array) {
     this.memory = memory;
     this.wc_focusedWeights = new Float64Array(this.memory.blocks);
     this.w_weightings = new Float64Array(this.memory.blocks);
-    this.s_shiftingVector = new Float64Array(this.memory.blocks);
+
+    Utils.initRandomSoftmaxArray(this.w_weightings);
+
+    this.shiftLength = 3; //this.memory.blocks;
+
+    this.s_shiftingVector = new Float64Array(this.shiftLength);
     this.k_keys = new Float64Array(this.memory.blockWidth);
     this.ß_keyStrength = 0;
     this.eraseGate = new Float64Array(this.memory.blocks);
     this.addGate = new Float64Array(this.memory.blocks);
     this.readVector = destinationArray || new Float64Array(this.memory.blocks);
-    
-    this.layer = new Layer.Layer(this.memory.blockWidth * 4 + Head.ADDITIONAL_INPUT_VALUES);
-    
+
+    this.layer = new Layer.Layer(this.memory.blockWidth + this.memory.blocks * 3 + Head.ADDITIONAL_INPUT_VALUES + this.shiftLength);
+
     this.memory.hiddenLayer.project(this.layer, Layer.Layer.connectionType.ALL_TO_ALL);
     this.layer.project(this.memory.outputLayer, Layer.Layer.connectionType.ALL_TO_ALL);
-  }
-  
-  
 
-  doTimeStep() {
-    var activation = this.layer.activate();
-    
+    this.circulantMatrix = Utils.buildCirculantMatrix(this.memory.blocks);
+  }
+
+  private readParams(activation: Float64Array) {
+
     this.ß_keyStrength = Squash.SOFTPLUS(activation[0]);
-    this.g_interpolation = Squash.LOGISTIC(activation[1], true);
-    this.Y_focus = Math.exp(activation[2]) + 10;
-    
+    this.g_interpolation = Squash.LOGISTIC(activation[1]);
+    this.Y_focus = Math.log(Math.exp(activation[2] + 1)) + 1;//Squash.SOFTPLUS(activation[2]) + 1;
+
     var startAt = 3;
     for (var k = 0; k < this.k_keys.length; k++) {
       this.k_keys[k] = this.layer.list[k + startAt].activation;
     }
-    
-    startAt += this.k_keys.length;
-    for (var k = 0; k < this.k_keys.length; k++) {
-      this.addGate[k] = this.layer.list[k + startAt].derivative;
-    }
-   
-    startAt += this.k_keys.length; 
-    for (var k = 0; k < this.k_keys.length; k++) {
-      this.eraseGate[k] = this.layer.list[k + startAt].activation;
-    }
-    
 
     startAt += this.k_keys.length;
-    
-    
-    //if(this.memory.dirty){
-      for (var k = 0; k < this.k_keys.length; k++) {
-        this.s_shiftingVector[k] = this.layer.list[k + startAt].activation; 
-      }
-    /*} else {
-      this.prevFocus++;
-      this.prevFocus = this.prevFocus % this.k_keys.length;
-      
-      for (var k = 0; k < this.k_keys.length; k++) {
-        this.s_shiftingVector[k] = 0; 
-      }
-      
-      this.s_shiftingVector[this.prevFocus] = 1; 
-    }*/
-    
-    
-    
+    for (var k = 0; k < this.addGate.length; k++) {
+      this.addGate[k] = this.layer.list[k + startAt].derivative;
+    }
+
+    startAt += this.addGate.length;
+    for (var k = 0; k < this.eraseGate.length; k++) {
+      this.eraseGate[k] = Squash.LOGISTIC(this.layer.list[k + startAt].activation);
+    }
+
+    startAt += this.eraseGate.length;
+    for (var k = 0; k < this.shiftLength; k++) {
+      this.s_shiftingVector[k] = this.layer.list[k + startAt].activation;
+    }
+
     var M = this.memory.data;
     
     // focus by content, obtains an array of similarity indexes for each memoryBlock
@@ -363,17 +414,27 @@ export class Head {
     Utils.interpolateArray(this.wc_focusedWeights, this.w_weightings, this.g_interpolation);
     
     // convolutional shift
-    Utils.softMax(this.s_shiftingVector, 10);
-    Utils.vectorShifting(this.wc_focusedWeights, this.s_shiftingVector);
-    
+    this.doShiftings();
      
     // sharpening
     Utils.sharpArray(this.w_weightings, this.wc_focusedWeights, this.Y_focus);
     
-    /// we got wt!
-    
     // since ∑ w = 1, we have to softmax the array
     Utils.softMax(this.w_weightings);
+    
+    /// we got wt!
+  }
+
+  doShiftings() {
+    Utils.softMax(this.s_shiftingVector);
+
+    Utils.vectorInvertedShifting(this.wc_focusedWeights, this.s_shiftingVector);
+  }
+
+  doTimeStep() {
+    var activation = this.layer.activate();
+
+    this.readParams(activation);
     
     // reading
     for (var index = 0; index < this.memory.blocks; index++) {

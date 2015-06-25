@@ -3,12 +3,16 @@ import trainer = require('../trainer');
 import Layer = require('../layer');
 import Synaptic = require('../synaptic');
 export declare class Utils {
-    static softMax<T extends Synaptic.INumericArray>(array: T, sharpen?: number): T;
+    static softMax<T extends Synaptic.INumericArray>(array: T): T;
+    static softMaxSharpen<T extends Synaptic.INumericArray>(array: T, sharpen?: number): T;
     static getCosineSimilarity(arrayA: Synaptic.INumericArray, arrayB: Synaptic.INumericArray): number;
     static interpolateArray(output_inputA: Synaptic.INumericArray, inputB: Synaptic.INumericArray, g: any): Synaptic.INumericArray;
     static sharpArray(output: Synaptic.INumericArray, wn: Synaptic.INumericArray, Y: number): void;
     static scalarShifting(wg: Synaptic.INumericArray, shiftScalar: number): Float64Array;
-    static vectorShifting(wg: Float64Array, shiftings: Synaptic.INumericArray): void;
+    static normalizeShift(shift: Float64Array): void;
+    static vectorInvertedShifting(wg: Float64Array, shiftings: Synaptic.INumericArray): void;
+    static initRandomSoftmaxArray(array: Float64Array): void;
+    static buildCirculantMatrix(length: number, offset?: number): Float64Array[];
 }
 export declare class NTM extends network.Network {
     trainer: trainer.Trainer;
@@ -45,7 +49,11 @@ export declare class Head {
     readVector: Float64Array;
     ß_keyStrength: number;
     prevFocus: number;
+    shiftLength: number;
     layer: Layer.Layer;
+    circulantMatrix: Float64Array[];
     constructor(memory: NTM, destinationArray?: Float64Array);
+    private readParams(activation);
+    doShiftings(): void;
     doTimeStep(): void;
 }
