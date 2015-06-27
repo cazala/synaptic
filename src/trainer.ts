@@ -95,7 +95,7 @@ export class Trainer {
           });
      
         } else if (options.log && iterations % options.log == 0) {
-          console.log('iterations', iterations, 'error', error, 'rate', currentRate);
+          console.log('iterations', iterations, 'error', error, 'rate', currentRate, 'T:', target, 'O:', output);
         };
         if (options.shuffle)
           shuffle(set);
@@ -605,6 +605,12 @@ export module Trainer {
       var crossentropy = 0;
       for (var i in output)
         crossentropy -= (target[i] * Math.log(output[i] + 1e-15)) + ((1 - target[i]) * Math.log((1 + 1e-15) - output[i])); // +1e-15 is a tiny push away to avoid Math.log(0)
+      return crossentropy;
+    },
+    CROSS_ENTROPY_SOFTMAX: function(target, output) {
+      var crossentropy = 0;
+      for (var i in output)
+        crossentropy -= target[i] * Math.log(output[i] + 1e-15);
       return crossentropy;
     },
     MSE: function(target, output) {

@@ -32,6 +32,7 @@ import neuron = require('./neuron');
 import trainer = require('./trainer');
 import architect = require('./architect');
 import squash = require('./squash');
+import utils = require('./utils');
 
 declare var window;
 
@@ -71,6 +72,7 @@ module Synaptic {
 	export var Trainer = trainer.Trainer;
 	export var Squash = squash;
 	export var Architect = architect;
+	export var Utils = utils.Utils;
 }
 
 export = Synaptic;

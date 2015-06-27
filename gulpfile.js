@@ -30,8 +30,8 @@ gulp.task('node', function () {
         .pipe(ts(tsProject));
     
     return merge2([
-        tsResult.js.pipe(sm.write()).pipe(gulp.dest('./node-dist')),
-        tsResult.dts.pipe(gulp.dest('./node-dist'))
+        tsResult.js.pipe(sm.write()).pipe(gulp.dest('./dist')),
+        tsResult.dts.pipe(gulp.dest('./dist'))
     ]);
 });
 

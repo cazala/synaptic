@@ -1,7 +1,7 @@
 // import
 
 var assert = require('assert'),
-  Utils = require('../node-dist/src/architect/NTM').Utils;
+  Utils = require('../dist/src/utils').Utils;
 
 
 // utils
@@ -84,7 +84,6 @@ describe("NTM Utils", function() {
     
     fixedArray.set([0,0,0,0,1]);
     Utils.vectorInvertedShifting(fixedArray, [0, 1, 0]);
-    console.log('0', fixedArray);
     assert.deepEqual(fixedArray, [0,0,0,0,1], 'Unchanged shiftings');
     
     fixedArray.set([0,0,0,0,1]);
@@ -93,44 +92,36 @@ describe("NTM Utils", function() {
     
     fixedArray.set([0,0,0,0,1]);
     Utils.vectorInvertedShifting(fixedArray, [1, 0, 0]);
-    console.log('+1', fixedArray);
     assert.deepEqual(fixedArray, [1,0,0,0,0], 'Plus one shift');
     
     fixedArray.set([0,0,0,0,1]);
     Utils.vectorInvertedShifting(fixedArray, [0, 0, 1]);
-    console.log('-1', fixedArray);
     assert.deepEqual(fixedArray, [0,0,0,1,0], 'Minus one shift');
 
     fixedArray.set([1,0,0,0,2]);
     Utils.vectorInvertedShifting(fixedArray, [1, 0, 0]);
-    console.log('Valued', fixedArray);
     assert.deepEqual(fixedArray, [2,1,0,0,0], 'Plus one shift, two values');
     
     fixedArray.set([1,1,1,1,1]);
     Utils.vectorInvertedShifting(fixedArray, [1, 1, 1]);
-    console.log('Mixing values', fixedArray);
     assert.deepEqual(fixedArray, [3,3,3,3,3], 'Mixing three values');
 
     fixedArray.set([1,1,1,1,1]);
     Utils.vectorInvertedShifting(fixedArray, [1, 1, 0]);
-    console.log('Mixing values', fixedArray);
     assert.deepEqual(fixedArray, [2,2,2,2,2], 'Mixing two values');
     
     fixedArray.set([1,1,1,1,1]);
     Utils.vectorInvertedShifting(fixedArray, [.5, 1, 0.5]);
-    console.log('Mixing values', fixedArray);
     assert.deepEqual(fixedArray, [2,2,2,2,2], 'Mixing threeº values');
     
     
     fixedArray.set([1,1,1,1,1]);
     Utils.vectorInvertedShifting(fixedArray, [.5, .5, 1, .5, .5]);
-    console.log('Mixing values', fixedArray);
     assert.deepEqual(fixedArray, [3,3,3,3,3], 'Mixing five values');
-    
-    
-    
-    
-    
-    
+
+    fixedArray.set([1,2,1,3,1]);
+    Utils.vectorInvertedShifting(fixedArray, [.5, 0, .5]);
+    assert.deepEqual(fixedArray, [1.5,1,2.5,1,2], 'Mixing five values');
+
   });
 });

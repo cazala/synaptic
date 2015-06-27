@@ -21,7 +21,7 @@ export class Network {
 		if (typeof layers != 'undefined') {
 			this.layers = layers || {
 				input: null,
-				hidden: {},
+				hidden: [],
 				output: null
 			};
 		}

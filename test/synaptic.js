@@ -1,7 +1,8 @@
 // import
 
 var assert = require('assert'),
-  synaptic = require('../node-dist/src/synaptic');
+  synaptic = require('../dist/src/synaptic'),
+  softMaxLayer = require('../dist/src/softmaxLayer');
 
 var Perceptron = synaptic.Architect.Perceptron,
   LSTM = synaptic.Architect.LSTM,
@@ -194,6 +195,82 @@ describe("Perceptron - XOR", function() {
 
     assert.equal(test11, 0, "[1,1] did not output 0");
   });
+});
+
+describe("Perceptron - XOR Softmax", function() {
+
+
+
+    var input = new synaptic.Layer(2);
+    var hidden = new softMaxLayer.SoftMaxLayer(4);
+    var output = new synaptic.Layer(2);
+
+    // generate hidden layers
+    input.project(hidden);
+    hidden.project(output);
+  
+    // set layers of the neural network
+      
+    var perceptron = new synaptic.Network({
+      input: input,
+      hidden: [hidden],
+      output: output
+    });
+  
+    // trainer for the network
+    perceptron.trainer = new synaptic.Trainer(perceptron);
+    perceptron.optimized = false;
+  
+
+    var trainingSet = [
+    {
+      input: [0,0],
+      output: [0,1]
+    }, {
+      input: [1,1],
+      output: [0,1]
+    },
+    {
+      input: [0,1],
+      output: [1,0]
+    }, {
+      input: [1,0],
+      output: [1,0]
+    }
+    ];
+  
+    perceptron.trainer.train(trainingSet, { 
+      log: true,
+      rate: [0.1, 0.01,0.007, 0.003,0.001,0.0005],
+      cost: synaptic.Trainer.cost.CROSS_ENTROPY,
+      error: 0.001,
+      iterations: 100000
+    });
+  
+    var test00 = Math.round(perceptron.activate([0, 0])[0]);
+    
+    it("input: [0,0] output: " + test00, function() {
+  
+      assert.equal(test00, 0, "[0,0] did not output 0");
+    });
+  
+    var test01 = Math.round(perceptron.activate([0, 1])[0]);
+    it("input: [0,1] output: " + test01, function() {
+  
+      assert.equal(test01, 1, "[0,1] did not output 1");
+    });
+  
+    var test10 = Math.round(perceptron.activate([1, 0])[0]);
+    it("input: [1,0] output: " + test10, function() {
+  
+      assert.equal(test10, 1, "[1,0] did not output 1");
+    });
+  
+    var test11 = Math.round(perceptron.activate([1, 1])[0]);
+    it("input: [1,1] output: " + test11, function() {
+  
+      assert.equal(test11, 0, "[1,1] did not output 0");
+    });
 });
 
 describe("LSTM - Discrete Sequence Recall", function() {
