@@ -20,7 +20,6 @@
         "src/architect/Perceptron.ts",
         "src/architect/LSTM.ts",
         "src/architect/Liquid.ts",
-        "src/architect/Hopfield.ts",
-        "src/architect/NTM.ts"
+        "src/architect/Hopfield.ts"
     ]
 }

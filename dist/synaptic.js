@@ -3,14 +3,12 @@ var hopfield = require('./architect/Hopfield');
 var lstm = require('./architect/LSTM');
 var lsm = require('./architect/Liquid');
 var perceptron = require('./architect/Perceptron');
-var mb = require('./architect/NTM');
 exports.LSTM = lstm.LSTM;
 exports.Liquid = lsm.Liquid;
 exports.Hopfield = hopfield.Hopfield;
 exports.Perceptron = perceptron.Perceptron;
-exports.NTM = mb.NTM;
 
-},{"./architect/Hopfield":2,"./architect/LSTM":3,"./architect/Liquid":4,"./architect/NTM":5,"./architect/Perceptron":6}],2:[function(require,module,exports){
+},{"./architect/Hopfield":2,"./architect/LSTM":3,"./architect/Liquid":4,"./architect/Perceptron":5}],2:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -57,7 +55,7 @@ var Hopfield = (function (_super) {
 })(network.Network);
 exports.Hopfield = Hopfield;
 
-},{"../layer":7,"../network":8,"../trainer":13}],3:[function(require,module,exports){
+},{"../layer":6,"../network":7,"../trainer":11}],3:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -180,7 +178,7 @@ var LSTM = (function (_super) {
 exports.LSTM = LSTM;
 ;
 
-},{"../layer":7,"../network":8,"../trainer":13}],4:[function(require,module,exports){
+},{"../layer":6,"../network":7,"../trainer":11}],4:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -231,190 +229,7 @@ var Liquid = (function (_super) {
 })(network.Network);
 exports.Liquid = Liquid;
 
-},{"../layer":7,"../network":8,"../trainer":13}],5:[function(require,module,exports){
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
-var network = require('../network');
-var trainer = require('../trainer');
-var Layer = require('../layer');
-var Squash = require('../squash');
-var _utils = require('../utils');
-var softmaxLayer = require('../softmaxLayer');
-var Utils = _utils.Utils;
-var NTM = (function (_super) {
-    __extends(NTM, _super);
-    function NTM(inputs, outputs, memBlocks, blockWidth, heads, hiddenSize) {
-        // build the memory
-        _super.call(this);
-        this.heads = new Array();
-        this.dirty = false;
-        this.trainer = new trainer.Trainer(this);
-        this.blocks = memBlocks;
-        this.blockWidth = blockWidth;
-        this.data = new Array(this.blocks);
-        for (var index = 0; index < this.data.length; index++) {
-            this.data[index] = new Float64Array(blockWidth);
-        }
-        this.clean();
-        // build the network
-        var inputLength = inputs + heads * memBlocks;
-        this.inputValues = new Float64Array(inputLength);
-        this.layers.input = this.inputLayer = new Layer.Layer(inputLength);
-        this.hiddenLayer = new Layer.Layer(hiddenSize);
-        this.layers.output = this.outputLayer = new Layer.Layer(outputs);
-        this.inputLayer.project(this.hiddenLayer, Layer.Layer.connectionType.ALL_TO_ALL);
-        this.hiddenLayer.project(this.outputLayer, Layer.Layer.connectionType.ALL_TO_ALL);
-        var inputCounter = inputs - 1;
-        for (var headIndex = 0; headIndex < heads; headIndex++) {
-            this.addHead(this.inputValues.subarray(inputCounter, inputCounter + memBlocks));
-            inputCounter += memBlocks;
-        }
-        this.optimized = false;
-    }
-    NTM.prototype.clean = function () {
-        for (var location = 0; location < this.blocks; location++) {
-            Utils.initRandomSoftmaxArray(this.data[location]);
-        }
-        this.dirty = false;
-    };
-    NTM.prototype.activate = function (input) {
-        this.inputValues.set(input);
-        this.inputLayer.activate(this.inputValues);
-        this.hiddenLayer.activate();
-        this.doTimeStep();
-        return this.outputLayer.activate();
-    };
-    NTM.prototype.propagate = function (rate, target) {
-        this.outputLayer.propagate(rate, target);
-        for (var i = this.heads.length - 1; i >= 0; i--) {
-            this.heads[i].shiftingLayer && this.heads[i].shiftingLayer.propagate(rate);
-            this.heads[i].layer.propagate(rate);
-        }
-        this.hiddenLayer.propagate(rate);
-        this.dirty = true;
-    };
-    NTM.prototype.addHead = function (subArray) {
-        var head = new Head(this, subArray);
-        this.heads.push(head);
-        return head;
-    };
-    NTM.prototype.doTimeStep = function () {
-        var _this = this;
-        this.heads.forEach(function (head, headIndex) {
-            head.doTimeStep();
-        });
-        // parallelizable
-        this.heads.forEach(function (head, headIndex) {
-            _this.doErase(head.w_weightings, head.eraseGate);
-        });
-        // parallelizable
-        this.heads.forEach(function (head, headIndex) {
-            _this.doAdd(head.w_weightings, head.addGate);
-        });
-        //this.data.forEach((e) => e = Utils.softMax(e))
-    };
-    NTM.prototype.doAdd = function (w, addGate) {
-        for (var n = 0; n < this.blocks; n++) {
-            var M = this.data[n];
-            for (var i = 0; i < this.blockWidth; i++) {
-                M[i] += addGate[n] * w[i];
-            }
-        }
-    };
-    NTM.prototype.doErase = function (w, eraseGate) {
-        for (var n = 0; n < this.blocks; n++) {
-            var M = this.data[n];
-            for (var i = 0; i < this.blockWidth; i++) {
-                M[i] *= 1 - eraseGate[n] * w[i];
-            }
-        }
-    };
-    return NTM;
-})(network.Network);
-exports.NTM = NTM;
-var Head = (function () {
-    function Head(memory, destinationArray) {
-        this.s_shiftingValue = null;
-        this.prevFocus = 1;
-        this.memory = memory;
-        this.wc_focusedWeights = new Float64Array(this.memory.blocks);
-        this.w_weightings = new Float64Array(this.memory.blocks);
-        Utils.initRandomSoftmaxArray(this.w_weightings);
-        this.shiftLength = 3; //this.memory.blocks;
-        this.k_keys = new Float64Array(this.memory.blockWidth);
-        this.ß_keyStrength = 0;
-        this.eraseGate = new Float64Array(this.memory.blocks);
-        this.addGate = new Float64Array(this.memory.blocks);
-        this.readVector = destinationArray || new Float64Array(this.memory.blocks);
-        // Head layer
-        this.layer = new Layer.Layer(this.memory.blockWidth + this.memory.blocks * 3 + Head.ADDITIONAL_INPUT_VALUES, "NTM: Head layer");
-        this.memory.hiddenLayer.project(this.layer, Layer.Layer.connectionType.ALL_TO_ALL);
-        this.layer.project(this.memory.outputLayer, Layer.Layer.connectionType.ALL_TO_ALL);
-        // shifting layer
-        this.shiftingLayer = new softmaxLayer.SoftMaxLayer(this.shiftLength, "NTM: Shifting layer");
-        this.memory.hiddenLayer.project(this.shiftingLayer, Layer.Layer.connectionType.ALL_TO_ALL);
-        this.shiftingLayer.project(this.memory.hiddenLayer, Layer.Layer.connectionType.ALL_TO_ALL);
-        this.s_shiftingVector = this.shiftingLayer.currentActivation;
-    }
-    Head.prototype.readParams = function (activation) {
-        this.ß_keyStrength = activation[0];
-        this.g_interpolation = activation[1];
-        this.Y_focus = activation[2] + 1; //Squash.SOFTPLUS(activation[2]) + 1;
-        var startAt = 3;
-        for (var k = 0; k < this.k_keys.length; k++) {
-            this.k_keys[k] = this.layer.list[k + startAt].activation;
-        }
-        startAt += this.k_keys.length;
-        for (var k = 0; k < this.addGate.length; k++) {
-            this.addGate[k] = this.layer.list[k + startAt].activation;
-        }
-        startAt += this.addGate.length;
-        for (var k = 0; k < this.eraseGate.length; k++) {
-            this.eraseGate[k] = Squash.LOGISTIC(this.layer.list[k + startAt].activation);
-        }
-        var M = this.memory.data;
-        // focus by content, obtains an array of similarity indexes for each memoryBlock
-        for (var i = 0; i < M.length; i++)
-            this.wc_focusedWeights[i] = Utils.getCosineSimilarity(M[i], this.k_keys) * this.ß_keyStrength;
-        Utils.softMax(this.wc_focusedWeights);
-        // focus by location (interpolation)
-        Utils.interpolateArray(this.wc_focusedWeights, this.w_weightings, this.g_interpolation);
-        // convolutional shift
-        //this.doShiftings();
-        Utils.vectorInvertedShifting(this.wc_focusedWeights, this.s_shiftingVector);
-        // sharpening
-        Utils.sharpArray(this.w_weightings, this.wc_focusedWeights, this.Y_focus);
-        // since ∑ w = 1, we have to softmax the array
-        Utils.softMax(this.w_weightings);
-        /// we got wt!
-    };
-    Head.prototype.doShiftings = function () {
-        // call this fn in case of not using a softmaxLayer for shifting
-        Utils.softMax(this.s_shiftingVector);
-        Utils.vectorInvertedShifting(this.wc_focusedWeights, this.s_shiftingVector);
-    };
-    Head.prototype.doTimeStep = function () {
-        var activation = this.layer.activate();
-        this.shiftingLayer && this.shiftingLayer.activate();
-        this.readParams(activation);
-        // reading
-        for (var index = 0; index < this.memory.blocks; index++) {
-            this.readVector[index] = 0;
-            for (var cell = 0; cell < this.memory.blockWidth; cell++) {
-                this.readVector[index] += this.memory.data[index][cell] * this.w_weightings[index];
-            }
-        }
-    };
-    Head.ADDITIONAL_INPUT_VALUES = 3;
-    return Head;
-})();
-exports.Head = Head;
-
-},{"../layer":7,"../network":8,"../softmaxLayer":10,"../squash":11,"../trainer":13,"../utils":14}],6:[function(require,module,exports){
+},{"../layer":6,"../network":7,"../trainer":11}],5:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -464,7 +279,7 @@ var Perceptron = (function (_super) {
 exports.Perceptron = Perceptron;
 ;
 
-},{"../layer":7,"../network":8,"../trainer":13}],7:[function(require,module,exports){
+},{"../layer":6,"../network":7,"../trainer":11}],6:[function(require,module,exports){
 var neuron = require('./neuron');
 var network = require('./network');
 /*******************************************************************************************
@@ -720,7 +535,7 @@ var Layer;
     Layer.LayerConnection = LayerConnection;
 })(Layer = exports.Layer || (exports.Layer = {}));
 
-},{"./network":8,"./neuron":9}],8:[function(require,module,exports){
+},{"./network":7,"./neuron":8}],7:[function(require,module,exports){
 var layer = require('./layer');
 var Squash = require('./squash');
 var _neuron = require('./neuron');
@@ -1243,7 +1058,7 @@ var Network = (function () {
 })();
 exports.Network = Network;
 
-},{"./layer":7,"./neuron":9,"./squash":11}],9:[function(require,module,exports){
+},{"./layer":6,"./neuron":8,"./squash":9}],8:[function(require,module,exports){
 /// <reference path="synaptic.ts" />
 var Squash = require('./squash');
 /******************************************************************************************
@@ -1928,77 +1743,7 @@ var Neuron;
     })(Connection = Neuron.Connection || (Neuron.Connection = {}));
 })(Neuron = exports.Neuron || (exports.Neuron = {}));
 
-},{"./squash":11}],10:[function(require,module,exports){
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
-var Layer = require('./layer');
-var Squash = require('./squash');
-var _Utils = require('./utils');
-var Utils = _Utils.Utils;
-var SoftMaxLayer = (function (_super) {
-    __extends(SoftMaxLayer, _super);
-    function SoftMaxLayer(size, label) {
-        _super.call(this, size, label);
-        this.optimizable = false;
-        for (var n = 0; n < this.list.length; n++) {
-            this.list[n].squash = Squash.IDENTITY;
-        }
-    }
-    SoftMaxLayer.prototype.activate = function (input) {
-        if (this.currentActivation.length != this.list.length)
-            this.currentActivation = new Float64Array(this.list.length);
-        var activationIndex = 0;
-        var sum = 0;
-        var Amax = null;
-        if (typeof input != 'undefined') {
-            if (input.length != this.size)
-                throw "INPUT size and LAYER size must be the same to activate!";
-            Utils.softMax(input);
-            for (var id in this.list) {
-                this.list[id].readIncommingConnections(input[id]);
-                if (Amax === null || this.list[id].activation > Amax)
-                    Amax = this.list[id].activation;
-            }
-        }
-        else {
-            for (var id in this.list) {
-                this.list[id].readIncommingConnections();
-                if (Amax === null || this.list[id].activation > Amax)
-                    Amax = this.list[id].activation;
-            }
-        }
-        for (var n = 0; n < this.currentActivation.length; n++) {
-            sum += (this.list[n].activation = Math.exp(this.list[n].activation - Amax));
-        }
-        for (var n = 0; n < this.currentActivation.length; n++) {
-            // set the activations
-            var x = this.list[n].activation / sum;
-            this.list[n].activation = this.currentActivation[n] = x;
-            // set the derivatives
-            //x = this.list[n].activation / (sum - this.list[n].activation);
-            this.list[n].derivative = x * (1 - x);
-            this.list[n].updateTraces();
-        }
-        return this.currentActivation;
-    };
-    SoftMaxLayer.NormalizeConnectionWeights = function (layerConnection) {
-        var sum = 0;
-        for (var c = 0; c < layerConnection.list.length; c++) {
-            sum += (layerConnection.list[c].weight = Math.exp(layerConnection.list[c].weight));
-        }
-        for (var c = 0; c < layerConnection.list.length; c++) {
-            layerConnection.list[c].weight /= sum;
-        }
-    };
-    return SoftMaxLayer;
-})(Layer.Layer);
-exports.SoftMaxLayer = SoftMaxLayer;
-
-},{"./layer":7,"./squash":11,"./utils":14}],11:[function(require,module,exports){
+},{"./squash":9}],9:[function(require,module,exports){
 // squashing functions
 function LOGISTIC(x, derivate) {
     if (derivate) {
@@ -2035,7 +1780,7 @@ function EXP(x, derivate) {
 }
 exports.EXP = EXP;
 
-},{}],12:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /*
 ********************************************************************************************
                                          SYNAPTIC
@@ -2088,7 +1833,7 @@ if (typeof window != "undefined")
     window['synaptic'] = Synaptic;
 module.exports = Synaptic;
 
-},{"./architect":1,"./layer":7,"./network":8,"./neuron":9,"./squash":11,"./trainer":13,"./utils":14}],13:[function(require,module,exports){
+},{"./architect":1,"./layer":6,"./network":7,"./neuron":8,"./squash":9,"./trainer":11,"./utils":12}],11:[function(require,module,exports){
 /*******************************************************************************************
                                         TRAINER
 *******************************************************************************************/
@@ -2625,7 +2370,7 @@ var Trainer;
     };
 })(Trainer = exports.Trainer || (exports.Trainer = {}));
 
-},{}],14:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 var Utils = (function () {
     function Utils() {
     }
@@ -2802,5 +2547,5 @@ var Utils = (function () {
 })();
 exports.Utils = Utils;
 
-},{}]},{},[12]);
+},{}]},{},[10]);
 var synaptic = synaptic || Synaptic;var Neuron = synaptic.Neuron, Layer = synaptic.Layer, Network = synaptic.Network, Trainer = synaptic.Trainer, Architect = synaptic.Architect;

@@ -70,15 +70,7 @@ describe("NTM Utils", function() {
     
     assert.equal(sumAll(Utils.softMax(fixedArray)), 1, 'Random signed array equals 1');
   });
-  /*
-  it('Generate circulant matrix', function(){
-    var fixedArray = new Float64Array(5);
-    
-    fixedArray.set([0,0,0,0,1]);
-    
-    assert.equal(Utils.vectorShifting(fixedArray, [0, 1, 0]), [0,0,0,0,1], 'Unchanged shiftings');
-  });
-  */
+
   it('Shifting', function(){
     var fixedArray = new Float64Array(5);
     
