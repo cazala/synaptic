@@ -1,3 +1,4 @@
+import Synaptic = require('./synaptic');
 import _neuron = require('./neuron');
 export declare class Network {
     optimized: any;
@@ -6,9 +7,9 @@ export declare class Network {
         hidden: {};
         output: any;
     };
-    constructor(layers: any);
-    activate(input: any): any;
-    propagate(rate: number, target?: any): void;
+    constructor(layers?: any);
+    activate(input: Synaptic.INumericArray): any;
+    propagate(rate: number, target?: Synaptic.INumericArray): void;
     project(unit: any, type: any, weights: any): any;
     gate(connection: any, type: any): void;
     clear(): void;

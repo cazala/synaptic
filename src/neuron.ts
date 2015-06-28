@@ -14,6 +14,8 @@ import Squash = require('./squash');
 */
 
 export class Neuron {
+	optimizable = true;
+
 	ID = Neuron.uid();
 	label = null;
 	connections: Neuron.INeuronConnections = {
@@ -39,9 +41,12 @@ export class Neuron {
 	neighboors = {};
 	bias = Math.random() * .2 - .1;
 	derivative = 0;
-  
-	// activate the neuron
-	activate(input?: number) {
+
+	constructor() {
+
+	}
+
+	readIncommingConnections(input?: number) {
 		// activation from enviroment (for input neurons)
 		if (typeof input != 'undefined') {
 			this.activation = input;
@@ -49,7 +54,7 @@ export class Neuron {
 			this.bias = 0;
 			return this.activation;
 		}
-
+		
 		// old state
 		this.old = this.state;
 
@@ -67,7 +72,9 @@ export class Neuron {
 
 		// f'(s)
 		this.derivative = this.squash(this.state, true);
+	}
 
+	updateTraces() {
 		// update traces
 		var influences = [];
 		for (var id in this.trace.extended) {
@@ -106,11 +113,19 @@ export class Neuron {
 				theInput.ID] * influence;
 			}
 		}
-
+		
 		//  update gated connection's gains
 		for (var connection in this.connections.gated) {
 			this.connections.gated[connection].gain = this.activation;
 		}
+	}
+  
+  
+	// activate the neuron
+	activate(input?: number) : number {
+		this.readIncommingConnections(input);
+
+		this.updateTraces();
 
 		return this.activation;
 	}

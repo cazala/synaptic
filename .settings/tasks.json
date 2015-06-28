@@ -13,6 +13,11 @@
             "problemMatcher": "$tsc"
         },
         {
+            "taskName": "test-ntm",
+            "isTestCommand": true,
+            "problemMatcher": "$tsc"
+        },
+        {
             "isBuildCommand": true,
             "taskName": "build",
             "problemMatcher": "$tsc"

@@ -32,6 +32,7 @@ import neuron = require('./neuron');
 import trainer = require('./trainer');
 import architect = require('./architect');
 import squash = require('./squash');
+import utils = require('./utils');
 
 declare var window;
 
@@ -60,12 +61,18 @@ module Synaptic {
 		layers?: any;
 	}
 	
+	export interface INumericArray {
+	  [index: number] : number;
+	  length : number;
+	}
+	
 	export var Neuron = neuron.Neuron;
 	export var Layer = layer.Layer;
 	export var Network = network.Network;
 	export var Trainer = trainer.Trainer;
 	export var Squash = squash;
 	export var Architect = architect;
+	export var Utils = utils.Utils;
 }
 
 export = Synaptic;

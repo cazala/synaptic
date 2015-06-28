@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var hopfield = require('./architect/hopfield');
+var hopfield = require('./architect/Hopfield');
 var lstm = require('./architect/LSTM');
 var lsm = require('./architect/Liquid');
 var perceptron = require('./architect/Perceptron');
@@ -8,7 +8,54 @@ exports.Liquid = lsm.Liquid;
 exports.Hopfield = hopfield.Hopfield;
 exports.Perceptron = perceptron.Perceptron;
 
-},{"./architect/LSTM":2,"./architect/Liquid":3,"./architect/Perceptron":4,"./architect/hopfield":5}],2:[function(require,module,exports){
+},{"./architect/Hopfield":2,"./architect/LSTM":3,"./architect/Liquid":4,"./architect/Perceptron":5}],2:[function(require,module,exports){
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var network = require('../network');
+var trainer = require('../trainer');
+var layer = require('../layer');
+var Hopfield = (function (_super) {
+    __extends(Hopfield, _super);
+    function Hopfield(size) {
+        var inputLayer = new layer.Layer(size);
+        var outputLayer = new layer.Layer(size);
+        inputLayer.project(outputLayer, layer.Layer.connectionType.ALL_TO_ALL);
+        _super.call(this, {
+            input: inputLayer,
+            hidden: [],
+            output: outputLayer
+        });
+        this.trainer = new trainer.Trainer(this);
+    }
+    Hopfield.prototype.learn = function (patterns) {
+        var set = [];
+        for (var p in patterns)
+            set.push({
+                input: patterns[p],
+                output: patterns[p]
+            });
+        return this.trainer.train(set, {
+            iterations: 500000,
+            error: .00005,
+            rate: 1
+        });
+    };
+    Hopfield.prototype.feed = function (pattern) {
+        var output = this.activate(pattern);
+        var patterns = [];
+        for (var i in output)
+            patterns[i] = output[i] > .5 ? 1 : 0;
+        return patterns;
+    };
+    return Hopfield;
+})(network.Network);
+exports.Hopfield = Hopfield;
+
+},{"../layer":6,"../network":7,"../trainer":11}],3:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -131,7 +178,7 @@ var LSTM = (function (_super) {
 exports.LSTM = LSTM;
 ;
 
-},{"../layer":6,"../network":7,"../trainer":11}],3:[function(require,module,exports){
+},{"../layer":6,"../network":7,"../trainer":11}],4:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -182,7 +229,7 @@ var Liquid = (function (_super) {
 })(network.Network);
 exports.Liquid = Liquid;
 
-},{"../layer":6,"../network":7,"../trainer":11}],4:[function(require,module,exports){
+},{"../layer":6,"../network":7,"../trainer":11}],5:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -232,53 +279,6 @@ var Perceptron = (function (_super) {
 exports.Perceptron = Perceptron;
 ;
 
-},{"../layer":6,"../network":7,"../trainer":11}],5:[function(require,module,exports){
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
-var network = require('../network');
-var trainer = require('../trainer');
-var layer = require('../layer');
-var Hopfield = (function (_super) {
-    __extends(Hopfield, _super);
-    function Hopfield(size) {
-        var inputLayer = new layer.Layer(size);
-        var outputLayer = new layer.Layer(size);
-        inputLayer.project(outputLayer, layer.Layer.connectionType.ALL_TO_ALL);
-        _super.call(this, {
-            input: inputLayer,
-            hidden: [],
-            output: outputLayer
-        });
-        this.trainer = new trainer.Trainer(this);
-    }
-    Hopfield.prototype.learn = function (patterns) {
-        var set = [];
-        for (var p in patterns)
-            set.push({
-                input: patterns[p],
-                output: patterns[p]
-            });
-        return this.trainer.train(set, {
-            iterations: 500000,
-            error: .00005,
-            rate: 1
-        });
-    };
-    Hopfield.prototype.feed = function (pattern) {
-        var output = this.activate(pattern);
-        var patterns = [];
-        for (var i in output)
-            patterns[i] = output[i] > .5 ? 1 : 0;
-        return patterns;
-    };
-    return Hopfield;
-})(network.Network);
-exports.Hopfield = Hopfield;
-
 },{"../layer":6,"../network":7,"../trainer":11}],6:[function(require,module,exports){
 var neuron = require('./neuron');
 var network = require('./network');
@@ -287,6 +287,7 @@ var network = require('./network');
 *******************************************************************************************/
 var Layer = (function () {
     function Layer(size, label) {
+        this.optimizable = true;
         this.list = [];
         this.label = null;
         this.connectedto = [];
@@ -295,6 +296,7 @@ var Layer = (function () {
         this.list = [];
         this.label = label || null;
         this.connectedto = [];
+        this.currentActivation = new Float64Array(size);
         while (size--) {
             var theNeuron = new neuron.Neuron();
             this.list.push(theNeuron);
@@ -302,24 +304,22 @@ var Layer = (function () {
     }
     // activates all the neurons in the layer
     Layer.prototype.activate = function (input) {
-        var activations = [];
+        if (this.currentActivation.length != this.list.length)
+            this.currentActivation = new Float64Array(this.list.length);
+        var activationIndex = 0;
         if (typeof input != 'undefined') {
             if (input.length != this.size)
                 throw "INPUT size and LAYER size must be the same to activate!";
             for (var id in this.list) {
-                var neuron = this.list[id];
-                var activation = neuron.activate(input[id]);
-                activations.push(activation);
+                this.currentActivation[activationIndex++] = this.list[id].activate(input[id]);
             }
         }
         else {
             for (var id in this.list) {
-                var neuron = this.list[id];
-                var activation = neuron.activate();
-                activations.push(activation);
+                this.currentActivation[activationIndex++] = this.list[id].activate();
             }
         }
-        return activations;
+        return this.currentActivation;
     };
     // propagates the error on all the neurons of the layer
     Layer.prototype.propagate = function (rate, target) {
@@ -550,10 +550,9 @@ var Network = (function () {
         if (typeof layers != 'undefined') {
             this.layers = layers || {
                 input: null,
-                hidden: {},
+                hidden: [],
                 output: null
             };
-            this.optimized = null;
         }
     }
     // feed-forward activation of all the layers to produce an ouput
@@ -1072,6 +1071,7 @@ var Squash = require('./squash');
 */
 var Neuron = (function () {
     function Neuron() {
+        this.optimizable = true;
         this.ID = Neuron.uid();
         this.label = null;
         this.connections = {
@@ -1098,8 +1098,7 @@ var Neuron = (function () {
         this.bias = Math.random() * .2 - .1;
         this.derivative = 0;
     }
-    // activate the neuron
-    Neuron.prototype.activate = function (input) {
+    Neuron.prototype.readIncommingConnections = function (input) {
         // activation from enviroment (for input neurons)
         if (typeof input != 'undefined') {
             this.activation = input;
@@ -1120,6 +1119,8 @@ var Neuron = (function () {
         this.activation = this.squash(this.state);
         // f'(s)
         this.derivative = this.squash(this.state, true);
+    };
+    Neuron.prototype.updateTraces = function () {
         // update traces
         var influences = [];
         for (var id in this.trace.extended) {
@@ -1155,6 +1156,11 @@ var Neuron = (function () {
         for (var connection in this.connections.gated) {
             this.connections.gated[connection].gain = this.activation;
         }
+    };
+    // activate the neuron
+    Neuron.prototype.activate = function (input) {
+        this.readIncommingConnections(input);
+        this.updateTraces();
         return this.activation;
     };
     // back-propagate the error
@@ -1740,10 +1746,11 @@ var Neuron;
 },{"./squash":9}],9:[function(require,module,exports){
 // squashing functions
 function LOGISTIC(x, derivate) {
-    if (!derivate)
-        return 1 / (1 + Math.exp(-x));
-    var fx = LOGISTIC(x);
-    return fx * (1 - fx);
+    if (derivate) {
+        var fx = LOGISTIC(x);
+        return fx * (1 - fx);
+    }
+    return 1 / (1 + Math.exp(-x));
 }
 exports.LOGISTIC = LOGISTIC;
 function TANH(x, derivate) {
@@ -1762,6 +1769,16 @@ function HLIM(x, derivate) {
     return derivate ? 1 : +(x > 0);
 }
 exports.HLIM = HLIM;
+function SOFTPLUS(x, derivate) {
+    if (derivate)
+        return 1 - 1 / (1 + Math.exp(x));
+    return Math.log(1 + Math.exp(x));
+}
+exports.SOFTPLUS = SOFTPLUS;
+function EXP(x, derivate) {
+    return Math.exp(x);
+}
+exports.EXP = EXP;
 
 },{}],10:[function(require,module,exports){
 /*
@@ -1795,9 +1812,10 @@ var neuron = require('./neuron');
 var trainer = require('./trainer');
 var architect = require('./architect');
 var squash = require('./squash');
+var utils = require('./utils');
 var Synaptic;
 (function (Synaptic) {
-    var oldSynaptic = window && window['Synaptic'];
+    var oldSynaptic = typeof window != "undefined" && window && window['Synaptic'];
     function ninja() {
         window['synaptic'] = oldSynaptic;
         return Synaptic;
@@ -1809,12 +1827,13 @@ var Synaptic;
     Synaptic.Trainer = trainer.Trainer;
     Synaptic.Squash = squash;
     Synaptic.Architect = architect;
+    Synaptic.Utils = utils.Utils;
 })(Synaptic || (Synaptic = {}));
 if (typeof window != "undefined")
     window['synaptic'] = Synaptic;
 module.exports = Synaptic;
 
-},{"./architect":1,"./layer":6,"./network":7,"./neuron":8,"./squash":9,"./trainer":11}],11:[function(require,module,exports){
+},{"./architect":1,"./layer":6,"./network":7,"./neuron":8,"./squash":9,"./trainer":11,"./utils":12}],11:[function(require,module,exports){
 /*******************************************************************************************
                                         TRAINER
 *******************************************************************************************/
@@ -1885,15 +1904,15 @@ var Trainer = (function () {
             iterations++;
             error /= set.length;
             if (options) {
-                if (this.schedule && this.schedule.every && iterations %
-                    this.schedule.every == 0)
+                if (this.schedule && this.schedule.every && iterations % this.schedule.every == 0) {
                     abort_training = this.schedule.do({
                         error: error,
                         iterations: iterations,
                         rate: currentRate
                     });
+                }
                 else if (options.log && iterations % options.log == 0) {
-                    console.log('iterations', iterations, 'error', error, 'rate', currentRate);
+                    console.log('iterations', iterations, 'error', error, 'rate', currentRate, 'T:', target, 'O:', output);
                 }
                 ;
                 if (options.shuffle)
@@ -2143,7 +2162,7 @@ var Trainer = (function () {
             // log
             if (log && trial % log == 0)
                 console.log("iterations:", trial, " success:", success, " correct:", correct, " time:", Date.now() - start, " error:", error);
-            if (schedule.do && schedule.every && trial % schedule.every == 0)
+            if (schedule.do && schedule.every && trial % schedule.every == 0) {
                 schedule.do({
                     iterations: trial,
                     success: success,
@@ -2151,6 +2170,7 @@ var Trainer = (function () {
                     time: Date.now() - start,
                     correct: correct
                 });
+            }
         }
         return {
             iterations: trial,
@@ -2335,6 +2355,12 @@ var Trainer;
                 crossentropy -= (target[i] * Math.log(output[i] + 1e-15)) + ((1 - target[i]) * Math.log((1 + 1e-15) - output[i])); // +1e-15 is a tiny push away to avoid Math.log(0)
             return crossentropy;
         },
+        CROSS_ENTROPY_SOFTMAX: function (target, output) {
+            var crossentropy = 0;
+            for (var i in output)
+                crossentropy -= target[i] * Math.log(output[i] + 1e-15);
+            return crossentropy;
+        },
         MSE: function (target, output) {
             var mse = 0;
             for (var i in output)
@@ -2343,6 +2369,183 @@ var Trainer;
         }
     };
 })(Trainer = exports.Trainer || (exports.Trainer = {}));
+
+},{}],12:[function(require,module,exports){
+var Utils = (function () {
+    function Utils() {
+    }
+    Utils.softMax = function (outputArray) {
+        // for all i ∈ array
+        // sum = ∑ array[n]^e
+        // i = î^e / sum
+        // where the result ∑ array[0..n] = 1
+        if (!outputArray.length)
+            return outputArray;
+        var sum = 0;
+        var Amax = outputArray[0];
+        for (var i = 0; i < outputArray.length; i++) {
+            if (outputArray[i] < Amax)
+                Amax = outputArray[i];
+        }
+        // sum = ∑ array[n]^e
+        for (var i = 0; i < outputArray.length; i++) {
+            outputArray[i] = Math.exp(outputArray[i] - Amax);
+            sum += outputArray[i];
+        }
+        for (var i = 0; i < outputArray.length; i++)
+            outputArray[i] /= sum;
+        return outputArray;
+    };
+    Utils.softMaxDerivative = function (outputArray) {
+        // http://sysmagazine.com/posts/155235/
+        if (!outputArray.length)
+            return outputArray;
+        var sum = 0;
+        // sum = ∑ array[n]^e
+        for (var i = 0; i < outputArray.length; i++) {
+            outputArray[i] = Math.exp(outputArray[i]);
+            sum += outputArray[i];
+        }
+        for (var i = 0; i < outputArray.length; i++) {
+            var t = outputArray[i] /= sum;
+            outputArray[i] = t * (1 - t);
+        }
+        return outputArray;
+    };
+    Utils.softMaxReinforcement = function (array, temperature) {
+        // Reinforcement learning
+        if (temperature === void 0) { temperature = 1; }
+        if (!array.length)
+            return array;
+        temperature = temperature || 1;
+        var sum = 0;
+        // sum = ∑ array[n]^e
+        for (var i = 0; i < array.length; i++) {
+            array[i] = Math.exp(array[i] / temperature);
+            sum += array[i];
+        }
+        if (sum != 0) {
+            for (var i = 0; i < array.length; i++)
+                array[i] /= sum;
+        }
+        else {
+            var div = 1 / array.length;
+            for (var i = 0; i < array.length; i++)
+                array[i] = div;
+        }
+        return array;
+    };
+    Utils.getCosineSimilarity = function (arrayA, arrayB) {
+        // http://en.wikipedia.org/wiki/Cosine_similarity
+        var dotPr = 0;
+        var acumA = 0, acumB = 0;
+        for (var i = 0; i < arrayA.length; i++) {
+            dotPr += arrayA[i] * arrayB[i];
+            acumA += arrayA[i] * arrayA[i];
+            acumB += arrayB[i] * arrayB[i];
+        }
+        return dotPr / (Math.sqrt(acumA) * Math.sqrt(acumB) + .00005);
+    };
+    Utils.interpolateArray = function (output_inputA, inputB, g) {
+        // 3.3.2 focus by location (7)
+        var gInverted = 1 - g;
+        for (var i = 0; i < output_inputA.length; i++)
+            output_inputA[i] = output_inputA[i] * g + gInverted * inputB[i];
+        return output_inputA;
+    };
+    // w_sharpWn
+    Utils.sharpArray = function (output, wn, Y) {
+        // 3.3.2 (9)
+        var sum = 0;
+        // ∀ a ∈ wn → a = a^Y
+        // sum = ∑ a^Y 
+        for (var i = 0; i < wn.length; i++) {
+            wn[i] = Math.pow(wn[i], Y);
+            sum += wn[i];
+        }
+        // ∀ a ∈ wn → a = a^Y / sum
+        if (sum != 0) {
+            for (var i = 0; i < wn.length; i++)
+                output[i] = wn[i] / sum;
+        }
+        else {
+            var div = 1 / wn.length;
+            for (var i = 0; i < wn.length; i++)
+                output[i] = div;
+        }
+    };
+    //wn_shift
+    Utils.scalarShifting = function (wg, shiftScalar) {
+        // w~ 3.3.2 (8)
+        var shiftings = new Float64Array(wg.length);
+        var wn = new Float64Array(wg.length);
+        var intPart = shiftScalar | 0;
+        var decimalPart = shiftScalar - intPart;
+        shiftings[intPart % shiftings.length] = 1 - decimalPart;
+        shiftings[(intPart + 1) % shiftings.length] = decimalPart;
+        for (var i = 0; i < wn.length; i++) {
+            var acum = 0;
+            for (var j = 0; j < wn.length; j++) {
+                if ((i - j) < 0)
+                    acum += wg[j] * shiftings[shiftings.length - Math.abs(i - j)];
+                else
+                    acum += wg[j] * shiftings[(i - j) % shiftings.length];
+            }
+            wn[i] = acum;
+        }
+        return wn;
+    };
+    Utils.normalizeShift = function (shift) {
+        var sum = 0;
+        for (var i = 0; i < shift.length; i++) {
+            sum += shift[i];
+        }
+        for (var j = 0; j < shift.length; j++) {
+            shift[j] /= sum;
+        }
+    };
+    Utils.vectorInvertedShifting = function (wg, shiftings) {
+        // w~ 3.3.2 (8)
+        var ret = new Float64Array(wg.length);
+        var corrimientoIndex = -((shiftings.length - 1) / 2) | 0;
+        var circulantMatrix = Utils.transformationMatrixCache[wg.length] || (Utils.transformationMatrixCache[wg.length] = Utils.buildCirculantMatrix(wg.length));
+        for (var i = 0; i < wg.length; i++) {
+            for (var x = 0; x < wg.length; x++) {
+                var tmp = 0;
+                for (var shift = 0; shift < shiftings.length; shift++) {
+                    var matRow = i - x + corrimientoIndex + shift;
+                    while (matRow < 0)
+                        matRow += wg.length;
+                    matRow %= wg.length;
+                    tmp += wg[circulantMatrix[x][matRow]] * shiftings[shift];
+                }
+                ret[i] = tmp;
+            }
+        }
+        wg.set(ret);
+    };
+    Utils.initRandomSoftmaxArray = function (array) {
+        for (var i = 0; i < array.length; i++) {
+            array[i] = Math.random();
+        }
+        Utils.softMax(array);
+    };
+    Utils.buildCirculantMatrix = function (length, offset) {
+        if (offset === void 0) { offset = 0; }
+        var ret = [];
+        for (var i = 0; i < length; i++) {
+            var arr = new Float64Array(length);
+            ret.push(arr);
+            for (var n = 0; n < length; n++) {
+                arr[n] = ((i + n) % length);
+            }
+        }
+        return ret;
+    };
+    Utils.transformationMatrixCache = {};
+    return Utils;
+})();
+exports.Utils = Utils;
 
 },{}]},{},[10]);
 var synaptic = synaptic || Synaptic;var Neuron = synaptic.Neuron, Layer = synaptic.Layer, Network = synaptic.Network, Trainer = synaptic.Trainer, Architect = synaptic.Architect;

@@ -1,4 +1,4 @@
-import net =require('./network');
+import net = require('./network');
 
 /*******************************************************************************************
                                         TRAINER
@@ -86,15 +86,16 @@ export class Trainer {
       error /= set.length;
 
       if (options) {
-        if (this.schedule && this.schedule.every && iterations %
-          this.schedule.every == 0)
+        if (this.schedule && this.schedule.every && iterations % this.schedule.every == 0) {
+
           abort_training = this.schedule.do({
             error: error,
             iterations: iterations,
             rate: currentRate
           });
-        else if (options.log && iterations % options.log == 0) {
-          console.log('iterations', iterations, 'error', error, 'rate', currentRate);
+     
+        } else if (options.log && iterations % options.log == 0) {
+          console.log('iterations', iterations, 'error', error, 'rate', currentRate, 'T:', target, 'O:', output);
         };
         if (options.shuffle)
           shuffle(set);
@@ -379,7 +380,7 @@ export class Trainer {
       if (log && trial % log == 0)
         console.log("iterations:", trial, " success:", success, " correct:",
           correct, " time:", Date.now() - start, " error:", error);
-      if (schedule.do && schedule.every && trial % schedule.every == 0)
+      if (schedule.do && schedule.every && trial % schedule.every == 0) {
         schedule.do({
           iterations: trial,
           success: success,
@@ -387,6 +388,8 @@ export class Trainer {
           time: Date.now() - start,
           correct: correct
         });
+
+      }
     }
 
     return {
@@ -602,6 +605,12 @@ export module Trainer {
       var crossentropy = 0;
       for (var i in output)
         crossentropy -= (target[i] * Math.log(output[i] + 1e-15)) + ((1 - target[i]) * Math.log((1 + 1e-15) - output[i])); // +1e-15 is a tiny push away to avoid Math.log(0)
+      return crossentropy;
+    },
+    CROSS_ENTROPY_SOFTMAX: function(target, output) {
+      var crossentropy = 0;
+      for (var i in output)
+        crossentropy -= target[i] * Math.log(output[i] + 1e-15);
       return crossentropy;
     },
     MSE: function(target, output) {
