@@ -1,4 +1,4 @@
-import hopfield = require('./architect/hopfield');
+import hopfield = require('./architect/Hopfield');
 import lstm = require('./architect/LSTM');
 import lsm = require('./architect/Liquid');
 import perceptron = require('./architect/Perceptron');

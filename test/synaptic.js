@@ -1,7 +1,7 @@
 // import
 
 var assert = require('assert'),
-  synaptic = require('../node-dist/src/synaptic');
+  synaptic = require('../dist/src/synaptic');
 
 var Perceptron = synaptic.Architect.Perceptron,
   LSTM = synaptic.Architect.LSTM,

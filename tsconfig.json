@@ -5,7 +5,7 @@
 		"declaration": true,
         "sourceMap": true,
         "target": "ES5",
-        "outDir": "./"
+        "outDir": "./dist"
     },
     "files": [
         "src/synaptic.ts",

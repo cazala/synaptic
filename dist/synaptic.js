@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var hopfield = require('./architect/hopfield');
+var hopfield = require('./architect/Hopfield');
 var lstm = require('./architect/LSTM');
 var lsm = require('./architect/Liquid');
 var perceptron = require('./architect/Perceptron');
@@ -8,7 +8,54 @@ exports.Liquid = lsm.Liquid;
 exports.Hopfield = hopfield.Hopfield;
 exports.Perceptron = perceptron.Perceptron;
 
-},{"./architect/LSTM":2,"./architect/Liquid":3,"./architect/Perceptron":4,"./architect/hopfield":5}],2:[function(require,module,exports){
+},{"./architect/Hopfield":2,"./architect/LSTM":3,"./architect/Liquid":4,"./architect/Perceptron":5}],2:[function(require,module,exports){
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var network = require('../network');
+var trainer = require('../trainer');
+var layer = require('../layer');
+var Hopfield = (function (_super) {
+    __extends(Hopfield, _super);
+    function Hopfield(size) {
+        var inputLayer = new layer.Layer(size);
+        var outputLayer = new layer.Layer(size);
+        inputLayer.project(outputLayer, layer.Layer.connectionType.ALL_TO_ALL);
+        _super.call(this, {
+            input: inputLayer,
+            hidden: [],
+            output: outputLayer
+        });
+        this.trainer = new trainer.Trainer(this);
+    }
+    Hopfield.prototype.learn = function (patterns) {
+        var set = [];
+        for (var p in patterns)
+            set.push({
+                input: patterns[p],
+                output: patterns[p]
+            });
+        return this.trainer.train(set, {
+            iterations: 500000,
+            error: .00005,
+            rate: 1
+        });
+    };
+    Hopfield.prototype.feed = function (pattern) {
+        var output = this.activate(pattern);
+        var patterns = [];
+        for (var i in output)
+            patterns[i] = output[i] > .5 ? 1 : 0;
+        return patterns;
+    };
+    return Hopfield;
+})(network.Network);
+exports.Hopfield = Hopfield;
+
+},{"../layer":6,"../network":7,"../trainer":11}],3:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -131,7 +178,7 @@ var LSTM = (function (_super) {
 exports.LSTM = LSTM;
 ;
 
-},{"../layer":6,"../network":7,"../trainer":11}],3:[function(require,module,exports){
+},{"../layer":6,"../network":7,"../trainer":11}],4:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -182,7 +229,7 @@ var Liquid = (function (_super) {
 })(network.Network);
 exports.Liquid = Liquid;
 
-},{"../layer":6,"../network":7,"../trainer":11}],4:[function(require,module,exports){
+},{"../layer":6,"../network":7,"../trainer":11}],5:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -231,53 +278,6 @@ var Perceptron = (function (_super) {
 })(network.Network);
 exports.Perceptron = Perceptron;
 ;
-
-},{"../layer":6,"../network":7,"../trainer":11}],5:[function(require,module,exports){
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
-var network = require('../network');
-var trainer = require('../trainer');
-var layer = require('../layer');
-var Hopfield = (function (_super) {
-    __extends(Hopfield, _super);
-    function Hopfield(size) {
-        var inputLayer = new layer.Layer(size);
-        var outputLayer = new layer.Layer(size);
-        inputLayer.project(outputLayer, layer.Layer.connectionType.ALL_TO_ALL);
-        _super.call(this, {
-            input: inputLayer,
-            hidden: [],
-            output: outputLayer
-        });
-        this.trainer = new trainer.Trainer(this);
-    }
-    Hopfield.prototype.learn = function (patterns) {
-        var set = [];
-        for (var p in patterns)
-            set.push({
-                input: patterns[p],
-                output: patterns[p]
-            });
-        return this.trainer.train(set, {
-            iterations: 500000,
-            error: .00005,
-            rate: 1
-        });
-    };
-    Hopfield.prototype.feed = function (pattern) {
-        var output = this.activate(pattern);
-        var patterns = [];
-        for (var i in output)
-            patterns[i] = output[i] > .5 ? 1 : 0;
-        return patterns;
-    };
-    return Hopfield;
-})(network.Network);
-exports.Hopfield = Hopfield;
 
 },{"../layer":6,"../network":7,"../trainer":11}],6:[function(require,module,exports){
 var neuron = require('./neuron');
@@ -1797,7 +1797,7 @@ var architect = require('./architect');
 var squash = require('./squash');
 var Synaptic;
 (function (Synaptic) {
-    var oldSynaptic = window && window['Synaptic'];
+    var oldSynaptic = typeof window != "undefined" && window && window['Synaptic'];
     function ninja() {
         window['synaptic'] = oldSynaptic;
         return Synaptic;
