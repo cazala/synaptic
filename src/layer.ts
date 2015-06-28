@@ -72,7 +72,7 @@ export class Layer {
 	}
 
 	// projects a connection from this layer to another one
-	project(layer: network.Network | Layer, type?: string, weights?: Synaptic.INumericArray) {
+	project(layer: network.Network | Layer, type?: string, weights?: Synaptic.INumericArray): Layer.LayerConnection {
 
 		if (layer instanceof network.Network)
 			layer = (<network.Network>layer).layers.input;

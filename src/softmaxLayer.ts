@@ -28,6 +28,8 @@ export class SoftMaxLayer extends Layer.Layer {
 			if (input.length != this.size)
 				throw "INPUT size and LAYER size must be the same to activate!";
 
+			Utils.softMax(input);
+
 			for (var id in this.list) {
 				this.list[id].readIncommingConnections(input[id]);
 				sum += this.list[id].activation;
@@ -46,14 +48,18 @@ export class SoftMaxLayer extends Layer.Layer {
 		for (var n = 0; n < this.currentActivation.length; n++) {
 			var x = this.list[n].activation / sum;
 
+			if(x == Infinity){
+				x = 1;
+				console.log('act infinity', this.list[n].activation , sum);
+			}
+		
 			if (isNaN(x) || x == Infinity || x == -Infinity) {
 				console.log("Activacion se fue al choto.", this.list[n].derivative, x, sum);
 			}
 
-
-			this.currentActivation[n] = x;
-			var der = x;
-			this.list[n].derivative = x * (1- x);//-((sum - this.list[n].activation) - this.list[n].activation)//x * (1 - x);
+			this.list[n].activation = this.currentActivation[n] = x;
+			
+			this.list[n].derivative = x * (1 - x);
 			
 			if (isNaN(this.list[n].derivative)) {
 				console.log("Derivada se fue al choto.", this.list[n].derivative, x, sum);
@@ -64,5 +70,24 @@ export class SoftMaxLayer extends Layer.Layer {
 		}
 
 		return this.currentActivation;
+	}
+	
+	propagate(rate: number, target?: Synaptic.INumericArray) {
+		/*if (typeof target != 'undefined') {
+			for (var n = 0; n < this.currentActivation.length; n++) {
+				this.list[n].derivative =  this.list[n].activation-target[n];
+			}
+		}*/
+		super.propagate(rate, target);
+	}
+	
+	static NormalizeConnectionWeights(layerConnection: Layer.Layer.LayerConnection){
+		var sum = 0;
+		for (var c = 0; c < layerConnection.list.length; c++) {
+			sum += (layerConnection.list[c].weight = Math.exp(layerConnection.list[c].weight));
+		}
+		for (var c = 0; c < layerConnection.list.length; c++) {
+			layerConnection.list[c].weight /= sum;
+		}
 	}
 }
