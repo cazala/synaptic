@@ -30,8 +30,8 @@ gulp.task('node', function () {
         .pipe(ts(tsProject));
     
     return merge2([
-        tsResult.js.pipe(sm.write()).pipe(gulp.dest('./node-dist')),
-        tsResult.dts.pipe(gulp.dest('./node-dist'))
+        tsResult.js.pipe(sm.write()).pipe(gulp.dest('./dist')),
+        tsResult.dts.pipe(gulp.dest('./dist'))
     ]);
 });
 
@@ -62,7 +62,7 @@ gulp.task('min', function () {
 });
 
 // build source into /dist with sourcemaps for debugging
-gulp.task('debug', ['tsc'], function () {
+gulp.task('debug', function () {
   return browserify({ debug: true })
     .add('./src/synaptic.ts')
     .plugin('tsify')
@@ -78,6 +78,13 @@ gulp.task('test', ['node'], function () {
     return gulp.src('test/synaptic.js', {read: false})
         .pipe(mocha());
 });
+
+// run all the tests with mocha
+gulp.task('test-ntm', ['node'], function () {
+    return gulp.src('test/ntm.js', {read: false})
+        .pipe(mocha());
+});
+
 
 // watch for changed and re-build (debug)
 gulp.task('dev', function () {

@@ -1,8 +1,10 @@
-import hopfield = require('./architect/hopfield');
+import hopfield = require('./architect/Hopfield');
 import lstm = require('./architect/LSTM');
 import lsm = require('./architect/Liquid');
 import perceptron = require('./architect/Perceptron');
+import mb = require('./architect/NTM');
 export declare var LSTM: typeof lstm.LSTM;
 export declare var Liquid: typeof lsm.Liquid;
 export declare var Hopfield: typeof hopfield.Hopfield;
 export declare var Perceptron: typeof perceptron.Perceptron;
+export declare var NTM: typeof mb.NTM;

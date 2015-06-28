@@ -41,6 +41,7 @@ export declare module Trainer {
     }
     var cost: {
         CROSS_ENTROPY: (target: any, output: any) => number;
+        CROSS_ENTROPY_SOFTMAX: (target: any, output: any) => number;
         MSE: (target: any, output: any) => number;
     };
 }

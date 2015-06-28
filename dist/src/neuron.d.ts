@@ -5,6 +5,7 @@ import Squash = require('./squash');
                                          NEURON
 *******************************************************************************************/
 export declare class Neuron {
+    optimizable: boolean;
     ID: number;
     label: any;
     connections: Neuron.INeuronConnections;
@@ -26,6 +27,9 @@ export declare class Neuron {
     neighboors: {};
     bias: number;
     derivative: number;
+    constructor();
+    readIncommingConnections(input?: number): number;
+    updateTraces(): void;
     activate(input?: number): number;
     propagate(rate: number, target?: number): void;
     project(neuron: any, weight?: number): Neuron.Connection;

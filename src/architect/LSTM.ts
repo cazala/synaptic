@@ -2,6 +2,7 @@ import network  = require('../network');
 import trainer  = require('../trainer');
 import Layer  = require('../layer');
 import neuron = require('../neuron');
+import softMaxLayer = require('../softmaxLayer');
 
 export class LSTM extends network.Network {
   trainer: trainer.Trainer;

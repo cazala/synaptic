@@ -1,0 +1,348 @@
+<html>
+	<head>
+		<title>Training a neural network to complete a Discrete Sequence Recall task - Synaptic</title>
+		<meta charset="UTF-8">
+		
+		<script src="../dist/synaptic.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js" ></script>
+		<style>
+
+			body { 
+				font-family: 'monaco','Open Sans', sans-serif;
+				position: relative;
+				line-height: 120%;
+				margin: 0px;
+				background: #000;
+				color: #0f0;
+			}
+			.container {
+				width: 1024px;
+				margin: 0 auto;
+			}
+			.title {
+				text-align: center;
+				color: rgb(125, 125, 125);
+				font-size: 34px;
+				padding-top: 50px;
+				height: 50px;
+				cursor: pointer;
+			}
+			.title b{
+				color:rgb(50, 50, 50);;
+			}
+			.title:hover{
+				opacity: .8;
+			}
+			.subtitle {
+				font-weight: bold;
+			}
+
+			p, li {
+				padding: 4px;
+				font-size: 13px;
+				text-align: justify;
+			}
+			.code, .log {
+				border-left: 5px solid rgb(220, 220, 220);
+				padding-left: 20px;
+				color: rgb(150, 150, 150);
+				line-height: 1.2;
+				white-space: pre;
+				font-family: "Lucida Console", Monaco, monospace;
+				font-size: 12px;
+			}
+			.log {
+				margin: 0px;
+				line-height: 3px;
+				font-size: 11px;
+			}
+			.validate {
+				width: 16;
+				height: 13;
+				display: inline-block;
+				position: relative;
+				top: 1px;
+			}
+			.tick {
+				background-image: url(img/tick.png);
+			}
+			.fail{
+				background-image: url(img/fail.png);
+				width: 12px;
+				height: 12px;
+				top: 1px;
+				position: relative;
+			}
+			.square{
+				width: 12px;
+				height: 12px;
+				border-radius: 12px;
+				top: 2px;
+				position: relative;
+				border: 1px solid rgb(68, 68, 68);
+				display: inline-block;
+				box-shadow: inset 0 2px 1px rgba(255,255,255,0.8);
+			}
+			.log .square{
+				top: -5px;
+			}
+			#footer {
+				position: absolute;
+				font-size: 11px;
+				bottom: 10px;
+				margin-left: 50%;
+				left: -245px;
+			}
+			a{
+				color: black;
+				font-weight: bold;
+			}
+		</style>
+		<script>
+
+			var LSTM = null;
+
+			var targets = [2,4];
+			var distractors = [3,5];
+			var prompts = [0, 1];
+			var length = 10;
+
+			var sequence = null;
+			var sequenceLength = 0;
+			var targetsCorrect = 0;
+			var distractorsCorrect = 0;
+			var indexes = [];
+			var positions = [];
+			var symbol = 0;
+			var symbols = targets.length + distractors.length + prompts.length;
+			var json = null;
+			
+			var i = 0;
+			
+			var canv = null;
+			var ctx = null;
+
+			var log = function(text, append){
+				var p = $('<p>', {'class' : 'log'}).html(text).appendTo($(".container")).hide().fadeIn();
+				if (append)
+					p.appendTo($("#" + append));
+			}
+			
+			var drawMemory = function(index,rgb){
+				ctx.fillStyle = 'black';
+				ctx.fillRect(0,0,512,128);
+				
+				var memory = LSTM.data;
+				
+				for (var memBlock = 0; memBlock < memory.length; memBlock++) {
+					var mem = memory[memBlock];
+					for (var wM = 0; wM < mem.length; wM++) {
+						ctx.fillStyle = 'rgb(0,0,' + (mem[wM] * 255).toFixed() + ')';
+						ctx.fillRect(memBlock * 9, wM*9,8,8);
+					}
+				}	
+			}
+
+			var train = function(){
+				canv = document.getElementById('canvasMem');
+				ctx = canv.getContext('2d');
+				
+				$("#aux").remove();
+				$('.log').remove();
+				$("#log-validate").remove();
+
+				var squareTargets =[];
+				for (var i in targets)
+					squareTargets[i] = square(targets[i]);
+				log("Targets: " + squareTargets.join(' '));
+
+				var squareDistractors =[];
+				for (var i in distractors)
+					squareDistractors[i] = square(distractors[i]);
+				log("Distractors: " + squareDistractors.join(' '));
+
+				var squarePrompts =[];
+				for (var i in prompts)
+					squarePrompts[i] = square(prompts[i]);
+				log("Prompts: " + squarePrompts.join(' '));
+
+				log("Length: " + length);
+				log ("&nbsp");
+
+				log("Training DSR...");
+				log ("&nbsp");
+
+				$("body").animate({ scrollTop: $(document).height() }, function()
+				{
+					var inputs = symbols;
+					var outputs = targets.length;
+					var hidden = inputs * .8 | 0;
+					
+					LSTM = new Architect.NTM(inputs,outputs,symbols,symbols,1,hidden);
+					
+
+
+					var results = LSTM.trainer.DSR({
+						targets: targets,
+						distractors: distractors,
+						prompts: prompts,
+						length: length,
+						iterations: 100,
+						rate: .17,
+						schedule: {
+							every: 2,
+							do: function(obj){
+								drawMemory();
+								console.log(' Error: ' + obj.error);
+							}
+						}
+					});
+					
+					
+					if (results.iterations < 250000)
+					{
+						log("Trained!");
+						log("- Iterations: " + results.iterations);
+						log("- Error: " + results.error);
+						log("- Elapsed time: " + results.time + " ms");
+						log("- Success rate: " + (results.success*100).toFixed(2) + "%");
+						$('<div>', { id: 'log-validate', style:'height:450px;'}).appendTo(".container");
+						validate();
+					} else{
+						log ("&nbsp");
+						log ("Failed...");
+						log ("&nbsp");
+						log ("&nbsp");
+						console.log('failed');
+						train()
+					}
+				});
+
+			}
+
+			var validate = function(){
+				//$(document.body).css("min-height", 1349);
+				$("#log-validate").html('');
+				log ("&nbsp", "log-validate");
+				log("Validating...", "log-validate");
+				
+				sequence = [], sequenceLength = length - prompts.length;
+				for (i  = 0; i < sequenceLength; i ++)
+				{
+					var any = Math.random() * distractors.length | 0;
+					sequence.push(distractors[any]);
+				}
+				indexes = [], positions = [];
+				for (i = 0; i < prompts.length; i ++)
+				{
+					indexes.push(Math.random() * targets.length | 0);
+					positions.push(noRepeat(sequenceLength, positions));
+				}
+				positions = positions.sort();
+				for (i = 0; i < prompts.length; i ++)
+				{
+					sequence[positions[i]] = targets[indexes[i]];
+					sequence.push(prompts[i]);
+				}
+				targetsCorrect = distractorsCorrect = symbol = 0;
+
+				log ("&nbsp", "log-validate");
+				var squareSecuence =[];
+				for (var i in sequence)
+					squareSecuence[i] = square(sequence[i]);
+				log("Sequence: " + squareSecuence.join(' '), "log-validate");
+				next();
+			}
+
+			var next = function(){
+				// generate input from sequence
+				var input = [];
+				for (var j = 0; j < symbols; j++)
+					input[j] = 0;
+				input[sequence[symbol]] = 1;
+
+				// generate target output
+				var output = [];
+				for (j = 0; j < targets.length; j++)
+					output[j] = 0;
+
+				if (symbol >= sequenceLength)
+				{
+					var index = symbol - sequenceLength;
+					output[indexes[index]] = 1;
+				}
+
+				// check result
+				var prediction = LSTM.activate(input);
+				var ok = equal(prediction, output);
+				if (ok)
+					if (symbol < sequenceLength)
+						distractorsCorrect++;
+					else
+						targetsCorrect++;
+				val = value(prediction);
+				log((symbol+1) + ") input: " + square(sequence[symbol]) +  " output: " + (val != "none" ? square(targets[val]) : "--") + (ok ? ' <span class="validate tick"></span>' : ' <span class="validate fail"></span>'), "log-validate")
+
+				symbol++;
+				
+				if (symbol < sequence.length)
+					setTimeout(next, 100);
+				else {
+					if (distractorsCorrect + targetsCorrect == length)
+					{
+						log ("&nbsp", "log-validate");
+						log ("Success! <button onclick='validate();'>Try another sequence</button>", "log-validate");
+						$("body").animate({ scrollTop: $(document).height() }, "slow");
+					} else {
+						log ("&nbsp", "log-validate");
+						log ("Failed...", "log-validate");
+						validate();
+					}
+				}
+			}
+
+			var noRepeat = function(range, avoid)
+			{
+				var number = Math.random() * range | 0;
+				var used = false;
+				for (var i in avoid)
+					if (number == avoid[i])
+						used = true;
+				return used ? noRepeat(range, avoid) : number;
+			}
+			var equal = function(prediction, output){
+				for (var i in prediction)
+					if (Math.round(prediction[i]) != output[i])
+						return false;
+				return true;
+			}
+
+			var value = function(array){
+				var max = .5;
+				var res = -1;
+				for (var i in array)
+					if (array[i] > max)
+					{
+						max = array[i];
+						res = i;
+					}
+				return res == -1 ? 'none' : res;
+			}
+
+			var colors = ['white', 'black', 'green', 'yellow', 'red', 'blue', 'purple', 'orange', 'gray', 'lightblue'];
+			var square = function(value){
+				return '<span class="square" style="background-color:' + colors[value] + '">&nbsp</span>';
+			}
+
+		</script>
+	</head>
+	<body>
+		<canvas id="canvasMem" width=512 height=128></canvas>
+		
+		<div class="container"></div>
+		
+		<p> Start training: <button onclick="train();">START</button></p>
+		<p id="aux">&nbsp;</p>
+	</div>
+	</body>
+</html>
