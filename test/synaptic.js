@@ -240,11 +240,11 @@ describe("Perceptron - XOR Softmax", function () {
   ];
 
   perceptron.trainer.train(trainingSet, {
-    log: true,
+    log: 5000,
     cost: synaptic.Trainer.cost.CROSS_ENTROPY_SOFTMAX,
-    error: 0.00001,
+    error: 0.001,
     iterations: 100000,
-    rate: [0.1, 0.1, 0.01]
+    rate: 0.1
   });
 
   var test00 = Math.round(perceptron.activate([0, 0])[0]);

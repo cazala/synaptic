@@ -12,7 +12,7 @@ export class SoftMaxLayer extends Layer.Layer {
 		this.optimizable = false;
 
 		for (var n = 0; n < this.list.length; n++) {
-			this.list[n].squash = Squash.EXP;
+			this.list[n].squash = Squash.IDENTITY;
 		}
 	}
 
@@ -23,7 +23,8 @@ export class SoftMaxLayer extends Layer.Layer {
 		var activationIndex = 0;
 
 		var sum = 0;
-
+		var Amax = null;
+		
 		if (typeof input != 'undefined') {
 			if (input.length != this.size)
 				throw "INPUT size and LAYER size must be the same to activate!";
@@ -32,56 +33,39 @@ export class SoftMaxLayer extends Layer.Layer {
 
 			for (var id in this.list) {
 				this.list[id].readIncommingConnections(input[id]);
-				sum += this.list[id].activation;
+				if (Amax === null || this.list[id].activation > Amax)
+					Amax = this.list[id].activation;
 			}
 		} else {
 			for (var id in this.list) {
 				this.list[id].readIncommingConnections();
-				sum += this.list[id].activation;
+				if (Amax === null || this.list[id].activation > Amax)
+					Amax = this.list[id].activation;
 			}
-		}
-		
-		if(isNaN(sum) || sum == Infinity || sum == -Infinity){
-				console.log("Sum se fue al choto.", sum);
 		}
 
 		for (var n = 0; n < this.currentActivation.length; n++) {
-			var x = this.list[n].activation / sum;
-
-			if(x == Infinity){
-				x = 1;
-				console.log('act infinity', this.list[n].activation , sum);
-			}
+			sum += (this.list[n].activation = Math.exp(this.list[n].activation - Amax));
+		}
 		
-			if (isNaN(x) || x == Infinity || x == -Infinity) {
-				console.log("Activacion se fue al choto.", this.list[n].derivative, x, sum);
-			}
-
+		for (var n = 0; n < this.currentActivation.length; n++) {
+			// set the activations
+			var x = this.list[n].activation / sum;
 			this.list[n].activation = this.currentActivation[n] = x;
 			
-			this.list[n].derivative = x * (1 - x);
+			// set the derivatives
 			
-			if (isNaN(this.list[n].derivative)) {
-				console.log("Derivada se fue al choto.", this.list[n].derivative, x, sum);
-			}
-
-
+			//x = this.list[n].activation / (sum - this.list[n].activation);
+			
+			this.list[n].derivative = x*(1-x);
+			
 			this.list[n].updateTraces();
 		}
-
+		
 		return this.currentActivation;
 	}
-	
-	propagate(rate: number, target?: Synaptic.INumericArray) {
-		/*if (typeof target != 'undefined') {
-			for (var n = 0; n < this.currentActivation.length; n++) {
-				this.list[n].derivative =  this.list[n].activation-target[n];
-			}
-		}*/
-		super.propagate(rate, target);
-	}
-	
-	static NormalizeConnectionWeights(layerConnection: Layer.Layer.LayerConnection){
+
+	static NormalizeConnectionWeights(layerConnection: Layer.Layer.LayerConnection) {
 		var sum = 0;
 		for (var c = 0; c < layerConnection.list.length; c++) {
 			sum += (layerConnection.list[c].weight = Math.exp(layerConnection.list[c].weight));
