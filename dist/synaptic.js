@@ -57,7 +57,7 @@ var Hopfield = (function (_super) {
 })(network.Network);
 exports.Hopfield = Hopfield;
 
-},{"../layer":7,"../network":8,"../trainer":12}],3:[function(require,module,exports){
+},{"../layer":7,"../network":8,"../trainer":13}],3:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -180,7 +180,7 @@ var LSTM = (function (_super) {
 exports.LSTM = LSTM;
 ;
 
-},{"../layer":7,"../network":8,"../trainer":12}],4:[function(require,module,exports){
+},{"../layer":7,"../network":8,"../trainer":13}],4:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -231,7 +231,7 @@ var Liquid = (function (_super) {
 })(network.Network);
 exports.Liquid = Liquid;
 
-},{"../layer":7,"../network":8,"../trainer":12}],5:[function(require,module,exports){
+},{"../layer":7,"../network":8,"../trainer":13}],5:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -243,6 +243,7 @@ var trainer = require('../trainer');
 var Layer = require('../layer');
 var Squash = require('../squash');
 var _utils = require('../utils');
+var softmaxLayer = require('../softmaxLayer');
 var Utils = _utils.Utils;
 var NTM = (function (_super) {
     __extends(NTM, _super);
@@ -290,6 +291,7 @@ var NTM = (function (_super) {
     NTM.prototype.propagate = function (rate, target) {
         this.outputLayer.propagate(rate, target);
         for (var i = this.heads.length - 1; i >= 0; i--) {
+            this.heads[i].shiftingLayer && this.heads[i].shiftingLayer.propagate(rate);
             this.heads[i].layer.propagate(rate);
         }
         this.hiddenLayer.propagate(rate);
@@ -343,45 +345,47 @@ var Head = (function () {
         this.w_weightings = new Float64Array(this.memory.blocks);
         Utils.initRandomSoftmaxArray(this.w_weightings);
         this.shiftLength = 3; //this.memory.blocks;
-        this.s_shiftingVector = new Float64Array(this.shiftLength);
         this.k_keys = new Float64Array(this.memory.blockWidth);
         this.ß_keyStrength = 0;
         this.eraseGate = new Float64Array(this.memory.blocks);
         this.addGate = new Float64Array(this.memory.blocks);
         this.readVector = destinationArray || new Float64Array(this.memory.blocks);
-        this.layer = new Layer.Layer(this.memory.blockWidth + this.memory.blocks * 3 + Head.ADDITIONAL_INPUT_VALUES + this.shiftLength);
+        // Head layer
+        this.layer = new Layer.Layer(this.memory.blockWidth + this.memory.blocks * 3 + Head.ADDITIONAL_INPUT_VALUES, "NTM: Head layer");
         this.memory.hiddenLayer.project(this.layer, Layer.Layer.connectionType.ALL_TO_ALL);
         this.layer.project(this.memory.outputLayer, Layer.Layer.connectionType.ALL_TO_ALL);
-        this.circulantMatrix = Utils.buildCirculantMatrix(this.memory.blocks);
+        // shifting layer
+        this.shiftingLayer = new softmaxLayer.SoftMaxLayer(this.shiftLength, "NTM: Shifting layer");
+        this.memory.hiddenLayer.project(this.shiftingLayer, Layer.Layer.connectionType.ALL_TO_ALL);
+        this.shiftingLayer.project(this.memory.hiddenLayer, Layer.Layer.connectionType.ALL_TO_ALL);
+        this.s_shiftingVector = this.shiftingLayer.currentActivation;
     }
     Head.prototype.readParams = function (activation) {
-        this.ß_keyStrength = Squash.SOFTPLUS(activation[0]);
-        this.g_interpolation = Squash.LOGISTIC(activation[1]);
-        this.Y_focus = Math.log(Math.exp(activation[2] + 1)) + 1; //Squash.SOFTPLUS(activation[2]) + 1;
+        this.ß_keyStrength = activation[0];
+        this.g_interpolation = activation[1];
+        this.Y_focus = activation[2] + 1; //Squash.SOFTPLUS(activation[2]) + 1;
         var startAt = 3;
         for (var k = 0; k < this.k_keys.length; k++) {
             this.k_keys[k] = this.layer.list[k + startAt].activation;
         }
         startAt += this.k_keys.length;
         for (var k = 0; k < this.addGate.length; k++) {
-            this.addGate[k] = this.layer.list[k + startAt].derivative;
+            this.addGate[k] = this.layer.list[k + startAt].activation;
         }
         startAt += this.addGate.length;
         for (var k = 0; k < this.eraseGate.length; k++) {
             this.eraseGate[k] = Squash.LOGISTIC(this.layer.list[k + startAt].activation);
         }
-        startAt += this.eraseGate.length;
-        for (var k = 0; k < this.shiftLength; k++) {
-            this.s_shiftingVector[k] = this.layer.list[k + startAt].activation;
-        }
         var M = this.memory.data;
         // focus by content, obtains an array of similarity indexes for each memoryBlock
         for (var i = 0; i < M.length; i++)
-            this.wc_focusedWeights[i] = Utils.getCosineSimilarity(M[i], this.k_keys);
+            this.wc_focusedWeights[i] = Utils.getCosineSimilarity(M[i], this.k_keys) * this.ß_keyStrength;
+        Utils.softMax(this.wc_focusedWeights);
         // focus by location (interpolation)
         Utils.interpolateArray(this.wc_focusedWeights, this.w_weightings, this.g_interpolation);
         // convolutional shift
-        this.doShiftings();
+        //this.doShiftings();
+        Utils.vectorInvertedShifting(this.wc_focusedWeights, this.s_shiftingVector);
         // sharpening
         Utils.sharpArray(this.w_weightings, this.wc_focusedWeights, this.Y_focus);
         // since ∑ w = 1, we have to softmax the array
@@ -389,11 +393,13 @@ var Head = (function () {
         /// we got wt!
     };
     Head.prototype.doShiftings = function () {
+        // call this fn in case of not using a softmaxLayer for shifting
         Utils.softMax(this.s_shiftingVector);
         Utils.vectorInvertedShifting(this.wc_focusedWeights, this.s_shiftingVector);
     };
     Head.prototype.doTimeStep = function () {
         var activation = this.layer.activate();
+        this.shiftingLayer && this.shiftingLayer.activate();
         this.readParams(activation);
         // reading
         for (var index = 0; index < this.memory.blocks; index++) {
@@ -408,7 +414,7 @@ var Head = (function () {
 })();
 exports.Head = Head;
 
-},{"../layer":7,"../network":8,"../squash":10,"../trainer":12,"../utils":13}],6:[function(require,module,exports){
+},{"../layer":7,"../network":8,"../softmaxLayer":10,"../squash":11,"../trainer":13,"../utils":14}],6:[function(require,module,exports){
 var __extends = this.__extends || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
@@ -458,7 +464,7 @@ var Perceptron = (function (_super) {
 exports.Perceptron = Perceptron;
 ;
 
-},{"../layer":7,"../network":8,"../trainer":12}],7:[function(require,module,exports){
+},{"../layer":7,"../network":8,"../trainer":13}],7:[function(require,module,exports){
 var neuron = require('./neuron');
 var network = require('./network');
 /*******************************************************************************************
@@ -729,7 +735,7 @@ var Network = (function () {
         if (typeof layers != 'undefined') {
             this.layers = layers || {
                 input: null,
-                hidden: {},
+                hidden: [],
                 output: null
             };
         }
@@ -1237,7 +1243,7 @@ var Network = (function () {
 })();
 exports.Network = Network;
 
-},{"./layer":7,"./neuron":9,"./squash":10}],9:[function(require,module,exports){
+},{"./layer":7,"./neuron":9,"./squash":11}],9:[function(require,module,exports){
 /// <reference path="synaptic.ts" />
 var Squash = require('./squash');
 /******************************************************************************************
@@ -1922,13 +1928,84 @@ var Neuron;
     })(Connection = Neuron.Connection || (Neuron.Connection = {}));
 })(Neuron = exports.Neuron || (exports.Neuron = {}));
 
-},{"./squash":10}],10:[function(require,module,exports){
+},{"./squash":11}],10:[function(require,module,exports){
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var Layer = require('./layer');
+var Squash = require('./squash');
+var _Utils = require('./utils');
+var Utils = _Utils.Utils;
+var SoftMaxLayer = (function (_super) {
+    __extends(SoftMaxLayer, _super);
+    function SoftMaxLayer(size, label) {
+        _super.call(this, size, label);
+        this.optimizable = false;
+        for (var n = 0; n < this.list.length; n++) {
+            this.list[n].squash = Squash.IDENTITY;
+        }
+    }
+    SoftMaxLayer.prototype.activate = function (input) {
+        if (this.currentActivation.length != this.list.length)
+            this.currentActivation = new Float64Array(this.list.length);
+        var activationIndex = 0;
+        var sum = 0;
+        var Amax = null;
+        if (typeof input != 'undefined') {
+            if (input.length != this.size)
+                throw "INPUT size and LAYER size must be the same to activate!";
+            Utils.softMax(input);
+            for (var id in this.list) {
+                this.list[id].readIncommingConnections(input[id]);
+                if (Amax === null || this.list[id].activation > Amax)
+                    Amax = this.list[id].activation;
+            }
+        }
+        else {
+            for (var id in this.list) {
+                this.list[id].readIncommingConnections();
+                if (Amax === null || this.list[id].activation > Amax)
+                    Amax = this.list[id].activation;
+            }
+        }
+        for (var n = 0; n < this.currentActivation.length; n++) {
+            sum += (this.list[n].activation = Math.exp(this.list[n].activation - Amax));
+        }
+        for (var n = 0; n < this.currentActivation.length; n++) {
+            // set the activations
+            var x = this.list[n].activation / sum;
+            this.list[n].activation = this.currentActivation[n] = x;
+            // set the derivatives
+            //x = this.list[n].activation / (sum - this.list[n].activation);
+            this.list[n].derivative = x * (1 - x);
+            this.list[n].updateTraces();
+        }
+        return this.currentActivation;
+    };
+    SoftMaxLayer.NormalizeConnectionWeights = function (layerConnection) {
+        var sum = 0;
+        for (var c = 0; c < layerConnection.list.length; c++) {
+            sum += (layerConnection.list[c].weight = Math.exp(layerConnection.list[c].weight));
+        }
+        for (var c = 0; c < layerConnection.list.length; c++) {
+            layerConnection.list[c].weight /= sum;
+        }
+    };
+    return SoftMaxLayer;
+})(Layer.Layer);
+exports.SoftMaxLayer = SoftMaxLayer;
+
+},{"./layer":7,"./squash":11,"./utils":14}],11:[function(require,module,exports){
 // squashing functions
 function LOGISTIC(x, derivate) {
-    if (!derivate)
-        return 1 / (1 + Math.exp(-x));
-    var fx = LOGISTIC(x);
-    return fx * (1 - fx);
+    if (derivate) {
+        var fx = LOGISTIC(x);
+        return fx * (1 - fx);
+    }
+    return 1 / (1 + Math.exp(-x));
 }
 exports.LOGISTIC = LOGISTIC;
 function TANH(x, derivate) {
@@ -1949,7 +2026,7 @@ function HLIM(x, derivate) {
 exports.HLIM = HLIM;
 function SOFTPLUS(x, derivate) {
     if (derivate)
-        return 1 - 1 / 1 + Math.exp(x);
+        return 1 - 1 / (1 + Math.exp(x));
     return Math.log(1 + Math.exp(x));
 }
 exports.SOFTPLUS = SOFTPLUS;
@@ -1958,7 +2035,7 @@ function EXP(x, derivate) {
 }
 exports.EXP = EXP;
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /*
 ********************************************************************************************
                                          SYNAPTIC
@@ -2011,7 +2088,7 @@ if (typeof window != "undefined")
     window['synaptic'] = Synaptic;
 module.exports = Synaptic;
 
-},{"./architect":1,"./layer":7,"./network":8,"./neuron":9,"./squash":10,"./trainer":12,"./utils":13}],12:[function(require,module,exports){
+},{"./architect":1,"./layer":7,"./network":8,"./neuron":9,"./squash":11,"./trainer":13,"./utils":14}],13:[function(require,module,exports){
 /*******************************************************************************************
                                         TRAINER
 *******************************************************************************************/
@@ -2090,7 +2167,7 @@ var Trainer = (function () {
                     });
                 }
                 else if (options.log && iterations % options.log == 0) {
-                    console.log('iterations', iterations, 'error', error, 'rate', currentRate);
+                    console.log('iterations', iterations, 'error', error, 'rate', currentRate, 'T:', target, 'O:', output);
                 }
                 ;
                 if (options.shuffle)
@@ -2533,6 +2610,12 @@ var Trainer;
                 crossentropy -= (target[i] * Math.log(output[i] + 1e-15)) + ((1 - target[i]) * Math.log((1 + 1e-15) - output[i])); // +1e-15 is a tiny push away to avoid Math.log(0)
             return crossentropy;
         },
+        CROSS_ENTROPY_SOFTMAX: function (target, output) {
+            var crossentropy = 0;
+            for (var i in output)
+                crossentropy -= target[i] * Math.log(output[i] + 1e-15);
+            return crossentropy;
+        },
         MSE: function (target, output) {
             var mse = 0;
             for (var i in output)
@@ -2542,7 +2625,7 @@ var Trainer;
     };
 })(Trainer = exports.Trainer || (exports.Trainer = {}));
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 var Utils = (function () {
     function Utils() {
     }
@@ -2554,9 +2637,14 @@ var Utils = (function () {
         if (!outputArray.length)
             return outputArray;
         var sum = 0;
+        var Amax = outputArray[0];
+        for (var i = 0; i < outputArray.length; i++) {
+            if (outputArray[i] < Amax)
+                Amax = outputArray[i];
+        }
         // sum = ∑ array[n]^e
         for (var i = 0; i < outputArray.length; i++) {
-            outputArray[i] = Math.exp(outputArray[i]);
+            outputArray[i] = Math.exp(outputArray[i] - Amax);
             sum += outputArray[i];
         }
         for (var i = 0; i < outputArray.length; i++)
@@ -2604,7 +2692,6 @@ var Utils = (function () {
     };
     Utils.getCosineSimilarity = function (arrayA, arrayB) {
         // http://en.wikipedia.org/wiki/Cosine_similarity
-        // NTM: 3.3.1 (6)
         var dotPr = 0;
         var acumA = 0, acumB = 0;
         for (var i = 0; i < arrayA.length; i++) {
@@ -2676,7 +2763,7 @@ var Utils = (function () {
         // w~ 3.3.2 (8)
         var ret = new Float64Array(wg.length);
         var corrimientoIndex = -((shiftings.length - 1) / 2) | 0;
-        var circulantMatrix = Utils.buildCirculantMatrix(wg.length);
+        var circulantMatrix = Utils.transformationMatrixCache[wg.length] || (Utils.transformationMatrixCache[wg.length] = Utils.buildCirculantMatrix(wg.length));
         for (var i = 0; i < wg.length; i++) {
             for (var x = 0; x < wg.length; x++) {
                 var tmp = 0;
@@ -2710,9 +2797,10 @@ var Utils = (function () {
         }
         return ret;
     };
+    Utils.transformationMatrixCache = {};
     return Utils;
 })();
 exports.Utils = Utils;
 
-},{}]},{},[11]);
+},{}]},{},[12]);
 var synaptic = synaptic || Synaptic;var Neuron = synaptic.Neuron, Layer = synaptic.Layer, Network = synaptic.Network, Trainer = synaptic.Trainer, Architect = synaptic.Architect;

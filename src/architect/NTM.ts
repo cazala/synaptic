@@ -5,6 +5,7 @@ import neuron = require('../neuron');
 import Synaptic = require('../synaptic');
 import Squash = require('../squash');
 import _utils = require('../utils');
+import softmaxLayer = require('../softmaxLayer');
 
 var Utils = _utils.Utils;
 
@@ -90,6 +91,7 @@ export class NTM extends network.Network {
   propagate(rate: number, target: Synaptic.INumericArray) {
     this.outputLayer.propagate(rate, target);
     for (var i = this.heads.length - 1; i >= 0; i--) {
+      this.heads[i].shiftingLayer && this.heads[i].shiftingLayer.propagate(rate);
       this.heads[i].layer.propagate(rate);
     }
     this.hiddenLayer.propagate(rate);
@@ -162,8 +164,7 @@ export class Head {
   shiftLength: number;
 
   layer: Layer.Layer;
-
-  circulantMatrix: Float64Array[];
+  shiftingLayer: Layer.Layer;
 
   constructor(memory: NTM, destinationArray?: Float64Array) {
     this.memory = memory;
@@ -174,26 +175,30 @@ export class Head {
 
     this.shiftLength = 3; //this.memory.blocks;
 
-    this.s_shiftingVector = new Float64Array(this.shiftLength);
+    
     this.k_keys = new Float64Array(this.memory.blockWidth);
     this.ß_keyStrength = 0;
     this.eraseGate = new Float64Array(this.memory.blocks);
     this.addGate = new Float64Array(this.memory.blocks);
     this.readVector = destinationArray || new Float64Array(this.memory.blocks);
 
-    this.layer = new Layer.Layer(this.memory.blockWidth + this.memory.blocks * 3 + Head.ADDITIONAL_INPUT_VALUES + this.shiftLength);
-
+    // Head layer
+    this.layer = new Layer.Layer(this.memory.blockWidth + this.memory.blocks * 3 + Head.ADDITIONAL_INPUT_VALUES, "NTM: Head layer");
     this.memory.hiddenLayer.project(this.layer, Layer.Layer.connectionType.ALL_TO_ALL);
     this.layer.project(this.memory.outputLayer, Layer.Layer.connectionType.ALL_TO_ALL);
 
-    this.circulantMatrix = Utils.buildCirculantMatrix(this.memory.blocks);
+    // shifting layer
+    this.shiftingLayer = new softmaxLayer.SoftMaxLayer(this.shiftLength, "NTM: Shifting layer");
+    this.memory.hiddenLayer.project(this.shiftingLayer, Layer.Layer.connectionType.ALL_TO_ALL);
+    this.shiftingLayer.project(this.memory.hiddenLayer, Layer.Layer.connectionType.ALL_TO_ALL);
+    this.s_shiftingVector = this.shiftingLayer.currentActivation;
   }
 
   private readParams(activation: Synaptic.INumericArray) {
 
-    this.ß_keyStrength = Squash.SOFTPLUS(activation[0]);
-    this.g_interpolation = Squash.LOGISTIC(activation[1]);
-    this.Y_focus = Math.log(Math.exp(activation[2] + 1)) + 1;//Squash.SOFTPLUS(activation[2]) + 1;
+    this.ß_keyStrength = activation[0];
+    this.g_interpolation = activation[1];
+    this.Y_focus = activation[2] + 1;//Squash.SOFTPLUS(activation[2]) + 1;
 
     var startAt = 3;
     for (var k = 0; k < this.k_keys.length; k++) {
@@ -202,7 +207,7 @@ export class Head {
 
     startAt += this.k_keys.length;
     for (var k = 0; k < this.addGate.length; k++) {
-      this.addGate[k] = this.layer.list[k + startAt].derivative;
+      this.addGate[k] = this.layer.list[k + startAt].activation;
     }
 
     startAt += this.addGate.length;
@@ -210,22 +215,20 @@ export class Head {
       this.eraseGate[k] = Squash.LOGISTIC(this.layer.list[k + startAt].activation);
     }
 
-    startAt += this.eraseGate.length;
-    for (var k = 0; k < this.shiftLength; k++) {
-      this.s_shiftingVector[k] = this.layer.list[k + startAt].activation;
-    }
-
     var M = this.memory.data;
     
     // focus by content, obtains an array of similarity indexes for each memoryBlock
     for (var i = 0; i < M.length; i++)
-      this.wc_focusedWeights[i] = Utils.getCosineSimilarity(M[i], this.k_keys);
+      this.wc_focusedWeights[i] = Utils.getCosineSimilarity(M[i], this.k_keys) * this.ß_keyStrength;
+    
+    Utils.softMax(this.wc_focusedWeights);
     
     // focus by location (interpolation)
     Utils.interpolateArray(this.wc_focusedWeights, this.w_weightings, this.g_interpolation);
     
     // convolutional shift
-    this.doShiftings();
+    //this.doShiftings();
+    Utils.vectorInvertedShifting(this.wc_focusedWeights, this.s_shiftingVector);
      
     // sharpening
     Utils.sharpArray(this.w_weightings, this.wc_focusedWeights, this.Y_focus);
@@ -237,13 +240,16 @@ export class Head {
   }
 
   doShiftings() {
+    // call this fn in case of not using a softmaxLayer for shifting
+    
     Utils.softMax(this.s_shiftingVector);
-
     Utils.vectorInvertedShifting(this.wc_focusedWeights, this.s_shiftingVector);
   }
 
   doTimeStep() {
     var activation = this.layer.activate();
+    
+    this.shiftingLayer && this.shiftingLayer.activate();
 
     this.readParams(activation);
     

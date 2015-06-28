@@ -103,9 +103,9 @@
 			var seqWidth = 9;
 			var seqLength = 10;
 			var targetSequence = [];
-			var trainLimit = 200;
+			var trainLimit = 60;
 			
-			var LSTM = new Architect.NTM(seqWidth,seqWidth,30,12,1,9);
+			var LSTM = new Architect.NTM(seqWidth,seqWidth,4,4,1,9);
 
 			var canv = null;
 			var ctx = null;
@@ -130,18 +130,30 @@
 			}
 			
 			var drawMemory = function(index,rgb){
-				ctx.fillStyle = 'black';
-				ctx.fillRect(0, 0, 512, 128);
+				if(index == 0){
+					ctx.fillStyle = 'black';
+					ctx.fillRect(0, 0, 512, 512);
+				}
 				
 				var memory = LSTM.data;
-				
+
 				for (var memBlock = 0; memBlock < memory.length; memBlock++) {
 					var mem = memory[memBlock];
+					alto = mem.length + 15;
+					
 					for (var wM = 0; wM < mem.length; wM++) {
 						ctx.fillStyle = 'rgb(0,0,' + (mem[wM] * 255).toFixed() + ')';
 						ctx.fillRect(memBlock * 9, wM*9,8,8);
 					}
-				}	
+				}
+				
+				var focus = LSTM.heads[0].wc_focusedWeights;
+
+				for (var wM = 0; wM < focus.length; wM++) {
+					var r = (focus[wM] * 255).toFixed();
+					ctx.fillStyle = 'rgb(' + r + ',' + r + ',' + r + ')';
+					ctx.fillRect( (wM)*9,(memory.length + index + 1) * 9,8,8);
+				}
 			}
 
 			var train = function(){
@@ -169,12 +181,11 @@
 				LSTM.propagate(0.01, targetSequence[num % targetSequence.length]);
 				
 				
-				
-				if(num % 5 == 0){
-					drawMemory();
-					console.log(num, 'of', trainLimit);
-				}
-				
+			
+			
+				drawMemory(num);
+				console.log(num, 'of', trainLimit);
+			
 				requestAnimationFrame(function(){
 					doTraining(num + 1);
 				});
@@ -184,13 +195,13 @@
 				canv = document.getElementById('canvasMem');
 				ctx = canv.getContext('2d');
 				drawMemory();
-				});
+			});
 
 
 		</script>
 	</head>
 	<body>
-		<canvas id="canvasMem" width=512 height=128></canvas>
+		<canvas id="canvasMem" width=512 height=512></canvas>
 		
 		<div class="container"></div>
 		

@@ -39,7 +39,7 @@ export declare class Head {
     prevFocus: number;
     shiftLength: number;
     layer: Layer.Layer;
-    circulantMatrix: Float64Array[];
+    shiftingLayer: Layer.Layer;
     constructor(memory: NTM, destinationArray?: Float64Array);
     private readParams(activation);
     doShiftings(): void;

@@ -14,9 +14,15 @@ export class Utils {
 
     var sum = 0;
 
+    var Amax = outputArray[0];
+    for (var i = 0; i < outputArray.length; i++) {
+      if(outputArray[i] < Amax) Amax = outputArray[i];
+    }
+    
+
     // sum = ∑ array[n]^e
     for (var i = 0; i < outputArray.length; i++) {
-      outputArray[i] = Math.exp(outputArray[i]);
+      outputArray[i] = Math.exp(outputArray[i] - Amax);
       sum += outputArray[i];
     }
 
@@ -74,7 +80,6 @@ export class Utils {
 
   static getCosineSimilarity(arrayA: Synaptic.INumericArray, arrayB: Synaptic.INumericArray): number {
     // http://en.wikipedia.org/wiki/Cosine_similarity
-    // NTM: 3.3.1 (6)
     var dotPr = 0;
 
     var acumA = 0, acumB = 0;
