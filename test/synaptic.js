@@ -12,7 +12,7 @@ var Perceptron = synaptic.Architect.Perceptron,
 
 // utils
 
-var noRepeat = function(range, avoid) {
+function noRepeat (range, avoid) {
   var number = Math.random() * range | 0;
   for (var i in avoid){
     if (number == avoid[i]){
@@ -22,18 +22,27 @@ var noRepeat = function(range, avoid) {
   return number;
 };
 
-var equal = function(prediction, output) {
+function equal (prediction, output) {
   for (var i in prediction)
     if (Math.round(prediction[i]) != output[i])
       return false;
   return true;
 };
 
-var generateRandomArray = function(size){
+function generateRandomArray (size){
     var array = [];
     for (var j = 0; j < size; j++)
         array.push(Math.random() + .5 | 0);
     return array;
+}
+
+function compare (a, b) {
+  var mse = 0;
+  for (var k in a)
+    mse += Math.pow(a[k] - b[k], 2);
+  mse /= a.length;
+
+  return mse < 1e-10;
 }
 
 // specs
@@ -85,7 +94,7 @@ describe('Basic Neural Network', function() {
     var test11 = Math.round(network.activate([1, 1]));
     assert.equal(test11, 1, "[1,1] did not output 1");
   });
-
+  
   it("trains an OR gate", function() {
 
     var inputLayer = new Layer(2),
@@ -294,8 +303,25 @@ describe("LSTM - Discrete Sequence Recall", function() {
   }
 });
 
+describe("LSTM - Timing Task", function() {
+  var network = new synaptic.Architect.LSTM(2,7,1);
+  var result = network.trainer.timingTask({ 
+    log: false,
+    trainSamples: 4000,
+    testSamples: 500
+  });
+  
+  it("should complete the training in less than 200 iterations", function() {
+    assert(result.train.iterations <= 200);
+  });
+
+  it("should pass the test with an error smaller than 0.05", function() {
+    assert(result.test.error < .05);
+  });
+});
+
 describe("Optimized and Unoptimized Networks Equivalency", function() {
-  var optimized = new Perceptron(10,15,5);
+  var optimized = new LSTM(2,1,1)
 
   var unoptimized = optimized.clone();
   unoptimized.setOptimize(false);
@@ -306,23 +332,19 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
   for (var i = 1; i <= iterations; i++)
   {
       //random input
-      var input = generateRandomArray(10);
+      var input = generateRandomArray(2);
 
       // activate networks
       var output1 = optimized.activate(input);
       var output2 = unoptimized.activate(input);
 
       if (i % 100 == 0)
-        it(' same output for both networks after ' + i + ' iterations', function(){
-          var diff = false;
-          for (var k in output1)
-            if (output1[k] - output2[k] != 0)
-              diff = true;
-          assert(!diff);
+        it('should produce the same output for both networks after ' + i + ' iterations', function(){
+          assert(compare(output1, output2));
         });
 
       // random target
-      var target = generateRandomArray(5);
+      var target = generateRandomArray(1);
 
       // propagate networks
       optimized.propagate(learningRate, target);
@@ -331,7 +353,7 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
 });
 
 describe("toJSON/fromJSON Networks Equivalency", function() {
-  var original = new Perceptron(10,15,5);
+  var original = new LSTM(10,5,5);
 
   var exported = original.toJSON();
   var imported = Network.fromJSON(exported);
@@ -349,12 +371,8 @@ describe("toJSON/fromJSON Networks Equivalency", function() {
       var output2 = imported.activate(input);
 
       if (i % 100 == 0)
-        it(' same output for both networks after ' + i + ' iterations', function(){
-          var diff = false;
-          for (var k in output1)
-            if (output1[k] - output2[k] != 0)
-              diff = true;
-          assert(!diff);
+        it('should produce the same output for both networks after ' + i + ' iterations', function(){
+          assert(compare(output1, output2));
         });
 
       // random target
@@ -367,7 +385,9 @@ describe("toJSON/fromJSON Networks Equivalency", function() {
 });
 
 describe("Cloned Networks Equivalency", function() {
-  var original = new Perceptron(10,15,5);
+  
+  var original = new LSTM(10,5,5);
+
   var cloned = original.clone();
 
   var learningRate = .5;
@@ -383,12 +403,8 @@ describe("Cloned Networks Equivalency", function() {
       var output2 = cloned.activate(input);
 
       if (i % 100 == 0)
-        it(' same output for both networks after ' + i + ' iterations', function(){
-          var diff = false;
-          for (var k in output1)
-            if (output1[k] - output2[k] != 0)
-              diff = true;
-          assert(!diff);
+        it('should produce the same output for both networks after ' + i + ' iterations', function(){
+          assert(compare(output1, output2));
         });
 
       // random target
@@ -400,10 +416,10 @@ describe("Cloned Networks Equivalency", function() {
   }
 });
 
-describe("Manual Override", function() {
+describe("Scheduled Tasks", function() {
   var perceptron = new Perceptron(2, 3, 1);
 
-  it('iterations ended at full 3000', function(){
+  it('should stop training at 3000 iterations', function(){
     var final_stats = perceptron.trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
@@ -420,7 +436,7 @@ describe("Manual Override", function() {
     assert.equal( final_stats.iterations, 3000 )
   });
 
-  it('iterations ended at 2000, not full 3000', function(){
+  it('should abort the training at 2000 iterations', function(){
     var final_stats = perceptron.trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
@@ -437,7 +453,7 @@ describe("Manual Override", function() {
     assert.equal( final_stats.iterations, 2000 )
   });
 
-  it('training works even when schedule() has no return value', function(){
+  it('should work even if shedule.do() returns no value', function(){
     var final_stats = perceptron.trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
@@ -448,20 +464,6 @@ describe("Manual Override", function() {
         }
     });
     assert.equal( final_stats.iterations, 3000 )
-  });
-
-  it('using depreciated customLog still works', function(){
-    var counter = 0
-    var final_stats = perceptron.trainer.XOR({
-      iterations: 3000,
-      rate: 0.000001,
-      error: 0.000001,
-      customLog: {
-          every: 1000,
-          do: function(data) { counter++ }
-        }
-    });
-    assert.equal( counter, 3 )
   });
 
 });
