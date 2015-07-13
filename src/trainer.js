@@ -8,7 +8,7 @@ function Trainer(network, options) {
   this.rate = options.rate || .2;
   this.iterations = options.iterations || 100000;
   this.error = options.error || .005
-  this.cost = options.cost || Trainer.cost.CROSS_ENTROPY;
+  this.cost = options.cost || null;
 }
 
 Trainer.prototype = {
@@ -18,8 +18,9 @@ Trainer.prototype = {
 
     var error = 1;
     var iterations = bucketSize = 0;
-    var abort_training = false;
+    var abort = false;
     var input, output, target, currentRate;
+    var cost = options && options.cost || this.cost || Trainer.cost.MSE;
 
     var start = Date.now();
 
@@ -55,12 +56,12 @@ Trainer.prototype = {
     }
 
 
-    while (!abort_training && iterations < this.iterations && error > this.error) {
+    while (!abort && iterations < this.iterations && error > this.error) {
       error = 0;
 
       if(bucketSize > 0) {
         var currentBucket = Math.floor(iterations / bucketSize);
-        currentRate = this.rate[currentBucket];
+        currentRate = this.rate[currentBucket] || currentRate;
       }
 
       for (var train in set) {
@@ -70,7 +71,7 @@ Trainer.prototype = {
         output = this.network.activate(input);
         this.network.propagate(currentRate, target);
 
-        error += this.cost(target, output);
+        error += cost(target, output);
       }
 
       // check error
@@ -80,7 +81,7 @@ Trainer.prototype = {
       if (options) {
         if (this.schedule && this.schedule.every && iterations %
           this.schedule.every == 0)
-          abort_training = this.schedule.do({
+          abort = this.schedule.do({
             error: error,
             iterations: iterations,
             rate: currentRate
@@ -102,6 +103,33 @@ Trainer.prototype = {
     return results;
   },
 
+  // tests a set and returns the error and elapsed time
+  test: function(set, options){
+
+    var error = 0;
+    var abort = false;
+    var input, output, target;
+    var cost = options && options.cost || this.cost || Trainer.cost.MSE;
+
+    var start = Date.now();
+
+    for (var test in set) {
+      input = set[test].input;
+      target = set[test].output;
+      output = this.network.activate(input);
+      error += cost(target, output);
+    }
+
+    error /= set.length;
+
+    var results = {
+      error: error,
+      time: Date.now() - start
+    }
+
+    return results;
+  },
+
   // trains any given set to a network using a WebWorker
   workerTrain: function(set, callback, options) {
 
@@ -110,7 +138,8 @@ Trainer.prototype = {
     var iterations = bucketSize = 0;
     var input, output, target, currentRate;
     var length = set.length;
-    var abort_training = false;
+    var abort = false;
+    var cost = options && options.cost || that.cost || Trainer.cost.MSE;
 
     var start = Date.now();
 
@@ -125,29 +154,31 @@ Trainer.prototype = {
         };
       }
       if (options.iterations)
-        this.iterations = options.iterations;
+        that.iterations = options.iterations;
       if (options.error)
-        this.error = options.error;
+        that.error = options.error;
       if (options.rate)
-        this.rate = options.rate;
+        that.rate = options.rate;
       if (options.cost)
-        this.cost = options.cost;
+        that.cost = options.cost;
       if (options.schedule)
-        this.schedule = options.schedule;
+        that.schedule = options.schedule;
       if (options.customLog)
+      {
         // for backward compatibility with code that used customLog
         console.log('Deprecated: use schedule instead of customLog')
-        this.schedule = options.customLog;
+        that.schedule = options.customLog;
+      }
     }
 
     // dynamic learning rate
-    currentRate = this.rate;
-    if(Array.isArray(this.rate)) {
-      bucketSize = Math.floor(this.iterations / this.rate.length);
+    currentRate = that.rate;
+    if(Array.isArray(that.rate)) {
+      bucketSize = Math.floor(that.iterations / that.rate.length);
     }
 
     // create a worker
-    var worker = this.network.worker();
+    var worker = that.network.worker();
 
     // activate the network
     function activateWorker(input)
@@ -163,7 +194,7 @@ Trainer.prototype = {
     function propagateWorker(target){
         if(bucketSize > 0) {
           var currentBucket = Math.floor(iterations / bucketSize);
-          currentRate = this.rate[currentBucket];
+          currentRate = that.rate[currentBucket] || currentRate;
         }
         worker.postMessage({ 
             action: "propagate",
@@ -188,10 +219,11 @@ Trainer.prototype = {
 
                 // log
                 if (options) {
-                  if (this.schedule && this.schedule.every && iterations % this.schedule.every == 0)
-                    abort_training = this.schedule.do({
+                  if (that.schedule && that.schedule.every && iterations % that.schedule.every == 0)
+                    abort = that.schedule.do({
                       error: error,
-                      iterations: iterations
+                      iterations: iterations,
+                      rate: currentRate
                     });
                   else if (options.log && iterations % options.log == 0) {
                     console.log('iterations', iterations, 'error', error);
@@ -200,7 +232,7 @@ Trainer.prototype = {
                     shuffle(set);
                 }
 
-                if (!abort_training && iterations < that.iterations && error > that.error)
+                if (!abort && iterations < that.iterations && error > that.error)
                 {
                     activateWorker(set[index].input);
                 } else {
@@ -219,7 +251,7 @@ Trainer.prototype = {
 
         if (e.data.action == "activate")
         {
-            error += that.cost(set[index].output, e.data.output);
+            error += cost(set[index].output, e.data.output);
             propagateWorker(set[index].output); 
             index++;
         }
@@ -276,6 +308,7 @@ Trainer.prototype = {
     var rate = options.rate || .1;
     var log = options.log || 0;
     var schedule = options.schedule || {};
+    var cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
 
     var trial = correct = i = j = success = 0,
       error = 1,
@@ -351,10 +384,7 @@ Trainer.prototype = {
           this.network.propagate(rate, output);
         }
 
-        var delta = 0;
-        for (var j in prediction)
-          delta += Math.pow(output[j] - prediction[j], 2);
-        error += delta / this.network.outputs();
+        error += cost(output, prediction);
 
         if (distractorsCorrect + targetsCorrect == length)
           correct++;
@@ -399,6 +429,7 @@ Trainer.prototype = {
     var criterion = options.error || .05;
     var rate = options.rate || .1;
     var log = options.log || 500;
+    var cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
 
     // gramar node
     var Node = function() {
@@ -557,12 +588,7 @@ Trainer.prototype = {
         read = sequence.charAt(++i);
         predict = sequence.charAt(i + 1);
 
-        var delta = 0;
-        for (var k in output)
-          delta += Math.pow(target[k] - output[k], 2)
-        delta /= output.length;
-
-        error += delta;
+        error += cost(target, output);
       }
       error /= sequence.length;
       iteration++;
@@ -578,6 +604,78 @@ Trainer.prototype = {
       time: Date.now() - start,
       test: test,
       generate: generate
+    }
+  },
+
+  timingTask: function(options){
+
+    if (this.network.inputs() != 2 || this.network.outputs() != 1)
+      throw "Invalid Network: must have 2 inputs and one output";
+
+    if (typeof options == 'undefined')
+      var options = {};
+
+    // helper
+    function getSamples (trainingSize, testSize){
+    
+      // sample size
+      var size = trainingSize + testSize;
+      
+      // generate samples
+      var t = 0;
+      var set  = [];
+      for (var i = 0; i < size; i++) {
+        set.push({ input: [0,0], output: [0] });
+      }
+      while(t < size - 20) {
+          var n = Math.round(Math.random() * 20);
+          set[t].input[0] = 1;
+          for (var j = t; j <= t + n; j++){
+              set[j].input[1] = n / 20;
+              set[j].output[0] = 0.5;
+          }
+          t += n;
+          n = Math.round(Math.random() * 20);
+          for (var k = t+1; k <= t + n; k++) 
+              set[k].input[1] = set[t].input[1];
+          t += n;
+      }
+
+      // separate samples between train and test sets
+      var trainingSet = []; var testSet = [];
+      for (var l = 0; l < size; l++)
+          (l < trainingSize ? trainingSet : testSet).push(set[l]);
+
+      // return samples
+      return {
+          train: trainingSet, 
+          test: testSet
+      }
+    }
+
+    var iterations = options.iterations || 200;
+    var error = options.error || .005;
+    var rate = options.rate || [.03, .02];
+    var log = options.log === false ? false : options.log || 10;
+    var cost = options.cost || this.cost || Trainer.cost.MSE;
+    var trainingSamples = options.trainSamples || 7000;
+    var testSamples = options.trainSamples || 1000;
+
+    // samples for training and testing
+    var samples = getSamples(trainingSamples, testSamples);
+
+    // train
+    var result = this.train(samples.train, {
+      rate: rate,
+      log: log,
+      iterations: iterations,
+      error: error,
+      cost: cost
+    });
+
+    return {
+      train: result,
+      test: this.test(samples.test)
     }
   }
 };
@@ -598,6 +696,12 @@ Trainer.cost = {
     for (var i in output)
       mse += Math.pow(target[i] - output[i], 2);
     return mse / output.length;
+  },
+  BINARY: function(target, output){
+    var misses = 0;
+    for (var i in output)
+      misses += Math.round(target[i] * 2) != Math.round(output[i] * 2);
+    return misses;
   }
 }
 
