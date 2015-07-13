@@ -1167,7 +1167,7 @@ Network.prototype = {
   }
 }
 
-// rebuild a network that has been stored in a json using the method toJson()
+// rebuild a network that has been stored in a json using the method toJSON()
 Network.fromJSON = function(json) {
 
   var neurons = [];
