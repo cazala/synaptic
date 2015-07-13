@@ -9,7 +9,7 @@ function Layer(size, label) {
   this.size = size | 0;
   this.list = [];
   this.label = label || null;
-  this.connectedto = [];
+  this.connectedTo = [];
 
   while (size--) {
     var neuron = new Neuron();
@@ -249,7 +249,7 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
     }
   }
   
-  fromLayer.connectedto.push(this);
+  fromLayer.connectedTo.push(this);
 }
 
 // types of connections

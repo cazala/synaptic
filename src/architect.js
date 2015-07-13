@@ -58,23 +58,23 @@ var Architect = {
     var last = args.pop();
     var option = {
       peepholes: Layer.connectionType.ALL_TO_ALL,
-      hiddentohidden: false,
-      outtohidden: false,
-      outtogates: false,
-      intoout: true,
+      hiddenToHidden: false,
+      outputToHidden: false,
+      outputToGates: false,
+      inputToOutput: true,
     };
     if (typeof last != 'number') {
       var outputs = args.pop();
       if (last.hasOwnProperty('peepholes'))
         option.peepholes = last.peepholes;
-      if (last.hasOwnProperty('hiddentohidden'))
-        option.hiddentohidden = last.hiddentohidden;
-      if (last.hasOwnProperty('outtohidden'))
-        option.outtohidden = last.outtohidden;
-      if (last.hasOwnProperty('outtogates'))
-        option.outtogates = last.outtogates;
-      if (last.hasOwnProperty('intoout'))
-        option.intoout = last.intoout;
+      if (last.hasOwnProperty('hiddenToHidden'))
+        option.hiddenToHidden = last.hiddenToHidden;
+      if (last.hasOwnProperty('outputToHidden'))
+        option.outputToHidden = last.outputToHidden;
+      if (last.hasOwnProperty('outputToGates'))
+        option.outputToGates = last.outputToGates;
+      if (last.hasOwnProperty('inputToOutput'))
+        option.inputToOutput = last.inputToOutput;
     } else
       var outputs = last;
 
@@ -129,15 +129,15 @@ var Architect = {
       var self = memoryCell.project(memoryCell);
 
       // hidden to hidden recurrent connection
-      if (option.hiddentohidden)
+      if (option.hiddenToHidden)
         memoryCell.project(memoryCell, Layer.connectionType.ALL_TO_ELSE);
 
       // out to hidden recurrent connection
-      if (option.outtohidden)
+      if (option.outputToHidden)
         outputLayer.project(memoryCell);
 
       // out to gates recurrent connection
-      if (option.outtogates) {
+      if (option.outputToGates) {
         outputLayer.project(inputGate);
         outputLayer.project(outputGate);
         outputLayer.project(forgetGate);
@@ -159,7 +159,7 @@ var Architect = {
     }
 
     // input to output direct connection
-    if (option.intoout)
+    if (option.inputToOutput)
       inputLayer.project(outputLayer);
 
     // set the layers of the neural network
