@@ -142,7 +142,6 @@ Network.prototype = {
       hardcode += "F[" + optimized.variables[i].id + "] = " + (optimized.variables[
         i].value || 0) + "; ";
     hardcode += "var activate = function(input){\n";
-    hardcode += "influences = [];";
     for (var i in optimized.inputs)
       hardcode += "F[" + optimized.inputs[i] + "] = input[" + i + "]; ";
     for (var currentLayer in optimized.activation_sentences) {
@@ -356,21 +355,6 @@ Network.prototype = {
       neurons.push(copy);
     }
 
-    if (!ignoreTraces)
-      for (var i in neurons) {
-        var copy = neurons[i];
-
-        for (var input in neuron.trace.elegibility)
-          copy.trace.elegibility[input] = neuron.trace.elegibility[input];
-
-        for (var gated in neuron.trace.extended) {
-          copy.trace.extended[gated] = {};
-          for (var input in neuron.trace.extended[gated])
-            copy.trace.extended[ids[gated]][input] = neuron.trace.extended[
-              gated][input];
-        }
-      }
-
     // get connections
     for (var i in list) {
       var neuron = list[i].neuron;
@@ -391,8 +375,7 @@ Network.prototype = {
           from: ids[neuron.ID],
           to: ids[neuron.ID],
           weight: neuron.selfconnection.weight,
-          gater: neuron.selfconnection.gater ? ids[neuron.selfconnection.gater
-            .ID] : null,
+          gater: neuron.selfconnection.gater ? ids[neuron.selfconnection.gater.ID] : null,
         });
     }
 
@@ -407,31 +390,31 @@ Network.prototype = {
               $ node example.js > example.dot
               $ dot example.dot -Tpng > out.png
   */
-  toDot: function(edgeconnection) {
-    if (! typeof edgeconnection)
-      edgeconnection = false;
+  toDot: function(edgeConnection) {
+    if (! typeof edgeConnection)
+      edgeConnection = false;
     var code = "digraph nn {\n    rankdir = BT\n";
     var layers = [this.layers.input].concat(this.layers.hidden, this.layers.output);
     for (var layer in layers) {
-      for (var to in layers[layer].connectedto) { // projections
-        var connection = layers[layer].connectedto[to];
-        var layerto = connection.to;
+      for (var to in layers[layer].connectedTo) { // projections
+        var connection = layers[layer].connectedTo[to];
+        var layerTo = connection.to;
         var size = connection.size;
         var layerID = layers.indexOf(layers[layer]);
-        var layertoID = layers.indexOf(layerto);
+        var layerToID = layers.indexOf(layerTo);
         /* http://stackoverflow.com/questions/26845540/connect-edges-with-graph-dot
          * DOT does not support edge-to-edge connections
          * This workaround produces somewhat weird graphs ...
         */
-        if ( edgeconnection) {
+        if ( edgeConnection) {
           if (connection.gatedfrom.length) {
-            var fakeNode = "fake" + layerID + "_" + layertoID;
+            var fakeNode = "fake" + layerID + "_" + layerToID;
             code += "    " + fakeNode +
               " [label = \"\", shape = point, width = 0.01, height = 0.01]\n";
             code += "    " + layerID + " -> " + fakeNode + " [label = " + size + ", arrowhead = none]\n";
-            code += "    " + fakeNode + " -> " + layertoID + "\n";
+            code += "    " + fakeNode + " -> " + layerToID + "\n";
           } else
-            code += "    " + layerID + " -> " + layertoID + " [label = " + size + "]\n";
+            code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
           for (var from in connection.gatedfrom) { // gatings
             var layerfrom = connection.gatedfrom[from].layer;
             var type = connection.gatedfrom[from].type;
@@ -439,12 +422,12 @@ Network.prototype = {
             code += "    " + layerfromID + " -> " + fakeNode + " [color = blue]\n";
           }
         } else {
-          code += "    " + layerID + " -> " + layertoID + " [label = " + size + "]\n";
+          code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
           for (var from in connection.gatedfrom) { // gatings
             var layerfrom = connection.gatedfrom[from].layer;
             var type = connection.gatedfrom[from].type;
             var layerfromID = layers.indexOf(layerfrom);
-            code += "    " + layerfromID + " -> " + layertoID + " [color = blue]\n";
+            code += "    " + layerfromID + " -> " + layerToID + " [color = blue]\n";
           }
         }
       }
@@ -538,8 +521,8 @@ Network.prototype = {
   },
 
   // returns a copy of the network
-  clone: function(ignoreTraces) {
-    return Network.fromJSON(this.toJSON(ignoreTraces));
+  clone: function() {
+    return Network.fromJSON(this.toJSON());
   }
 }
 
@@ -558,14 +541,13 @@ Network.fromJSON = function(json) {
     var config = json.neurons[i];
 
     var neuron = new Neuron();
-    neuron.trace.elegibility = config.trace.elegibility;
-    neuron.trace.extended = config.trace.extended;
+    neuron.trace.elegibility = {};
+    neuron.trace.extended = {};
     neuron.state = config.state;
     neuron.old = config.old;
     neuron.activation = config.activation;
     neuron.bias = config.bias;
-    neuron.squash = config.squash in Neuron.squash ? Neuron.squash[config.squash] :
-      Neuron.squash.LOGISTIC;
+    neuron.squash = config.squash in Neuron.squash ? Neuron.squash[config.squash] : Neuron.squash.LOGISTIC;
     neurons.push(neuron);
 
     if (config.layer == 'input')
