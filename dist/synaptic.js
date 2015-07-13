@@ -145,23 +145,23 @@ var Architect = {
     var last = args.pop();
     var option = {
       peepholes: Layer.connectionType.ALL_TO_ALL,
-      hiddentohidden: false,
-      outtohidden: false,
-      outtogates: false,
-      intoout: true,
+      hiddenToHidden: false,
+      outputToHidden: false,
+      outputToGates: false,
+      inputToOutput: true,
     };
     if (typeof last != 'number') {
       var outputs = args.pop();
       if (last.hasOwnProperty('peepholes'))
         option.peepholes = last.peepholes;
-      if (last.hasOwnProperty('hiddentohidden'))
-        option.hiddentohidden = last.hiddentohidden;
-      if (last.hasOwnProperty('outtohidden'))
-        option.outtohidden = last.outtohidden;
-      if (last.hasOwnProperty('outtogates'))
-        option.outtogates = last.outtogates;
-      if (last.hasOwnProperty('intoout'))
-        option.intoout = last.intoout;
+      if (last.hasOwnProperty('hiddenToHidden'))
+        option.hiddenToHidden = last.hiddenToHidden;
+      if (last.hasOwnProperty('outputToHidden'))
+        option.outputToHidden = last.outputToHidden;
+      if (last.hasOwnProperty('outputToGates'))
+        option.outputToGates = last.outputToGates;
+      if (last.hasOwnProperty('inputToOutput'))
+        option.inputToOutput = last.inputToOutput;
     } else
       var outputs = last;
 
@@ -216,15 +216,15 @@ var Architect = {
       var self = memoryCell.project(memoryCell);
 
       // hidden to hidden recurrent connection
-      if (option.hiddentohidden)
+      if (option.hiddenToHidden)
         memoryCell.project(memoryCell, Layer.connectionType.ALL_TO_ELSE);
 
       // out to hidden recurrent connection
-      if (option.outtohidden)
+      if (option.outputToHidden)
         outputLayer.project(memoryCell);
 
       // out to gates recurrent connection
-      if (option.outtogates) {
+      if (option.outputToGates) {
         outputLayer.project(inputGate);
         outputLayer.project(outputGate);
         outputLayer.project(forgetGate);
@@ -246,7 +246,7 @@ var Architect = {
     }
 
     // input to output direct connection
-    if (option.intoout)
+    if (option.inputToOutput)
       inputLayer.project(outputLayer);
 
     // set the layers of the neural network
@@ -372,7 +372,7 @@ function Layer(size, label) {
   this.size = size | 0;
   this.list = [];
   this.label = label || null;
-  this.connectedto = [];
+  this.connectedTo = [];
 
   while (size--) {
     var neuron = new Neuron();
@@ -612,7 +612,7 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
     }
   }
   
-  fromLayer.connectedto.push(this);
+  fromLayer.connectedTo.push(this);
 }
 
 // types of connections
@@ -783,7 +783,6 @@ Network.prototype = {
       hardcode += "F[" + optimized.variables[i].id + "] = " + (optimized.variables[
         i].value || 0) + "; ";
     hardcode += "var activate = function(input){\n";
-    hardcode += "influences = [];";
     for (var i in optimized.inputs)
       hardcode += "F[" + optimized.inputs[i] + "] = input[" + i + "]; ";
     for (var currentLayer in optimized.activation_sentences) {
@@ -997,21 +996,6 @@ Network.prototype = {
       neurons.push(copy);
     }
 
-    if (!ignoreTraces)
-      for (var i in neurons) {
-        var copy = neurons[i];
-
-        for (var input in neuron.trace.elegibility)
-          copy.trace.elegibility[input] = neuron.trace.elegibility[input];
-
-        for (var gated in neuron.trace.extended) {
-          copy.trace.extended[gated] = {};
-          for (var input in neuron.trace.extended[gated])
-            copy.trace.extended[ids[gated]][input] = neuron.trace.extended[
-              gated][input];
-        }
-      }
-
     // get connections
     for (var i in list) {
       var neuron = list[i].neuron;
@@ -1032,8 +1016,7 @@ Network.prototype = {
           from: ids[neuron.ID],
           to: ids[neuron.ID],
           weight: neuron.selfconnection.weight,
-          gater: neuron.selfconnection.gater ? ids[neuron.selfconnection.gater
-            .ID] : null,
+          gater: neuron.selfconnection.gater ? ids[neuron.selfconnection.gater.ID] : null,
         });
     }
 
@@ -1048,31 +1031,31 @@ Network.prototype = {
               $ node example.js > example.dot
               $ dot example.dot -Tpng > out.png
   */
-  toDot: function(edgeconnection) {
-    if (! typeof edgeconnection)
-      edgeconnection = false;
+  toDot: function(edgeConnection) {
+    if (! typeof edgeConnection)
+      edgeConnection = false;
     var code = "digraph nn {\n    rankdir = BT\n";
     var layers = [this.layers.input].concat(this.layers.hidden, this.layers.output);
     for (var layer in layers) {
-      for (var to in layers[layer].connectedto) { // projections
-        var connection = layers[layer].connectedto[to];
-        var layerto = connection.to;
+      for (var to in layers[layer].connectedTo) { // projections
+        var connection = layers[layer].connectedTo[to];
+        var layerTo = connection.to;
         var size = connection.size;
         var layerID = layers.indexOf(layers[layer]);
-        var layertoID = layers.indexOf(layerto);
+        var layerToID = layers.indexOf(layerTo);
         /* http://stackoverflow.com/questions/26845540/connect-edges-with-graph-dot
          * DOT does not support edge-to-edge connections
          * This workaround produces somewhat weird graphs ...
         */
-        if ( edgeconnection) {
+        if ( edgeConnection) {
           if (connection.gatedfrom.length) {
-            var fakeNode = "fake" + layerID + "_" + layertoID;
+            var fakeNode = "fake" + layerID + "_" + layerToID;
             code += "    " + fakeNode +
               " [label = \"\", shape = point, width = 0.01, height = 0.01]\n";
             code += "    " + layerID + " -> " + fakeNode + " [label = " + size + ", arrowhead = none]\n";
-            code += "    " + fakeNode + " -> " + layertoID + "\n";
+            code += "    " + fakeNode + " -> " + layerToID + "\n";
           } else
-            code += "    " + layerID + " -> " + layertoID + " [label = " + size + "]\n";
+            code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
           for (var from in connection.gatedfrom) { // gatings
             var layerfrom = connection.gatedfrom[from].layer;
             var type = connection.gatedfrom[from].type;
@@ -1080,12 +1063,12 @@ Network.prototype = {
             code += "    " + layerfromID + " -> " + fakeNode + " [color = blue]\n";
           }
         } else {
-          code += "    " + layerID + " -> " + layertoID + " [label = " + size + "]\n";
+          code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
           for (var from in connection.gatedfrom) { // gatings
             var layerfrom = connection.gatedfrom[from].layer;
             var type = connection.gatedfrom[from].type;
             var layerfromID = layers.indexOf(layerfrom);
-            code += "    " + layerfromID + " -> " + layertoID + " [color = blue]\n";
+            code += "    " + layerfromID + " -> " + layerToID + " [color = blue]\n";
           }
         }
       }
@@ -1179,8 +1162,8 @@ Network.prototype = {
   },
 
   // returns a copy of the network
-  clone: function(ignoreTraces) {
-    return Network.fromJSON(this.toJSON(ignoreTraces));
+  clone: function() {
+    return Network.fromJSON(this.toJSON());
   }
 }
 
@@ -1199,14 +1182,13 @@ Network.fromJSON = function(json) {
     var config = json.neurons[i];
 
     var neuron = new Neuron();
-    neuron.trace.elegibility = config.trace.elegibility;
-    neuron.trace.extended = config.trace.extended;
+    neuron.trace.elegibility = {};
+    neuron.trace.extended = {};
     neuron.state = config.state;
     neuron.old = config.old;
     neuron.activation = config.activation;
     neuron.bias = config.bias;
-    neuron.squash = config.squash in Neuron.squash ? Neuron.squash[config.squash] :
-      Neuron.squash.LOGISTIC;
+    neuron.squash = config.squash in Neuron.squash ? Neuron.squash[config.squash] : Neuron.squash.LOGISTIC;
     neurons.push(neuron);
 
     if (config.layer == 'input')
@@ -1707,14 +1689,13 @@ Neuron.prototype = {
           buildSentence(derivative, ' = 1', store_activation);
           break;
       }
-
-      influences = [];
+      
       for (var id in this.trace.extended) {
         // calculate extended elegibility traces in advance
         
         var xtrace = this.trace.extended[id];
         var neuron = this.neighboors[id];
-        var influence = getVar('aux');
+        var influence = getVar('influences[' + neuron.ID + ']');
         var neuron_old = getVar(neuron, 'old');
         var initialized = false;
         if (neuron.selfconnection.gater == this)
@@ -1729,17 +1710,12 @@ Neuron.prototype = {
             [incoming].from, 'activation');
 
           if (initialized)
-            buildSentence(influence, ' += ', incoming_weight, ' * ',
-              incoming_activation, store_trace);
+            buildSentence(influence, ' += ', incoming_weight, ' * ', incoming_activation, store_trace);
           else {
-            buildSentence(influence, ' = ', incoming_weight, ' * ',
-              incoming_activation, store_trace);
+            buildSentence(influence, ' = ', incoming_weight, ' * ', incoming_activation, store_trace);
             initialized = true;
           }
         }
-        
-        influences.push(neuron.ID);
-        buildSentence("influences[" + (influences.length - 1) + "] = ", influence, store_trace);
       }
       
       for (var i in this.connections.inputs) {
@@ -1777,7 +1753,7 @@ Neuron.prototype = {
           // extended elegibility trace
           var xtrace = this.trace.extended[id];
           var neuron = this.neighboors[id];
-          var influence = getVar('aux');
+          var influence = getVar('influences[' + neuron.ID + ']');
           var neuron_old = getVar(neuron, 'old');
 
           var trace = getVar(this, 'trace', 'elegibility', input.ID, this.trace
@@ -1792,14 +1768,14 @@ Neuron.prototype = {
             if (neuron.selfconnection.gater)
               buildSentence(xtrace, ' = ', neuron_self_gain, ' * ',
                 neuron_self_weight, ' * ', xtrace, ' + ', derivative, ' * ',
-                trace, ' * ', "influences[" + influences.indexOf(neuron.ID) + "]", store_trace);
+                trace, ' * ', influence, store_trace);
             else
               buildSentence(xtrace, ' = ', neuron_self_weight, ' * ',
                 xtrace, ' + ', derivative, ' * ', trace, ' * ',
-                "influences[" + influences.indexOf(neuron.ID) + "]", store_trace);
+                influence, store_trace);
           else
             buildSentence(xtrace, ' = ', derivative, ' * ', trace, ' * ',
-              "influences[" + influences.indexOf(neuron.ID) + "]", store_trace);
+              influence, store_trace);
         }
       }
       for (var connection in this.connections.gated) {
@@ -2053,7 +2029,7 @@ function Trainer(network, options) {
   this.rate = options.rate || .2;
   this.iterations = options.iterations || 100000;
   this.error = options.error || .005
-  this.cost = options.cost || Trainer.cost.CROSS_ENTROPY;
+  this.cost = options.cost || null;
 }
 
 Trainer.prototype = {
@@ -2063,8 +2039,9 @@ Trainer.prototype = {
 
     var error = 1;
     var iterations = bucketSize = 0;
-    var abort_training = false;
+    var abort = false;
     var input, output, target, currentRate;
+    var cost = options && options.cost || this.cost || Trainer.cost.MSE;
 
     var start = Date.now();
 
@@ -2100,12 +2077,12 @@ Trainer.prototype = {
     }
 
 
-    while (!abort_training && iterations < this.iterations && error > this.error) {
+    while (!abort && iterations < this.iterations && error > this.error) {
       error = 0;
 
       if(bucketSize > 0) {
         var currentBucket = Math.floor(iterations / bucketSize);
-        currentRate = this.rate[currentBucket];
+        currentRate = this.rate[currentBucket] || currentRate;
       }
 
       for (var train in set) {
@@ -2115,7 +2092,7 @@ Trainer.prototype = {
         output = this.network.activate(input);
         this.network.propagate(currentRate, target);
 
-        error += this.cost(target, output);
+        error += cost(target, output);
       }
 
       // check error
@@ -2125,7 +2102,7 @@ Trainer.prototype = {
       if (options) {
         if (this.schedule && this.schedule.every && iterations %
           this.schedule.every == 0)
-          abort_training = this.schedule.do({
+          abort = this.schedule.do({
             error: error,
             iterations: iterations,
             rate: currentRate
@@ -2147,6 +2124,33 @@ Trainer.prototype = {
     return results;
   },
 
+  // tests a set and returns the error and elapsed time
+  test: function(set, options){
+
+    var error = 0;
+    var abort = false;
+    var input, output, target;
+    var cost = options && options.cost || this.cost || Trainer.cost.MSE;
+
+    var start = Date.now();
+
+    for (var test in set) {
+      input = set[test].input;
+      target = set[test].output;
+      output = this.network.activate(input);
+      error += cost(target, output);
+    }
+
+    error /= set.length;
+
+    var results = {
+      error: error,
+      time: Date.now() - start
+    }
+
+    return results;
+  },
+
   // trains any given set to a network using a WebWorker
   workerTrain: function(set, callback, options) {
 
@@ -2155,7 +2159,8 @@ Trainer.prototype = {
     var iterations = bucketSize = 0;
     var input, output, target, currentRate;
     var length = set.length;
-    var abort_training = false;
+    var abort = false;
+    var cost = options && options.cost || that.cost || Trainer.cost.MSE;
 
     var start = Date.now();
 
@@ -2170,29 +2175,31 @@ Trainer.prototype = {
         };
       }
       if (options.iterations)
-        this.iterations = options.iterations;
+        that.iterations = options.iterations;
       if (options.error)
-        this.error = options.error;
+        that.error = options.error;
       if (options.rate)
-        this.rate = options.rate;
+        that.rate = options.rate;
       if (options.cost)
-        this.cost = options.cost;
+        that.cost = options.cost;
       if (options.schedule)
-        this.schedule = options.schedule;
+        that.schedule = options.schedule;
       if (options.customLog)
+      {
         // for backward compatibility with code that used customLog
         console.log('Deprecated: use schedule instead of customLog')
-        this.schedule = options.customLog;
+        that.schedule = options.customLog;
+      }
     }
 
     // dynamic learning rate
-    currentRate = this.rate;
-    if(Array.isArray(this.rate)) {
-      bucketSize = Math.floor(this.iterations / this.rate.length);
+    currentRate = that.rate;
+    if(Array.isArray(that.rate)) {
+      bucketSize = Math.floor(that.iterations / that.rate.length);
     }
 
     // create a worker
-    var worker = this.network.worker();
+    var worker = that.network.worker();
 
     // activate the network
     function activateWorker(input)
@@ -2208,7 +2215,7 @@ Trainer.prototype = {
     function propagateWorker(target){
         if(bucketSize > 0) {
           var currentBucket = Math.floor(iterations / bucketSize);
-          currentRate = this.rate[currentBucket];
+          currentRate = that.rate[currentBucket] || currentRate;
         }
         worker.postMessage({ 
             action: "propagate",
@@ -2233,10 +2240,11 @@ Trainer.prototype = {
 
                 // log
                 if (options) {
-                  if (this.schedule && this.schedule.every && iterations % this.schedule.every == 0)
-                    abort_training = this.schedule.do({
+                  if (that.schedule && that.schedule.every && iterations % that.schedule.every == 0)
+                    abort = that.schedule.do({
                       error: error,
-                      iterations: iterations
+                      iterations: iterations,
+                      rate: currentRate
                     });
                   else if (options.log && iterations % options.log == 0) {
                     console.log('iterations', iterations, 'error', error);
@@ -2245,7 +2253,7 @@ Trainer.prototype = {
                     shuffle(set);
                 }
 
-                if (!abort_training && iterations < that.iterations && error > that.error)
+                if (!abort && iterations < that.iterations && error > that.error)
                 {
                     activateWorker(set[index].input);
                 } else {
@@ -2264,7 +2272,7 @@ Trainer.prototype = {
 
         if (e.data.action == "activate")
         {
-            error += that.cost(set[index].output, e.data.output);
+            error += cost(set[index].output, e.data.output);
             propagateWorker(set[index].output); 
             index++;
         }
@@ -2321,6 +2329,7 @@ Trainer.prototype = {
     var rate = options.rate || .1;
     var log = options.log || 0;
     var schedule = options.schedule || {};
+    var cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
 
     var trial = correct = i = j = success = 0,
       error = 1,
@@ -2396,10 +2405,7 @@ Trainer.prototype = {
           this.network.propagate(rate, output);
         }
 
-        var delta = 0;
-        for (var j in prediction)
-          delta += Math.pow(output[j] - prediction[j], 2);
-        error += delta / this.network.outputs();
+        error += cost(output, prediction);
 
         if (distractorsCorrect + targetsCorrect == length)
           correct++;
@@ -2444,6 +2450,7 @@ Trainer.prototype = {
     var criterion = options.error || .05;
     var rate = options.rate || .1;
     var log = options.log || 500;
+    var cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
 
     // gramar node
     var Node = function() {
@@ -2602,12 +2609,7 @@ Trainer.prototype = {
         read = sequence.charAt(++i);
         predict = sequence.charAt(i + 1);
 
-        var delta = 0;
-        for (var k in output)
-          delta += Math.pow(target[k] - output[k], 2)
-        delta /= output.length;
-
-        error += delta;
+        error += cost(target, output);
       }
       error /= sequence.length;
       iteration++;
@@ -2623,6 +2625,78 @@ Trainer.prototype = {
       time: Date.now() - start,
       test: test,
       generate: generate
+    }
+  },
+
+  timingTask: function(options){
+
+    if (this.network.inputs() != 2 || this.network.outputs() != 1)
+      throw "Invalid Network: must have 2 inputs and one output";
+
+    if (typeof options == 'undefined')
+      var options = {};
+
+    // helper
+    function getSamples (trainingSize, testSize){
+    
+      // sample size
+      var size = trainingSize + testSize;
+      
+      // generate samples
+      var t = 0;
+      var set  = [];
+      for (var i = 0; i < size; i++) {
+        set.push({ input: [0,0], output: [0] });
+      }
+      while(t < size - 20) {
+          var n = Math.round(Math.random() * 20);
+          set[t].input[0] = 1;
+          for (var j = t; j <= t + n; j++){
+              set[j].input[1] = n / 20;
+              set[j].output[0] = 0.5;
+          }
+          t += n;
+          n = Math.round(Math.random() * 20);
+          for (var k = t+1; k <= t + n; k++) 
+              set[k].input[1] = set[t].input[1];
+          t += n;
+      }
+
+      // separate samples between train and test sets
+      var trainingSet = []; var testSet = [];
+      for (var l = 0; l < size; l++)
+          (l < trainingSize ? trainingSet : testSet).push(set[l]);
+
+      // return samples
+      return {
+          train: trainingSet, 
+          test: testSet
+      }
+    }
+
+    var iterations = options.iterations || 200;
+    var error = options.error || .005;
+    var rate = options.rate || [.03, .02];
+    var log = options.log === false ? false : options.log || 10;
+    var cost = options.cost || this.cost || Trainer.cost.MSE;
+    var trainingSamples = options.trainSamples || 7000;
+    var testSamples = options.trainSamples || 1000;
+
+    // samples for training and testing
+    var samples = getSamples(trainingSamples, testSamples);
+
+    // train
+    var result = this.train(samples.train, {
+      rate: rate,
+      log: log,
+      iterations: iterations,
+      error: error,
+      cost: cost
+    });
+
+    return {
+      train: result,
+      test: this.test(samples.test)
     }
   }
 };
@@ -2643,6 +2717,12 @@ Trainer.cost = {
     for (var i in output)
       mse += Math.pow(target[i] - output[i], 2);
     return mse / output.length;
+  },
+  BINARY: function(target, output){
+    var misses = 0;
+    for (var i in output)
+      misses += Math.round(target[i] * 2) != Math.round(output[i] * 2);
+    return misses;
   }
 }
 
