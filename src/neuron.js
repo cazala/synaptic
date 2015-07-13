@@ -465,14 +465,13 @@ Neuron.prototype = {
           buildSentence(derivative, ' = 1', store_activation);
           break;
       }
-
-      influences = [];
+      
       for (var id in this.trace.extended) {
         // calculate extended elegibility traces in advance
         
         var xtrace = this.trace.extended[id];
         var neuron = this.neighboors[id];
-        var influence = getVar('aux');
+        var influence = getVar('influences[' + neuron.ID + ']');
         var neuron_old = getVar(neuron, 'old');
         var initialized = false;
         if (neuron.selfconnection.gater == this)
@@ -487,17 +486,12 @@ Neuron.prototype = {
             [incoming].from, 'activation');
 
           if (initialized)
-            buildSentence(influence, ' += ', incoming_weight, ' * ',
-              incoming_activation, store_trace);
+            buildSentence(influence, ' += ', incoming_weight, ' * ', incoming_activation, store_trace);
           else {
-            buildSentence(influence, ' = ', incoming_weight, ' * ',
-              incoming_activation, store_trace);
+            buildSentence(influence, ' = ', incoming_weight, ' * ', incoming_activation, store_trace);
             initialized = true;
           }
         }
-        
-        influences.push(neuron.ID);
-        buildSentence("influences[" + (influences.length - 1) + "] = ", influence, store_trace);
       }
       
       for (var i in this.connections.inputs) {
@@ -535,7 +529,7 @@ Neuron.prototype = {
           // extended elegibility trace
           var xtrace = this.trace.extended[id];
           var neuron = this.neighboors[id];
-          var influence = getVar('aux');
+          var influence = getVar('influences[' + neuron.ID + ']');
           var neuron_old = getVar(neuron, 'old');
 
           var trace = getVar(this, 'trace', 'elegibility', input.ID, this.trace
@@ -550,14 +544,14 @@ Neuron.prototype = {
             if (neuron.selfconnection.gater)
               buildSentence(xtrace, ' = ', neuron_self_gain, ' * ',
                 neuron_self_weight, ' * ', xtrace, ' + ', derivative, ' * ',
-                trace, ' * ', "influences[" + influences.indexOf(neuron.ID) + "]", store_trace);
+                trace, ' * ', influence, store_trace);
             else
               buildSentence(xtrace, ' = ', neuron_self_weight, ' * ',
                 xtrace, ' + ', derivative, ' * ', trace, ' * ',
-                "influences[" + influences.indexOf(neuron.ID) + "]", store_trace);
+                influence, store_trace);
           else
             buildSentence(xtrace, ' = ', derivative, ' * ', trace, ' * ',
-              "influences[" + influences.indexOf(neuron.ID) + "]", store_trace);
+              influence, store_trace);
         }
       }
       for (var connection in this.connections.gated) {
