@@ -26,7 +26,7 @@ Layer.prototype = {
 
     if (typeof input != 'undefined') {
       if (input.length != this.size)
-        throw "INPUT size and LAYER size must be the same to activate!";
+        throw new Error("INPUT size and LAYER size must be the same to activate!");
 
       for (var id in this.list) {
         var neuron = this.list[id];
@@ -48,7 +48,7 @@ Layer.prototype = {
 
     if (typeof target != 'undefined') {
       if (target.length != this.size)
-        throw "TARGET size and LAYER size must be the same to propagate!";
+        throw new Error("TARGET size and LAYER size must be the same to propagate!");
 
       for (var id = this.list.length - 1; id >= 0; id--) {
         var neuron = this.list[id];
@@ -72,7 +72,7 @@ Layer.prototype = {
       if (!this.connected(layer))
         return new Layer.connection(this, layer, type, weights);
     } else
-      throw "Invalid argument, you can only project connections to LAYERS and NETWORKS!";
+      throw new Error("Invalid argument, you can only project connections to LAYERS and NETWORKS!");
 
 
   },
@@ -82,7 +82,7 @@ Layer.prototype = {
 
     if (type == Layer.gateType.INPUT) {
       if (connection.to.size != this.size)
-        throw "GATER layer and CONNECTION.TO layer must be the same size in order to gate!";
+        throw new Error("GATER layer and CONNECTION.TO layer must be the same size in order to gate!");
 
       for (var id in connection.to.list) {
         var neuron = connection.to.list[id];
@@ -95,7 +95,7 @@ Layer.prototype = {
       }
     } else if (type == Layer.gateType.OUTPUT) {
       if (connection.from.size != this.size)
-        throw "GATER layer and CONNECTION.FROM layer must be the same size in order to gate!";
+        throw new Error("GATER layer and CONNECTION.FROM layer must be the same size in order to gate!");
 
       for (var id in connection.from.list) {
         var neuron = connection.from.list[id];
@@ -108,7 +108,7 @@ Layer.prototype = {
       }
     } else if (type == Layer.gateType.ONE_TO_ONE) {
       if (connection.size != this.size)
-        throw "The number of GATER UNITS must be the same as the number of CONNECTIONS to gate!";
+        throw new Error("The number of GATER UNITS must be the same as the number of CONNECTIONS to gate!");
 
       for (var id in connection.list) {
         var gater = this.list[id];
@@ -248,7 +248,7 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
       this.size = this.list.push(connection);
     }
   }
-  
+
   fromLayer.connectedTo.push(this);
 }
 
@@ -273,4 +273,3 @@ Layer.gateType.ONE_TO_ONE = "ONE TO ONE";
 
 // export
 if (module) module.exports = Layer;
-

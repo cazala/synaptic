@@ -27,8 +27,8 @@ Network.prototype = {
       for (var layer in this.layers.hidden)
         this.layers.hidden[layer].activate();
       return this.layers.output.activate();
-    } 
-    else 
+    }
+    else
     {
       if (this.optimized == null)
         this.optimize();
@@ -48,8 +48,8 @@ Network.prototype = {
       reverse.reverse();
       for (var layer in reverse)
         reverse[layer].propagate(rate);
-    } 
-    else 
+    }
+    else
     {
       if (this.optimized == null)
         this.optimize();
@@ -69,7 +69,7 @@ Network.prototype = {
     if (unit instanceof Layer)
       return this.layers.output.project(unit, type, weights);
 
-    throw "Invalid argument, you can only project connections to LAYERS and NETWORKS!";
+    throw new Error("Invalid argument, you can only project connections to LAYERS and NETWORKS!");
   },
 
   // let this network gate a connection
@@ -384,7 +384,7 @@ Network.prototype = {
       connections: connections
     }
   },
-  
+
   // export the topology into dot language which can be visualized as graphs using dot
   /* example: ... console.log(net.toDotLang());
               $ node example.js > example.dot
@@ -578,4 +578,3 @@ Network.fromJSON = function(json) {
 
 // export
 if (module) module.exports = Network;
-

@@ -15,7 +15,7 @@ var Architect = {
 
     var args = Array.prototype.slice.call(arguments); // convert arguments to Array
     if (args.length < 3)
-      throw "Error: not enough layers (minimum 3) !!";
+      throw new Error("not enough layers (minimum 3) !!");
 
     var inputs = args.shift(); // first argument
     var outputs = args.pop(); // last argument
@@ -53,7 +53,7 @@ var Architect = {
 
     var args = Array.prototype.slice.call(arguments); // convert arguments to array
     if (args.length < 3)
-      throw "Error: not enough layers (minimum 3) !!";
+      throw new Error("not enough layers (minimum 3) !!");
 
     var last = args.pop();
     var option = {
@@ -142,7 +142,7 @@ var Architect = {
         outputLayer.project(outputGate);
         outputLayer.project(forgetGate);
       }
-      
+
       // peepholes
       memoryCell.project(inputGate, option.peepholes);
       memoryCell.project(forgetGate, option.peepholes);
@@ -270,5 +270,4 @@ for (var architecture in Architect) {
 }
 
 // export
-if (module) module.exports = Architect; 
-
+if (module) module.exports = Architect;
