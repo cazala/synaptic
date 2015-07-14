@@ -1,5 +1,6 @@
 // import
-var Neuron = require('./neuron');
+var Neuron = require('./neuron'),
+    Network = require('./network');
 
 /*******************************************************************************************
                                             LAYER
@@ -65,7 +66,7 @@ Layer.prototype = {
   // projects a connection from this layer to another one
   project: function(layer, type, weights) {
 
-    if (layer instanceof require('./network'))
+    if (layer instanceof Network)
       layer = layer.layers.input;
 
     if (layer instanceof Layer) {
@@ -248,7 +249,7 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
       this.size = this.list.push(connection);
     }
   }
-  
+
   fromLayer.connectedTo.push(this);
 }
 
@@ -273,4 +274,3 @@ Layer.gateType.ONE_TO_ONE = "ONE TO ONE";
 
 // export
 if (module) module.exports = Layer;
-
