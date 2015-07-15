@@ -102,7 +102,7 @@ var Architect = {
 
     var args = Array.prototype.slice.call(arguments); // convert arguments to Array
     if (args.length < 3)
-      throw "Error: not enough layers (minimum 3) !!";
+      throw new Error("not enough layers (minimum 3) !!");
 
     var inputs = args.shift(); // first argument
     var outputs = args.pop(); // last argument
@@ -140,7 +140,7 @@ var Architect = {
 
     var args = Array.prototype.slice.call(arguments); // convert arguments to array
     if (args.length < 3)
-      throw "Error: not enough layers (minimum 3) !!";
+      throw new Error("not enough layers (minimum 3) !!");
 
     var last = args.pop();
     var option = {
@@ -229,7 +229,7 @@ var Architect = {
         outputLayer.project(outputGate);
         outputLayer.project(forgetGate);
       }
-      
+
       // peepholes
       memoryCell.project(inputGate, option.peepholes);
       memoryCell.project(forgetGate, option.peepholes);
@@ -357,8 +357,7 @@ for (var architecture in Architect) {
 }
 
 // export
-if (module) module.exports = Architect; 
-
+if (module) module.exports = Architect;
 
 },{"./layer":3,"./network":4,"./trainer":6}],3:[function(require,module,exports){
 // import
@@ -389,7 +388,7 @@ Layer.prototype = {
 
     if (typeof input != 'undefined') {
       if (input.length != this.size)
-        throw "INPUT size and LAYER size must be the same to activate!";
+        throw new Error("INPUT size and LAYER size must be the same to activate!");
 
       for (var id in this.list) {
         var neuron = this.list[id];
@@ -411,7 +410,7 @@ Layer.prototype = {
 
     if (typeof target != 'undefined') {
       if (target.length != this.size)
-        throw "TARGET size and LAYER size must be the same to propagate!";
+        throw new Error("TARGET size and LAYER size must be the same to propagate!");
 
       for (var id = this.list.length - 1; id >= 0; id--) {
         var neuron = this.list[id];
@@ -435,7 +434,7 @@ Layer.prototype = {
       if (!this.connected(layer))
         return new Layer.connection(this, layer, type, weights);
     } else
-      throw "Invalid argument, you can only project connections to LAYERS and NETWORKS!";
+      throw new Error("Invalid argument, you can only project connections to LAYERS and NETWORKS!");
 
 
   },
@@ -445,7 +444,7 @@ Layer.prototype = {
 
     if (type == Layer.gateType.INPUT) {
       if (connection.to.size != this.size)
-        throw "GATER layer and CONNECTION.TO layer must be the same size in order to gate!";
+        throw new Error("GATER layer and CONNECTION.TO layer must be the same size in order to gate!");
 
       for (var id in connection.to.list) {
         var neuron = connection.to.list[id];
@@ -458,7 +457,7 @@ Layer.prototype = {
       }
     } else if (type == Layer.gateType.OUTPUT) {
       if (connection.from.size != this.size)
-        throw "GATER layer and CONNECTION.FROM layer must be the same size in order to gate!";
+        throw new Error("GATER layer and CONNECTION.FROM layer must be the same size in order to gate!");
 
       for (var id in connection.from.list) {
         var neuron = connection.from.list[id];
@@ -471,7 +470,7 @@ Layer.prototype = {
       }
     } else if (type == Layer.gateType.ONE_TO_ONE) {
       if (connection.size != this.size)
-        throw "The number of GATER UNITS must be the same as the number of CONNECTIONS to gate!";
+        throw new Error("The number of GATER UNITS must be the same as the number of CONNECTIONS to gate!");
 
       for (var id in connection.list) {
         var gater = this.list[id];
@@ -611,7 +610,7 @@ Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
       this.size = this.list.push(connection);
     }
   }
-  
+
   fromLayer.connectedTo.push(this);
 }
 
@@ -636,7 +635,6 @@ Layer.gateType.ONE_TO_ONE = "ONE TO ONE";
 
 // export
 if (module) module.exports = Layer;
-
 
 },{"./network":4,"./neuron":5}],4:[function(require,module,exports){
 // import
@@ -668,8 +666,8 @@ Network.prototype = {
       for (var layer in this.layers.hidden)
         this.layers.hidden[layer].activate();
       return this.layers.output.activate();
-    } 
-    else 
+    }
+    else
     {
       if (this.optimized == null)
         this.optimize();
@@ -689,8 +687,8 @@ Network.prototype = {
       reverse.reverse();
       for (var layer in reverse)
         reverse[layer].propagate(rate);
-    } 
-    else 
+    }
+    else
     {
       if (this.optimized == null)
         this.optimize();
@@ -710,7 +708,7 @@ Network.prototype = {
     if (unit instanceof Layer)
       return this.layers.output.project(unit, type, weights);
 
-    throw "Invalid argument, you can only project connections to LAYERS and NETWORKS!";
+    throw new Error("Invalid argument, you can only project connections to LAYERS and NETWORKS!");
   },
 
   // let this network gate a connection
@@ -1025,7 +1023,7 @@ Network.prototype = {
       connections: connections
     }
   },
-  
+
   // export the topology into dot language which can be visualized as graphs using dot
   /* example: ... console.log(net.toDotLang());
               $ node example.js > example.dot
@@ -1220,7 +1218,6 @@ Network.fromJSON = function(json) {
 // export
 if (module) module.exports = Network;
 
-
 },{"./layer":3,"./neuron":5}],5:[function(require,module,exports){
 /******************************************************************************************
                                          NEURON
@@ -1300,7 +1297,7 @@ Neuron.prototype = {
       }
       influences[neuron.ID] = influence;
     }
-    
+
     for (var i in this.connections.inputs) {
       var input = this.connections.inputs[i];
 
@@ -1341,7 +1338,7 @@ Neuron.prototype = {
     // output neurons get their error from the enviroment
     if (isOutput)
       this.error.responsibility = this.error.projected = target - this.activation; // Eq. 10
-    
+
     else // the rest of the neuron compute their error responsibilities by backpropagation
     {
       // error responsibilities from all the connections projected from this neuron
@@ -1523,7 +1520,7 @@ Neuron.prototype = {
 
   // hardcodes the behaviour of the neuron into an optimized function
   optimize: function(optimized, layer) {
-    
+
     optimized = optimized || {};
     var that = this;
     var store_activation = [];
@@ -1689,10 +1686,10 @@ Neuron.prototype = {
           buildSentence(derivative, ' = 1', store_activation);
           break;
       }
-      
+
       for (var id in this.trace.extended) {
         // calculate extended elegibility traces in advance
-        
+
         var xtrace = this.trace.extended[id];
         var neuron = this.neighboors[id];
         var influence = getVar('influences[' + neuron.ID + ']');
@@ -1717,7 +1714,7 @@ Neuron.prototype = {
           }
         }
       }
-      
+
       for (var i in this.connections.inputs) {
         var input = this.connections.inputs[i];
         if (input.gater)
@@ -1960,7 +1957,7 @@ Neuron.prototype = {
 Neuron.connection = function Connection(from, to, weight) {
 
   if (!from || !to)
-    throw "Connection Error: Invalid neurons";
+    throw new Error("Connection Error: Invalid neurons");
 
   this.ID = Neuron.connection.uid();
   this.from = from;
@@ -2016,7 +2013,6 @@ Neuron.squash.HLIM = function(x, derivate) {
 
 // export
 if (module) module.exports = Neuron;
-
 
 },{}],6:[function(require,module,exports){
 /*******************************************************************************************
@@ -2204,7 +2200,7 @@ Trainer.prototype = {
     // activate the network
     function activateWorker(input)
     {
-        worker.postMessage({ 
+        worker.postMessage({
             action: "activate",
             input: input,
             memoryBuffer: that.network.optimized.memory
@@ -2217,7 +2213,7 @@ Trainer.prototype = {
           var currentBucket = Math.floor(iterations / bucketSize);
           currentRate = that.rate[currentBucket] || currentRate;
         }
-        worker.postMessage({ 
+        worker.postMessage({
             action: "propagate",
             target: target,
             rate: currentRate,
@@ -2273,7 +2269,7 @@ Trainer.prototype = {
         if (e.data.action == "activate")
         {
             error += cost(set[index].output, e.data.output);
-            propagateWorker(set[index].output); 
+            propagateWorker(set[index].output);
             index++;
         }
     }
@@ -2288,7 +2284,7 @@ Trainer.prototype = {
   XOR: function(options) {
 
     if (this.network.inputs() != 2 || this.network.outputs() != 1)
-      throw "Error: Incompatible network (2 inputs, 1 output)";
+      throw new Error("Incompatible network (2 inputs, 1 output)");
 
     var defaults = {
       iterations: 100000,
@@ -2631,17 +2627,17 @@ Trainer.prototype = {
   timingTask: function(options){
 
     if (this.network.inputs() != 2 || this.network.outputs() != 1)
-      throw "Invalid Network: must have 2 inputs and one output";
+      throw new Error("Invalid Network: must have 2 inputs and one output");
 
     if (typeof options == 'undefined')
       var options = {};
 
     // helper
     function getSamples (trainingSize, testSize){
-    
+
       // sample size
       var size = trainingSize + testSize;
-      
+
       // generate samples
       var t = 0;
       var set  = [];
@@ -2657,7 +2653,7 @@ Trainer.prototype = {
           }
           t += n;
           n = Math.round(Math.random() * 20);
-          for (var k = t+1; k <= t + n; k++) 
+          for (var k = t+1; k <= t + n; k++)
               set[k].input[1] = set[t].input[1];
           t += n;
       }
@@ -2669,7 +2665,7 @@ Trainer.prototype = {
 
       // return samples
       return {
-          train: trainingSet, 
+          train: trainingSet,
           test: testSet
       }
     }
@@ -2728,7 +2724,6 @@ Trainer.cost = {
 
 // export
 if (module) module.exports = Trainer;
-
 
 },{}]},{},[1]);
 var Neuron = synaptic.Neuron, Layer = synaptic.Layer, Network = synaptic.Network, Trainer = synaptic.Trainer, Architect = synaptic.Architect;
