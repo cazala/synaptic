@@ -86,9 +86,9 @@ if (typeof window == 'object')
 
 },{"./architect":2,"./layer":3,"./network":4,"./neuron":5,"./trainer":6}],2:[function(require,module,exports){
 // import
-var Layer = require('./layer'),
-    Network = require('./network'),
-    Trainer = require('./trainer');
+var Layer   = require('./layer')
+,   Network = require('./network')
+,   Trainer = require('./trainer')
 
 /*******************************************************************************************
                                         ARCHITECT
@@ -358,10 +358,13 @@ for (var architecture in Architect) {
 
 // export
 if (module) module.exports = Architect;
-
 },{"./layer":3,"./network":4,"./trainer":6}],3:[function(require,module,exports){
+// export
+if (module) module.exports = Layer;
+
 // import
-var Neuron = require('./neuron');
+var Neuron  = require('./neuron')
+,   Network = require('./network')
 
 /*******************************************************************************************
                                             LAYER
@@ -427,7 +430,7 @@ Layer.prototype = {
   // projects a connection from this layer to another one
   project: function(layer, type, weights) {
 
-    if (layer instanceof require('./network'))
+    if (layer instanceof Network)
       layer = layer.layers.input;
 
     if (layer instanceof Layer) {
@@ -633,13 +636,13 @@ Layer.gateType.ONE_TO_ONE = "ONE TO ONE";
   }
 })();
 
-// export
-if (module) module.exports = Layer;
-
 },{"./network":4,"./neuron":5}],4:[function(require,module,exports){
+// export
+if (module) module.exports = Network;
+
 // import
-var Neuron = require('./neuron'),
-    Layer = require('./layer');
+var Neuron  = require('./neuron')
+,   Layer   = require('./layer')
 
 /*******************************************************************************************
                                          NETWORK
@@ -1215,10 +1218,10 @@ Network.fromJSON = function(json) {
   return new Network(layers);
 }
 
-// export
-if (module) module.exports = Network;
-
 },{"./layer":3,"./neuron":5}],5:[function(require,module,exports){
+// export
+if (module) module.exports = Neuron;
+
 /******************************************************************************************
                                          NEURON
 *******************************************************************************************/
@@ -2011,10 +2014,10 @@ Neuron.squash.HLIM = function(x, derivate) {
   }
 })();
 
-// export
-if (module) module.exports = Neuron;
-
 },{}],6:[function(require,module,exports){
+// export
+if (module) module.exports = Trainer;
+
 /*******************************************************************************************
                                         TRAINER
 *******************************************************************************************/
@@ -2721,9 +2724,6 @@ Trainer.cost = {
     return misses;
   }
 }
-
-// export
-if (module) module.exports = Trainer;
 
 },{}]},{},[1]);
 var Neuron = synaptic.Neuron, Layer = synaptic.Layer, Network = synaptic.Network, Trainer = synaptic.Trainer, Architect = synaptic.Architect;

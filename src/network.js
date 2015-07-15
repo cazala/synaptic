@@ -1,6 +1,9 @@
+// export
+if (module) module.exports = Network;
+
 // import
-var Neuron = require('./neuron'),
-    Layer = require('./layer');
+var Neuron  = require('./neuron')
+,   Layer   = require('./layer')
 
 /*******************************************************************************************
                                          NETWORK
@@ -575,6 +578,3 @@ Network.fromJSON = function(json) {
 
   return new Network(layers);
 }
-
-// export
-if (module) module.exports = Network;
