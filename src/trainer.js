@@ -183,7 +183,7 @@ Trainer.prototype = {
     // activate the network
     function activateWorker(input)
     {
-        worker.postMessage({ 
+        worker.postMessage({
             action: "activate",
             input: input,
             memoryBuffer: that.network.optimized.memory
@@ -196,7 +196,7 @@ Trainer.prototype = {
           var currentBucket = Math.floor(iterations / bucketSize);
           currentRate = that.rate[currentBucket] || currentRate;
         }
-        worker.postMessage({ 
+        worker.postMessage({
             action: "propagate",
             target: target,
             rate: currentRate,
@@ -252,7 +252,7 @@ Trainer.prototype = {
         if (e.data.action == "activate")
         {
             error += cost(set[index].output, e.data.output);
-            propagateWorker(set[index].output); 
+            propagateWorker(set[index].output);
             index++;
         }
     }
@@ -267,7 +267,7 @@ Trainer.prototype = {
   XOR: function(options) {
 
     if (this.network.inputs() != 2 || this.network.outputs() != 1)
-      throw "Error: Incompatible network (2 inputs, 1 output)";
+      throw new Error("Incompatible network (2 inputs, 1 output)");
 
     var defaults = {
       iterations: 100000,
@@ -610,17 +610,17 @@ Trainer.prototype = {
   timingTask: function(options){
 
     if (this.network.inputs() != 2 || this.network.outputs() != 1)
-      throw "Invalid Network: must have 2 inputs and one output";
+      throw new Error("Invalid Network: must have 2 inputs and one output");
 
     if (typeof options == 'undefined')
       var options = {};
 
     // helper
     function getSamples (trainingSize, testSize){
-    
+
       // sample size
       var size = trainingSize + testSize;
-      
+
       // generate samples
       var t = 0;
       var set  = [];
@@ -636,7 +636,7 @@ Trainer.prototype = {
           }
           t += n;
           n = Math.round(Math.random() * 20);
-          for (var k = t+1; k <= t + n; k++) 
+          for (var k = t+1; k <= t + n; k++)
               set[k].input[1] = set[t].input[1];
           t += n;
       }
@@ -648,7 +648,7 @@ Trainer.prototype = {
 
       // return samples
       return {
-          train: trainingSet, 
+          train: trainingSet,
           test: testSet
       }
     }
@@ -707,4 +707,3 @@ Trainer.cost = {
 
 // export
 if (module) module.exports = Trainer;
-

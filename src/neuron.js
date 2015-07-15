@@ -76,7 +76,7 @@ Neuron.prototype = {
       }
       influences[neuron.ID] = influence;
     }
-    
+
     for (var i in this.connections.inputs) {
       var input = this.connections.inputs[i];
 
@@ -117,7 +117,7 @@ Neuron.prototype = {
     // output neurons get their error from the enviroment
     if (isOutput)
       this.error.responsibility = this.error.projected = target - this.activation; // Eq. 10
-    
+
     else // the rest of the neuron compute their error responsibilities by backpropagation
     {
       // error responsibilities from all the connections projected from this neuron
@@ -299,7 +299,7 @@ Neuron.prototype = {
 
   // hardcodes the behaviour of the neuron into an optimized function
   optimize: function(optimized, layer) {
-    
+
     optimized = optimized || {};
     var that = this;
     var store_activation = [];
@@ -465,10 +465,10 @@ Neuron.prototype = {
           buildSentence(derivative, ' = 1', store_activation);
           break;
       }
-      
+
       for (var id in this.trace.extended) {
         // calculate extended elegibility traces in advance
-        
+
         var xtrace = this.trace.extended[id];
         var neuron = this.neighboors[id];
         var influence = getVar('influences[' + neuron.ID + ']');
@@ -493,7 +493,7 @@ Neuron.prototype = {
           }
         }
       }
-      
+
       for (var i in this.connections.inputs) {
         var input = this.connections.inputs[i];
         if (input.gater)
@@ -736,7 +736,7 @@ Neuron.prototype = {
 Neuron.connection = function Connection(from, to, weight) {
 
   if (!from || !to)
-    throw "Connection Error: Invalid neurons";
+    throw new Error("Connection Error: Invalid neurons");
 
   this.ID = Neuron.connection.uid();
   this.from = from;
@@ -792,4 +792,3 @@ Neuron.squash.HLIM = function(x, derivate) {
 
 // export
 if (module) module.exports = Neuron;
-
