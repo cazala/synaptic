@@ -54,7 +54,7 @@ gulp.task('test', function () {
         .pipe(mocha());
 });
 
-// watch for changed and re-build (debug)
+// watch for changes and re-build (debug)
 gulp.task('dev', function () {
    gulp.watch('./src/*.js', ['debug']);
 });
