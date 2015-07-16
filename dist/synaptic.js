@@ -1684,9 +1684,11 @@ Neuron.prototype = {
           buildSentence(derivative, ' = 1', store_activation);
           break;
         case Neuron.squash.HLIM:
-          buildSentence(activation, ' = +(', state, ' > 0)',
-            store_activation);
+          buildSentence(activation, ' = +(', state, ' > 0)', store_activation);
           buildSentence(derivative, ' = 1', store_activation);
+        case Neuron.squash.RELU:
+          buildSentence(activation, ' = ', state, ' > 0 ? ', state, ' : 0', store_activation);
+          buildSentence(derivative, ' = ', state, ' > 0 ? 1 : 0', store_activation);
           break;
       }
 
@@ -1993,7 +1995,12 @@ Neuron.squash.IDENTITY = function(x, derivate) {
   return derivate ? 1 : x;
 };
 Neuron.squash.HLIM = function(x, derivate) {
-  return derivate ? 1 : +(x > 0);
+  return derivate ? 1 : x > 0 ? 1 : 0;
+};
+Neuron.squash.RELU = function(x, derivate) {
+  if (derivate)
+    return x > 0 ? 1 : 0;
+  return x > 0 ? x : 0;
 };
 
 // unique ID's
