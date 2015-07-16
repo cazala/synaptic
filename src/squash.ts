@@ -21,6 +21,12 @@ export function IDENTITY(x: number, derivate?: boolean) {
 	return derivate ? 1 : x;
 }
 
+export function RELU(x: number, derivate?: boolean) {
+	if (derivate)
+		return x <= 0 ? 0 : 1;
+	return x <= 0 ? 0 : x;
+}
+
 export function HLIM(x: number, derivate?: boolean) {
 	return derivate ? 1 : +(x > 0);
 }
