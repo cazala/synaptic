@@ -88,7 +88,7 @@ describe('Basic Neural Network', function() {
     var test01 = Math.round(network.activate([0, 1]));
     assert.equal(test01, 0, "[0,1] did not output 0");
 
-    var test10 = Math.round(network.activate([0, 1]));
+    var test10 = Math.round(network.activate([1, 0]));
     assert.equal(test10, 0, "[1,0] did not output 0");
 
     var test11 = Math.round(network.activate([1, 1]));
@@ -134,7 +134,7 @@ describe('Basic Neural Network', function() {
     var test01 = Math.round(network.activate([0, 1]));
     assert.equal(test01, 1, "[0,1] did not output 1");
 
-    var test10 = Math.round(network.activate([0, 1]));
+    var test10 = Math.round(network.activate([1, 0]));
     assert.equal(test10, 1, "[1,0] did not output 1");
 
     var test11 = Math.round(network.activate([1, 1]));
