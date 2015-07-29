@@ -1,90 +1,4 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-/*
-
-The MIT License (MIT)
-
-Copyright (c) 2014 Juan Cazala - juancazala.com
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE
-
-
-
-********************************************************************************************
-                                         SYNAPTIC
-********************************************************************************************
-
-Synaptic is a javascript neural network library for node.js and the browser, its generalized
-algorithm is architecture-free, so you can build and train basically any type of first order
-or even second order neural network architectures.
-
-http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network
-
-The library includes a few built-in architectures like multilayer perceptrons, multilayer
-long-short term memory networks (LSTM) or liquid state machines, and a trainer capable of
-training any given network, and includes built-in training tasks/tests like solving an XOR,
-passing a Distracted Sequence Recall test or an Embeded Reber Grammar test.
-
-The algorithm implemented by this library has been taken from Derek D. Monner's paper:
-
-A generalized LSTM-like training algorithm for second-order recurrent neural networks
-http://www.overcomplete.net/papers/nn2012.pdf
-
-There are references to the equations in that paper commented through the source code.
-
-
-********************************************************************************************/
-
-var Synaptic = {
-    Neuron: require('./neuron'),
-    Layer: require('./layer'),
-    Network: require('./network'),
-    Trainer: require('./trainer'),
-    Architect: require('./architect')
-};
-
-// CommonJS & AMD
-if (typeof define !== 'undefined' && define.amd)
-{
-  define([], function(){ return Synaptic });
-}
-
-// Node.js
-if (typeof module !== 'undefined' && module.exports)
-{
-  module.exports = Synaptic;
-}
-
-// Browser
-if (typeof window == 'object')
-{
-  (function(){ 
-    var oldSynaptic = window['synaptic'];
-    Synaptic.ninja = function(){ 
-      window['synaptic'] = oldSynaptic; 
-      return Synaptic;
-    };	
-  })();
-
-  window['synaptic'] = Synaptic;
-}
-
-},{"./architect":2,"./layer":3,"./network":4,"./neuron":5,"./trainer":6}],2:[function(require,module,exports){
 // import
 var Layer   = require('./layer')
 ,   Network = require('./network')
@@ -358,7 +272,7 @@ for (var architecture in Architect) {
 
 // export
 if (module) module.exports = Architect;
-},{"./layer":3,"./network":4,"./trainer":6}],3:[function(require,module,exports){
+},{"./layer":2,"./network":3,"./trainer":6}],2:[function(require,module,exports){
 // export
 if (module) module.exports = Layer;
 
@@ -636,7 +550,7 @@ Layer.gateType.ONE_TO_ONE = "ONE TO ONE";
   }
 })();
 
-},{"./network":4,"./neuron":5}],4:[function(require,module,exports){
+},{"./network":3,"./neuron":4}],3:[function(require,module,exports){
 // export
 if (module) module.exports = Network;
 
@@ -1098,7 +1012,7 @@ Network.prototype = {
     // build network activation
     for (var neuron in data.activate) { // shouldn't this be layer?
       for (var sentence in data.activate[neuron])
-        activation += data.activate[neuron][sentence] + "\n";
+        activation += data.activate[neuron][sentence].join('') + "\n";
     }
 
     // build outputs
@@ -1218,7 +1132,7 @@ Network.fromJSON = function(json) {
   return new Network(layers);
 }
 
-},{"./layer":3,"./neuron":5}],5:[function(require,module,exports){
+},{"./layer":2,"./neuron":4}],4:[function(require,module,exports){
 // export
 if (module) module.exports = Neuron;
 
@@ -2021,7 +1935,93 @@ Neuron.squash.RELU = function(x, derivate) {
   }
 })();
 
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
+/*
+
+The MIT License (MIT)
+
+Copyright (c) 2014 Juan Cazala - juancazala.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE
+
+
+
+********************************************************************************************
+                                         SYNAPTIC
+********************************************************************************************
+
+Synaptic is a javascript neural network library for node.js and the browser, its generalized
+algorithm is architecture-free, so you can build and train basically any type of first order
+or even second order neural network architectures.
+
+http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network
+
+The library includes a few built-in architectures like multilayer perceptrons, multilayer
+long-short term memory networks (LSTM) or liquid state machines, and a trainer capable of
+training any given network, and includes built-in training tasks/tests like solving an XOR,
+passing a Distracted Sequence Recall test or an Embeded Reber Grammar test.
+
+The algorithm implemented by this library has been taken from Derek D. Monner's paper:
+
+A generalized LSTM-like training algorithm for second-order recurrent neural networks
+http://www.overcomplete.net/papers/nn2012.pdf
+
+There are references to the equations in that paper commented through the source code.
+
+
+********************************************************************************************/
+
+var Synaptic = {
+    Neuron: require('./neuron'),
+    Layer: require('./layer'),
+    Network: require('./network'),
+    Trainer: require('./trainer'),
+    Architect: require('./architect')
+};
+
+// CommonJS & AMD
+if (typeof define !== 'undefined' && define.amd)
+{
+  define([], function(){ return Synaptic });
+}
+
+// Node.js
+if (typeof module !== 'undefined' && module.exports)
+{
+  module.exports = Synaptic;
+}
+
+// Browser
+if (typeof window == 'object')
+{
+  (function(){ 
+    var oldSynaptic = window['synaptic'];
+    Synaptic.ninja = function(){ 
+      window['synaptic'] = oldSynaptic; 
+      return Synaptic;
+    };	
+  })();
+
+  window['synaptic'] = Synaptic;
+}
+
+},{"./architect":1,"./layer":2,"./network":3,"./neuron":4,"./trainer":6}],6:[function(require,module,exports){
 // export
 if (module) module.exports = Trainer;
 
@@ -2732,5 +2732,5 @@ Trainer.cost = {
   }
 }
 
-},{}]},{},[1]);
+},{}]},{},[5]);
 var Neuron = synaptic.Neuron, Layer = synaptic.Layer, Network = synaptic.Network, Trainer = synaptic.Trainer, Architect = synaptic.Architect;

@@ -459,7 +459,7 @@ Network.prototype = {
     // build network activation
     for (var neuron in data.activate) { // shouldn't this be layer?
       for (var sentence in data.activate[neuron])
-        activation += data.activate[neuron][sentence] + "\n";
+        activation += data.activate[neuron][sentence].join('') + "\n";
     }
 
     // build outputs
