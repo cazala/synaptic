@@ -1,7 +1,7 @@
 {
   "name": "synaptic",
-  "version": "1.0.1",
-  "description": "Architecture-free neural network library",
+  "version": "1.0.2",
+  "description": "architecture-free neural network library",
   "main": "./src/synaptic",
   "scripts": {
     "test": "mocha test"
