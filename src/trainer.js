@@ -56,12 +56,13 @@ Trainer.prototype = {
         console.log('Deprecated: use schedule instead of customLog')
         this.schedule = options.customLog;
       }
-      if (options.crossValidate) 
+      if (options.crossValidate) {
         crossValidate = true;
-      if (options.crossValidate.testSize)
-        this.crossValidate.testSize = options.crossValidate.testSize;
-      if (options.crossValidate.testError)
-        this.crossValidate.testError = options.crossValidate.testError;
+        if (options.crossValidate.testSize)
+          this.crossValidate.testSize = options.crossValidate.testSize;
+        if (options.crossValidate.testError)
+          this.crossValidate.testError = options.crossValidate.testError;
+      }
     }
 
     currentRate = this.rate;
@@ -136,10 +137,10 @@ Trainer.prototype = {
       errorSum += costFunction(target, output);
     }
     return errorSum;
-  }
+  },
 
   // tests a set and returns the error and elapsed time
-  test: function(set, options){
+  test: function(set, options) {
 
     var error = 0;
     var abort = false;
