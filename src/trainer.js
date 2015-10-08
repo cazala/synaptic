@@ -76,8 +76,11 @@ Trainer.prototype = {
       testSet = set.slice(numTrain);
     }
 
-    while ((crossValidate && error > this.crossValidate.testError) 
-      || (!abort && iterations < this.iterations && error > this.error)) {
+    while ((!abort && iterations < this.iterations && error > this.error)) {
+      if (crossValidate && error <= this.crossValidate.testError) {
+        break;
+      }
+
       var currentSetSize = set.length;
       error = 0;
 

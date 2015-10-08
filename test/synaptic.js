@@ -206,6 +206,76 @@ describe("Perceptron - XOR", function() {
   });
 });
 
+describe("Perceptron - SIN - CrossValidation", function() {
+
+  var sinNetwork = new Perceptron(1, 12, 1);
+
+  var trainingSet = Array.apply(null, Array(100)).map(function () {
+    var inputValue = Math.random() * Math.PI * 2;
+    return {
+      input: [inputValue],
+      output: [Math.sin(inputValue)]
+    }
+  });
+
+  var results = sinNetwork.trainer.train(trainingSet, {
+    iterations: 40,
+    log: false,
+    error: .001,
+    cost: Trainer.cost.MSE,
+    /*crossValidate: {
+      testSize: .3,
+      testError: .01
+    }*/
+  });
+
+  var inputs = trainingSet.map(function(x) {
+    return x.input[0];
+  });
+  var outs = inputs.map(function(x) {
+    return sinNetwork.activate([x])[0];
+  });
+  console.log(JSON.stringify(inputs), JSON.stringify(outs));
+
+  var equalError = function(output, expected, error) {
+    return Math.abs(output - expected) <= error;
+  };
+
+  var test0 = sinNetwork.activate([0])[0];
+  it("input: [0] output: " + test0, function() {
+    var expected = Math.sin(0);
+    var eq = equalError(test0, expected, .01);
+    assert.equal(eq, true, "[0] did not output " + expected);
+  });
+
+  var test05PI = sinNetwork.activate([.5*Math.PI])[0];
+  it("input: [0.5*Math.PI] output: " + test05PI, function() {
+    var expected = Math.sin(.5*Math.PI);
+    var eq = equalError(test05PI, expected, .01);
+    assert.equal(eq, true, "[0.5*Math.PI] did not output " + expected);
+  });
+
+  var test2PI = sinNetwork.activate([2*Math.PI])[0];
+  it("input: [2*Math.PI] output: " + test2PI, function() {
+    var expected = Math.sin(2*Math.PI);
+    var eq = equalError(test2PI, expected, .01);
+    assert.equal(eq, true, "[2*Math.PI] did not output " + expected);
+  });
+
+  var test2 = sinNetwork.activate([2])[0];
+  it("input: [2] output: " + test2, function() {
+    var expected = Math.sin(2);
+    var eq = equalError(test2, expected, .01);
+    assert.equal(eq, true, "[2] did not output " + expected);
+  });
+
+  var errorResult = results.error;
+  it("CrossValidation error: " + errorResult, function() {
+    var lessThanOrEqualError = errorResult <= .01;
+    assert.equal(lessThanOrEqualError, true, "CrossValidation error not less than or equal to desired error.");
+  });
+});
+
 describe("LSTM - Discrete Sequence Recall", function() {
 
   var targets = [2, 4];
