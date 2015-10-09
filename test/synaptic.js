@@ -206,7 +206,7 @@ describe("Perceptron - XOR", function() {
   });
 });
 
-describe("Perceptron - SIN - CrossValidation", function() {
+describe("Perceptron - SIN", function() {
 
   var mySin = function(x) {
     return (Math.sin(x)+1)/2;
@@ -225,17 +225,12 @@ describe("Perceptron - SIN - CrossValidation", function() {
       output: [mySin(inputValue)]
     }
   });
-  trainingSet.push({input:[2*Math.PI], output:[mySin(2*Math.PI)]}); // Force spcial test case
 
   var results = sinNetwork.trainer.train(trainingSet, {
     iterations: 2000,
     log: false,
     error: 1e-6,
     cost: Trainer.cost.MSE,
-    /*crossValidate: {
-      testSize: .3,
-      testError: .01
-    }*/
   });
  
   var test0 = sinNetwork.activate([0])[0];
@@ -252,11 +247,63 @@ describe("Perceptron - SIN - CrossValidation", function() {
     assert.equal(eq, true, "[0.5*Math.PI] did not output " + expected);
   });
 
-  var test2PI = sinNetwork.activate([2*Math.PI])[0];
-  it("input: [2*Math.PI] output: " + test2PI, function() {
-    var expected = mySin(2*Math.PI);
-    var eq = equalError(test2PI, expected, .03);
-    assert.equal(eq, true, "[2*Math.PI] did not output " + expected);
+  var test2 = sinNetwork.activate([2])[0];
+  it("input: [2] output: " + test2, function() {
+    var expected = mySin(2);
+    var eq = equalError(test2, expected, .03);
+    assert.equal(eq, true, "[2] did not output " + expected);
+  });
+
+  var errorResult = results.error;
+  it("Sin error: " + errorResult, function() {
+    var lessThanOrEqualError = errorResult <= .03;
+    assert.equal(lessThanOrEqualError, true, "Sin error not less than or equal to desired error.");
+  });
+});
+
+describe("Perceptron - SIN - CrossValidate", function() {
+
+  var mySin = function(x) {
+    return (Math.sin(x)+1)/2;
+  };
+
+  var equalError = function(output, expected, error) {
+    return Math.abs(output - expected) <= error;
+  };
+
+  var sinNetwork = new Perceptron(1, 12, 1);
+
+  var trainingSet = Array.apply(null, Array(1000)).map(function () {
+    var inputValue = Math.random() * Math.PI * 2;
+    return {
+      input: [inputValue],
+      output: [mySin(inputValue)]
+    }
+  });
+
+  var results = sinNetwork.trainer.train(trainingSet, {
+    iterations: 2000,
+    log: false,
+    error: 1e-6,
+    cost: Trainer.cost.MSE,
+    crossValidate: {
+      testSize: .3,
+      testError: 1e-6
+    }
+  });
+ 
+  var test0 = sinNetwork.activate([0])[0];
+  it("input: [0] output: " + test0, function() {
+    var expected = mySin(0);
+    var eq = equalError(test0, expected, .03);
+    assert.equal(eq, true, "[0] did not output " + expected);
+  });
+
+  var test05PI = sinNetwork.activate([.5*Math.PI])[0];
+  it("input: [0.5*Math.PI] output: " + test05PI, function() {
+    var expected = mySin(.5*Math.PI);
+    var eq = equalError(test05PI, expected, .03);
+    assert.equal(eq, true, "[0.5*Math.PI] did not output " + expected);
   });
 
   var test2 = sinNetwork.activate([2])[0];

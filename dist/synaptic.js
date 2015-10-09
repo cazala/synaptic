@@ -2095,7 +2095,7 @@ Trainer.prototype = {
     }
 
     if(crossValidate) {
-      var numTrain = Math.ceil((1 - this.testSize) * set.length);
+      var numTrain = Math.ceil((1 - this.crossValidate.testSize) * set.length);
       trainSet = set.slice(0, numTrain);
       testSet = set.slice(numTrain);
     }
@@ -2116,7 +2116,7 @@ Trainer.prototype = {
       if (crossValidate) {
         this._trainSet(trainSet, currentRate, cost);
         error += this.test(testSet).error;
-        currentSetSize = trainSet.length;
+        currentSetSize = 1;
       } else {
         error += this._trainSet(set, currentRate, cost);
         currentSetSize = set.length;
