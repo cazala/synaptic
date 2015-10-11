@@ -12,6 +12,10 @@ function Trainer(network, options) {
   this.iterations = options.iterations || 100000;
   this.error = options.error || .005
   this.cost = options.cost || null;
+  this.crossValidate = {
+    testSize: .3,
+    testError: .01
+  }
 }
 
 Trainer.prototype = {
@@ -24,6 +28,7 @@ Trainer.prototype = {
     var abort = false;
     var input, output, target, currentRate;
     var cost = options && options.cost || this.cost || Trainer.cost.MSE;
+    var crossValidate = false, testSet, trainSet;
 
     var start = Date.now();
 
@@ -51,6 +56,13 @@ Trainer.prototype = {
         console.log('Deprecated: use schedule instead of customLog')
         this.schedule = options.customLog;
       }
+      if (options.crossValidate) {
+        crossValidate = true;
+        if (options.crossValidate.testSize)
+          this.crossValidate.testSize = options.crossValidate.testSize;
+        if (options.crossValidate.testError)
+          this.crossValidate.testError = options.crossValidate.testError;
+      }
     }
 
     currentRate = this.rate;
@@ -58,8 +70,18 @@ Trainer.prototype = {
       bucketSize = Math.floor(this.iterations / this.rate.length);
     }
 
+    if(crossValidate) {
+      var numTrain = Math.ceil((1 - this.crossValidate.testSize) * set.length);
+      trainSet = set.slice(0, numTrain);
+      testSet = set.slice(numTrain);
+    }
 
-    while (!abort && iterations < this.iterations && error > this.error) {
+    while ((!abort && iterations < this.iterations && error > this.error)) {
+      if (crossValidate && error <= this.crossValidate.testError) {
+        break;
+      }
+
+      var currentSetSize = set.length;
       error = 0;
 
       if(bucketSize > 0) {
@@ -67,19 +89,18 @@ Trainer.prototype = {
         currentRate = this.rate[currentBucket] || currentRate;
       }
 
-      for (var train in set) {
-        input = set[train].input;
-        target = set[train].output;
-
-        output = this.network.activate(input);
-        this.network.propagate(currentRate, target);
-
-        error += cost(target, output);
+      if (crossValidate) {
+        this._trainSet(trainSet, currentRate, cost);
+        error += this.test(testSet).error;
+        currentSetSize = 1;
+      } else {
+        error += this._trainSet(set, currentRate, cost);
+        currentSetSize = set.length;
       }
 
       // check error
       iterations++;
-      error /= set.length;
+      error /= currentSetSize;
 
       if (options) {
         if (this.schedule && this.schedule.every && iterations %
@@ -106,8 +127,23 @@ Trainer.prototype = {
     return results;
   },
 
+  // preforms one training epoch and returns the error (private function used in this.train)
+  _trainSet: function(set, currentRate, costFunction) {
+    var errorSum = 0;
+    for (var train in set) {
+      input = set[train].input;
+      target = set[train].output;
+
+      output = this.network.activate(input);
+      this.network.propagate(currentRate, target);
+
+      errorSum += costFunction(target, output);
+    }
+    return errorSum;
+  },
+
   // tests a set and returns the error and elapsed time
-  test: function(set, options){
+  test: function(set, options) {
 
     var error = 0;
     var abort = false;
