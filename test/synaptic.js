@@ -20,14 +20,14 @@ function noRepeat (range, avoid) {
     }
   }
   return number;
-};
+}
 
 function equal (prediction, output) {
   for (var i in prediction)
     if (Math.round(prediction[i]) != output[i])
       return false;
   return true;
-};
+}
 
 function generateRandomArray (size){
     var array = [];
@@ -43,6 +43,10 @@ function compare (a, b) {
   mse /= a.length;
 
   return mse < 1e-10;
+}
+
+function equalWithError (output, expected, error) {
+  return Math.abs(output - expected) <= error;
 }
 
 // specs
@@ -94,7 +98,7 @@ describe('Basic Neural Network', function() {
     var test11 = Math.round(network.activate([1, 1]));
     assert.equal(test11, 1, "[1,1] did not output 1");
   });
-  
+
   it("trains an OR gate", function() {
 
     var inputLayer = new Layer(2),
@@ -207,23 +211,18 @@ describe("Perceptron - XOR", function() {
 });
 
 describe("Perceptron - SIN", function() {
-
   var mySin = function(x) {
     return (Math.sin(x)+1)/2;
   };
 
-  var equalError = function(output, expected, error) {
-    return Math.abs(output - expected) <= error;
-  };
-
   var sinNetwork = new Perceptron(1, 12, 1);
 
-  var trainingSet = Array.apply(null, Array(1000)).map(function () {
+  var trainingSet = Array.apply(null, Array(800)).map(function () {
     var inputValue = Math.random() * Math.PI * 2;
     return {
       input: [inputValue],
       output: [mySin(inputValue)]
-    }
+    };
   });
 
   var results = sinNetwork.trainer.train(trainingSet, {
@@ -232,31 +231,31 @@ describe("Perceptron - SIN", function() {
     error: 1e-6,
     cost: Trainer.cost.MSE,
   });
- 
+
   var test0 = sinNetwork.activate([0])[0];
-  it("input: [0] output: " + test0, function() {
-    var expected = mySin(0);
-    var eq = equalError(test0, expected, .03);
-    assert.equal(eq, true, "[0] did not output " + expected);
+  var expected0 = mySin(0);
+  it("input: [0] output: " + test0 + ", expected: " + expected0, function() {
+    var eq = equalWithError(test0, expected0, .035);
+    assert.equal(eq, true, "[0] did not output " + expected0);
   });
 
   var test05PI = sinNetwork.activate([.5*Math.PI])[0];
-  it("input: [0.5*Math.PI] output: " + test05PI, function() {
-    var expected = mySin(.5*Math.PI);
-    var eq = equalError(test05PI, expected, .03);
-    assert.equal(eq, true, "[0.5*Math.PI] did not output " + expected);
+  var expected05PI = mySin(.5*Math.PI);
+  it("input: [0.5*Math.PI] output: " + test05PI + ", expected: " + expected05PI, function() {
+    var eq = equalWithError(test05PI, expected05PI, .035);
+    assert.equal(eq, true, "[0.5*Math.PI] did not output " + expected05PI);
   });
 
   var test2 = sinNetwork.activate([2])[0];
-  it("input: [2] output: " + test2, function() {
-    var expected = mySin(2);
-    var eq = equalError(test2, expected, .03);
-    assert.equal(eq, true, "[2] did not output " + expected);
+  var expected2 = mySin(2);
+  it("input: [2] output: " + test2 + ", expected: " + expected2, function() {
+    var eq = equalWithError(test2, expected2, .035);
+    assert.equal(eq, true, "[2] did not output " + expected2);
   });
 
   var errorResult = results.error;
   it("Sin error: " + errorResult, function() {
-    var lessThanOrEqualError = errorResult <= .03;
+    var lessThanOrEqualError = errorResult <= .001;
     assert.equal(lessThanOrEqualError, true, "Sin error not less than or equal to desired error.");
   });
 });
@@ -267,18 +266,14 @@ describe("Perceptron - SIN - CrossValidate", function() {
     return (Math.sin(x)+1)/2;
   };
 
-  var equalError = function(output, expected, error) {
-    return Math.abs(output - expected) <= error;
-  };
-
   var sinNetwork = new Perceptron(1, 12, 1);
 
-  var trainingSet = Array.apply(null, Array(1000)).map(function () {
+  var trainingSet = Array.apply(null, Array(800)).map(function () {
     var inputValue = Math.random() * Math.PI * 2;
     return {
       input: [inputValue],
       output: [mySin(inputValue)]
-    }
+    };
   });
 
   var results = sinNetwork.trainer.train(trainingSet, {
@@ -291,31 +286,31 @@ describe("Perceptron - SIN - CrossValidate", function() {
       testError: 1e-6
     }
   });
- 
+
   var test0 = sinNetwork.activate([0])[0];
-  it("input: [0] output: " + test0, function() {
-    var expected = mySin(0);
-    var eq = equalError(test0, expected, .03);
-    assert.equal(eq, true, "[0] did not output " + expected);
+  var expected0 = mySin(0);
+  it("input: [0] output: " + test0 + ", expected: " + expected0, function() {
+    var eq = equalWithError(test0, expected0, .035);
+    assert.equal(eq, true, "[0] did not output " + expected0);
   });
 
   var test05PI = sinNetwork.activate([.5*Math.PI])[0];
-  it("input: [0.5*Math.PI] output: " + test05PI, function() {
-    var expected = mySin(.5*Math.PI);
-    var eq = equalError(test05PI, expected, .03);
-    assert.equal(eq, true, "[0.5*Math.PI] did not output " + expected);
+  var expected05PI = mySin(.5*Math.PI);
+  it("input: [0.5*Math.PI] output: " + test05PI + ", expected: " + expected05PI, function() {
+    var eq = equalWithError(test05PI, expected05PI, .035);
+    assert.equal(eq, true, "[0.5*Math.PI] did not output " + expected05PI);
   });
 
   var test2 = sinNetwork.activate([2])[0];
-  it("input: [2] output: " + test2, function() {
-    var expected = mySin(2);
-    var eq = equalError(test2, expected, .03);
-    assert.equal(eq, true, "[2] did not output " + expected);
+  var expected2 = mySin(2);
+  it("input: [2] output: " + test2 + ", expected: " + expected2, function() {
+    var eq = equalWithError(test2, expected2, .035);
+    assert.equal(eq, true, "[2] did not output " + expected2);
   });
 
   var errorResult = results.error;
   it("CrossValidation error: " + errorResult, function() {
-    var lessThanOrEqualError = errorResult <= .03;
+    var lessThanOrEqualError = errorResult <= .001;
     assert.equal(lessThanOrEqualError, true, "CrossValidation error not less than or equal to desired error.");
   });
 });
@@ -419,12 +414,12 @@ describe("LSTM - Discrete Sequence Recall", function() {
 
 describe("LSTM - Timing Task", function() {
   var network = new synaptic.Architect.LSTM(2,7,1);
-  var result = network.trainer.timingTask({ 
+  var result = network.trainer.timingTask({
     log: false,
     trainSamples: 4000,
     testSamples: 500
   });
-  
+
   it("should complete the training in less than 200 iterations", function() {
     assert(result.train.iterations <= 200);
   });
@@ -499,7 +494,7 @@ describe("toJSON/fromJSON Networks Equivalency", function() {
 });
 
 describe("Cloned Networks Equivalency", function() {
-  
+
   var original = new LSTM(10,5,5);
 
   var cloned = original.clone();
