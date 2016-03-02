@@ -2036,10 +2036,7 @@ function Trainer(network, options) {
   this.iterations = options.iterations || 100000;
   this.error = options.error || .005
   this.cost = options.cost || null;
-  this.crossValidate = {
-    testSize: .3,
-    testError: .01
-  }
+  this.crossValidate = options.crossValidate || null;
 }
 
 Trainer.prototype = {
@@ -2080,7 +2077,7 @@ Trainer.prototype = {
         console.log('Deprecated: use schedule instead of customLog')
         this.schedule = options.customLog;
       }
-      if (options.crossValidate) {
+      if (this.crossValidate) {
         crossValidate = true;
         if (options.crossValidate.testSize)
           this.crossValidate.testSize = options.crossValidate.testSize;
