@@ -1,6 +1,6 @@
 {
   "name": "synaptic",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "architecture-free neural network library",
   "main": "./src/synaptic",
   "scripts": {
@@ -38,5 +38,7 @@
     "url": "https://github.com/cazala/synaptic/issues"
   },
   "homepage": "http://synaptic.juancazala.com",
-  "engines" : { "node" : ">=0.10" }
+  "engines": {
+    "node": ">=0.10"
+  }
 }
