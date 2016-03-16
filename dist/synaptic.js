@@ -2696,7 +2696,7 @@ Trainer.prototype = {
           }
           t += n;
           n = Math.round(Math.random() * 20);
-          for (var k = t+1; k <= t + n; k++)
+          for (var k = t+1; k <= (t + n) &&  k < size; k++)
               set[k].input[1] = set[t].input[1];
           t += n;
       }
