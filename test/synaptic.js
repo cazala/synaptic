@@ -436,7 +436,7 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
   unoptimized.setOptimize(false);
 
   var learningRate = .5;
-  var iterations = 1000;
+  var iterations = 100000;
 
   for (var i = 1; i <= iterations; i++)
   {
@@ -447,10 +447,15 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
       var output1 = optimized.activate(input);
       var output2 = unoptimized.activate(input);
 
-      if (i % 100 == 0)
-        it('should produce the same output for both networks after ' + i + ' iterations', function(){
+      var comparaison = compare(output1, output2);
+      if(!comparaison){
+        var tempoIndex = i;
+        it('should produce the same output for both networks after ' + tempoIndex + ' iterations', function(){
           assert(compare(output1, output2));
         });
+        return;
+      }
+
 
       // random target
       var target = generateRandomArray(1);
@@ -458,8 +463,12 @@ describe("Optimized and Unoptimized Networks Equivalency", function() {
       // propagate networks
       optimized.propagate(learningRate, target);
       unoptimized.propagate(learningRate, target);
-  }
-});
+    }
+    it('should produce the same output for both networks after ' + iterations + ' iterations', function(){
+          assert(compare(output1, output2));
+    });
+  });
+
 
 describe("toJSON/fromJSON Networks Equivalency", function() {
   var original = new LSTM(10,5,5);
