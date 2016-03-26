@@ -47,30 +47,20 @@ Neuron.prototype = {
     // old state
     this.old = this.state;
     // eq. 15
-    this.state = this.selfconnection.gain * (this.selfconnection.weight * this.state) + this.bias;
-
+    this.state = this.selfconnection.gain * this.selfconnection.weight * this.state + this.bias;
 
     for (var i in this.connections.inputs) {
       var input = this.connections.inputs[i];
       if(input.gater){
         this.state +=  (input.from.activation * input.weight * input.gain ) ;
       }
-      
     }
-
      for (var i in this.connections.inputs) {
       var input = this.connections.inputs[i];
       if(!input.gater){
         this.state +=  ( input.from.activation * input.weight ) ;
       }
-      
     }
-
-
-
-
-
-
     // eq. 16
     this.activation = this.squash(this.state);
 
@@ -403,9 +393,6 @@ Neuron.prototype = {
 
 
       store.push(sentence + ';');
-
-
-
     }
 
     // helper to check if an object is empty
@@ -443,41 +430,27 @@ Neuron.prototype = {
         if (this.selfconnection.gater){
           buildSentence(state, ' = ', self_gain, ' * ', self_weight, ' * ',
             state, ' + ', bias, store_activation);
-         
         }
         else {
           buildSentence(state, ' = ', self_weight, ' * ', state, ' + ',
             bias, store_activation);
         }
-          
       else
         buildSentence(state, ' = ', bias, store_activation);
-      
       for (var i in this.connections.inputs) {
         var input = this.connections.inputs[i];
         var input_activation = getVar(input.from, 'activation');
         var input_weight = getVar(input, 'weight');
         if (input.gater){
           var input_gain = getVar(input, 'gain');
-
-
           buildSentence(state, ' += ', input_activation, ' * ',
             input_weight, ' * ', input_gain, store_activation);
-
         }
-          
         else{
           buildSentence(state, ' += ', input_activation, ' * ',
             input_weight, store_activation);
-
-        }
-          
-
-      
-         
+        }  
       }
-    
-      
       var derivative = getVar(this, 'derivative');
       switch (this.squash) {
         case Neuron.squash.LOGISTIC:
@@ -535,7 +508,6 @@ Neuron.prototype = {
         }
       }
       for (var i in this.connections.inputs) {
-
         var input = this.connections.inputs[i];
         if (input.gater)
           var input_gain = getVar(input, 'gain');
@@ -548,9 +520,7 @@ Neuron.prototype = {
               buildSentence(trace, ' = ', self_gain, ' * ', self_weight,
                 ' * ', trace, ' + ', input_gain, ' * ', input_activation,
                 store_trace);
-              
             }
-              
             else
               buildSentence(trace, ' = ', self_gain, ' * ', self_weight,
                 ' * ', trace, ' + ', input_activation, store_trace);
@@ -759,7 +729,6 @@ Neuron.prototype = {
       buildSentence(bias, ' += ', rate, ' * ', responsibility,
         store_propagation);
     }
-
     return {
       memory: varID,
       neurons: neurons + 1,
