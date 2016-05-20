@@ -8,7 +8,7 @@ var Layer   = require('./layer')
                                         ARCHITECT
 *******************************************************************************************/
 
-// Colection of useful built-in architectures
+// Collection of useful built-in architectures
 var Architect = {
 
   // Multilayer Perceptron
