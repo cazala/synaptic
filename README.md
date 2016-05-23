@@ -17,6 +17,9 @@ There are references to the equations in that paper commented through the source
 
 If you have no prior knowledge about Neural Networks, you should start by [reading this guide](https://github.com/cazala/synaptic/wiki/Neural-Networks-101).
 
+
+If you want a practical example on how to feed data to a neural network, then take a look at [this article](https://github.com/cazala/synaptic/wiki/Normalization-101).
+
 ####Demos
 
 - [Solve an XOR](http://synaptic.juancazala.com/#/xor)
@@ -42,6 +45,7 @@ The source code of these demos can be found in [this branch](https://github.com/
 ###Installation
 
 #####In node
+
 You can install synaptic with [npm](http://npmjs.org):
 
 ```cmd
@@ -49,10 +53,17 @@ npm install synaptic --save
 ```
 
 #####In the browser
-Just include the file synaptic.js from `/dist` directory with a script tag in your HTML:
+
+You can install synaptic with [bower](http://bower.io):
+
+```cmd
+bower install synaptic
+```
+
+Or you can simply use the CDN link, kindly provided by [CDNjs](https://cdnjs.com/)
 
 ```html
-<script src="synaptic.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/synaptic/1.0.4/synaptic.min.js"></script>
 ```
 
 ###Usage
