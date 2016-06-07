@@ -20,6 +20,8 @@ If you have no prior knowledge about Neural Networks, you should start by [readi
 
 If you want a practical example on how to feed data to a neural network, then take a look at [this article](https://github.com/cazala/synaptic/wiki/Normalization-101).
 
+You may also want to take a look at [this article](http://blog.webkid.io/neural-networks-in-javascript/).
+
 ####Demos
 
 - [Solve an XOR](http://synaptic.juancazala.com/#/xor)
