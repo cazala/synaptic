@@ -430,36 +430,50 @@ describe("LSTM - Timing Task", function() {
 });
 
 describe("Optimized and Unoptimized Networks Equivalency", function() {
-  var optimized = new LSTM(2,1,1)
+ var optimized = new LSTM(1,1,1)
 
   var unoptimized = optimized.clone();
+ 
+
   unoptimized.setOptimize(false);
 
-  var learningRate = .5;
-  var iterations = 1000;
+  var learningRate = .1;
+  var iterations = 50000;
+
 
   for (var i = 1; i <= iterations; i++)
   {
       //random input
-      var input = generateRandomArray(2);
+      var input = generateRandomArray(1);
+      //var input = [1];
+
+  
 
       // activate networks
       var output1 = optimized.activate(input);
       var output2 = unoptimized.activate(input);
 
-      if (i % 100 == 0)
-        it('should produce the same output for both networks after ' + i + ' iterations', function(){
-          assert(compare(output1, output2));
+      if(output1- output2 != 0){
+        var tempoIndex = i;
+        it('should produce the same output for both networks after ' + tempoIndex + ' iterations', function(){
+          assert(false);
         });
+        return;
+      }
+
 
       // random target
       var target = generateRandomArray(1);
 
       // propagate networks
-      optimized.propagate(learningRate, target);
-      unoptimized.propagate(learningRate, target);
-  }
-});
+     // optimized.propagate(learningRate, target);
+    //  unoptimized.propagate(learningRate, target);
+    }
+    it('should produce the same output for both networks after ' + iterations + ' iterations', function(){
+          assert(compare(output1, output2));
+    });
+  });
+
 
 describe("toJSON/fromJSON Networks Equivalency", function() {
   var original = new LSTM(10,5,5);
