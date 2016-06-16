@@ -28,7 +28,7 @@ var Architect = {
     var previous = input;
 
     // generate hidden layers
-    for (level in layers) {
+    for (var level in layers) {
       var size = layers[level];
       var layer = new Layer(size);
       hidden.push(layer);
