@@ -139,8 +139,8 @@ Layer.prototype = {
     // Check if ALL to ALL connection
     var connections = 0;
     for (var here in this.list) {
+      var from = this.list[here];
       for (var there in layer.list) {
-        var from = this.list[here];
         var to = layer.list[there];
         var connected = from.connected(to);
         if (connected.type == 'projected')
