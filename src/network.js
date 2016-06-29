@@ -492,32 +492,56 @@ Network.prototype = {
     return new Function(hardcode)();
   },
 
-  worker: function() {
+
+  // Return a HTML5 WebWorker specialized on training the network stored in `memory`.
+  // Train based on the given dataSet and options.
+  // The worker returns the updated `memory` when done.
+  worker: function(memory, set, options) {
+
+    // Copy the options and set defaults (options might be different for each worker)
+    var workerOptions = {};
+    if(options) workerOptions = JSON.parse(JSON.stringify(options));
+    workerOptions.rate = options.rate || .2;
+    workerOptions.iterations = options.iterations || 100000;
+    workerOptions.error = options.error || .005;
+    workerOptions.cost = options.cost || null;
+    workerOptions.crossValidate = options.crossValidate || null;
+
+    // Cost function might be different for each worker
+    costFunction = `var cost = ${options && options.cost || this.cost || Trainer.cost.MSE}`;
+    var workerFunction = Network.getWorkerSharedFunctions();
+    workerFunction = workerFunction.replace(/var cost = options && options\.cost \|\| this\.cost \|\| Trainer\.cost\.MSE;/g, costFunction);
+
+    // Set what we do when training is finished
+    workerFunction = workerFunction.replace('return results;', 
+                      'postMessage({action: "done", message: results, memoryBuffer: F}, [F.buffer]);');
+
+    // Replace log with postmessage
+    workerFunction = workerFunction.replace("console.log('iterations', iterations, 'error', error, 'rate', currentRate)",
+              `postMessage({action: 'log', message: {
+                  iterations: iterations,
+                  error: error,
+                  rate: currentRate
+                }
+              })`);
+
     if (!this.optimized)
       this.optimize();
 
-    var hardcode = "var inputs = " + this.optimized.data.inputs.length +
-      ";\n";
-    hardcode += "var outputs = " + this.optimized.data.outputs.length +
-      ";\n";
-    hardcode += "var F = null;\n";
-    hardcode += "var activate = " + this.optimized.activate.toString() +
-      ";\n";
-    hardcode += "var propagate = " + this.optimized.propagate.toString() +
-      ";\n";
-    hardcode += "onmessage = function(e){\n";
-    hardcode += "F = e.data.memoryBuffer;\n";
-    hardcode += "if (e.data.action == 'activate'){\n";
-    hardcode += "if (e.data.input.length == inputs){\n";
-    hardcode +=
-      "postMessage( { action: 'activate', output: activate(e.data.input), memoryBuffer: F }, [F.buffer]);\n";
-    hardcode += "}\n}\nelse if (e.data.action == 'propagate'){\n";
-    hardcode += "propagate(e.data.rate, e.data.target);\n";
-    hardcode +=
-      "postMessage({ action: 'propagate', memoryBuffer: F }, [F.buffer]);\n";
-    hardcode += "}\n}\n";
+    var hardcode = "var inputs = " + this.optimized.data.inputs.length + ";\n";
+    hardcode += "var outputs = " + this.optimized.data.outputs.length + ";\n";
+    hardcode += "var F =  new Float64Array([" + this.optimized.memory.toString() + "]);\n";
+    hardcode += "var activate = " + this.optimized.activate.toString() + ";\n";
+    hardcode += "var propagate = " + this.optimized.propagate.toString() + ";\n";
+    hardcode += 
+        `onmessage = function(e) {
+          if (e.data.action == 'startTraining') {
+            train(${JSON.stringify(set)}, ${JSON.stringify(workerOptions)});
+          }
+        }`
 
-    var blob = new Blob([hardcode]);
+    var workerSourceCode = workerFunction + '\n' + hardcode;
+    var blob = new Blob([workerSourceCode]);
     var blobURL = window.URL.createObjectURL(blob);
 
     return new Worker(blobURL);
@@ -528,6 +552,39 @@ Network.prototype = {
     return Network.fromJSON(this.toJSON());
   }
 }
+
+/**
+ * Creates a static String to store the source code of the functions
+ *  that are identical for all the workers (train, _trainSet, test)
+ *  
+ * @return {String} Source code that can train a network inside a worker.
+ * @static
+ */
+Network.getWorkerSharedFunctions = function() {
+  // If we already computed the source code for the shared functions
+  if(typeof Network._SHARED_WORKER_FUNCTIONS !== 'undefined')
+    return Network._SHARED_WORKER_FUNCTIONS;
+
+  // Otherwise compute and return the source code
+  // We compute them by simply copying the source code of the train, _trainSet and test functions
+  //  using the .toString() method
+
+  // Load and name the train function
+  var train_f = Trainer.prototype.train.toString();
+  train_f = train_f.replace('function (set', 'function train(set') + '\n';
+
+  // Load and name the _trainSet function
+  var _trainSet_f = Trainer.prototype._trainSet.toString().replace(/this.network./g, '');
+  _trainSet_f = _trainSet_f.replace('function (set', 'function _trainSet(set') + '\n';
+  _trainSet_f = _trainSet_f.replace('this.crossValidate', 'crossValidate');
+  _trainSet_f = _trainSet_f.replace('crossValidate = true', 'crossValidate = { }');
+
+  // Load and name the test function
+  var test_f = Trainer.prototype.test.toString().replace(/this.network./g, '');
+  test_f = test_f.replace('function (set', 'function test(set') + '\n';
+
+  return Network._SHARED_WORKER_FUNCTIONS = train_f + _trainSet_f + test_f;
+};
 
 // rebuild a network that has been stored in a json using the method toJSON()
 Network.fromJSON = function(json) {
