@@ -508,7 +508,7 @@ Network.prototype = {
     workerOptions.crossValidate = options.crossValidate || null;
 
     // Cost function might be different for each worker
-    costFunction = `var cost = ${options && options.cost || this.cost || Trainer.cost.MSE}`;
+    costFunction = "var cost = " + (options && options.cost || this.cost || Trainer.cost.MSE) + ";\n";
     var workerFunction = Network.getWorkerSharedFunctions();
     workerFunction = workerFunction.replace(/var cost = options && options\.cost \|\| this\.cost \|\| Trainer\.cost\.MSE;/g, costFunction);
 
@@ -518,12 +518,12 @@ Network.prototype = {
 
     // Replace log with postmessage
     workerFunction = workerFunction.replace("console.log('iterations', iterations, 'error', error, 'rate', currentRate)",
-              `postMessage({action: 'log', message: {
-                  iterations: iterations,
-                  error: error,
-                  rate: currentRate
-                }
-              })`);
+              "postMessage({action: 'log', message: {\n" +
+                  "iterations: iterations,\n" +
+                  "error: error,\n" +
+                  "rate: currentRate\n" +
+                "}\n" +
+              "})");
 
     if (!this.optimized)
       this.optimize();
@@ -534,11 +534,11 @@ Network.prototype = {
     hardcode += "var activate = " + this.optimized.activate.toString() + ";\n";
     hardcode += "var propagate = " + this.optimized.propagate.toString() + ";\n";
     hardcode += 
-        `onmessage = function(e) {
-          if (e.data.action == 'startTraining') {
-            train(${JSON.stringify(set)}, ${JSON.stringify(workerOptions)});
-          }
-        }`
+        "onmessage = function(e) {\n" +
+          "if (e.data.action == 'startTraining') {\n" +
+            "train(" + JSON.stringify(set) + "," + JSON.stringify(workerOptions) + ");\n" +
+          "}\n" +
+        "}";
 
     var workerSourceCode = workerFunction + '\n' + hardcode;
     var blob = new Blob([workerSourceCode]);
