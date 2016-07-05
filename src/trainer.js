@@ -10,7 +10,7 @@ function Trainer(network, options) {
   this.network = network;
   this.rate = options.rate || .2;
   this.iterations = options.iterations || 100000;
-  this.error = options.error || .005
+  this.error = options.error || .005;
   this.cost = options.cost || null;
   this.crossValidate = options.crossValidate || null;
 }
@@ -53,7 +53,8 @@ Trainer.prototype = {
         console.log('Deprecated: use schedule instead of customLog')
         this.schedule = options.customLog;
       }
-      if (this.crossValidate) {
+      if (this.crossValidate || options.crossValidate) {
+        if(!this.crossValidate) this.crossValidate = {};
         crossValidate = true;
         if (options.crossValidate.testSize)
           this.crossValidate.testSize = options.crossValidate.testSize;
@@ -169,134 +170,45 @@ Trainer.prototype = {
   // trains any given set to a network using a WebWorker
   workerTrain: function(set, callback, options) {
 
+    console.log('WorkerTrain initiated!');
+
     var that = this;
-    var error = 1;
-    var iterations = bucketSize = 0;
-    var input, output, target, currentRate;
-    var length = set.length;
-    var abort = false;
-    var cost = options && options.cost || that.cost || Trainer.cost.MSE;
+    
+    if (!this.network.optimized)
+      this.network.optimize();
 
-    var start = Date.now();
-
-    if (options) {
-      if (options.shuffle) {
-        //+ Jonas Raoni Soares Silva
-        //@ http://jsfromhell.com/array/shuffle [v1.0]
-        function shuffle(o) { //v1.0
-          for (var j, x, i = o.length; i; j = Math.floor(Math.random() *
-              i), x = o[--i], o[i] = o[j], o[j] = x);
-          return o;
-        };
-      }
-      if (options.iterations)
-        that.iterations = options.iterations;
-      if (options.error)
-        that.error = options.error;
-      if (options.rate)
-        that.rate = options.rate;
-      if (options.cost)
-        that.cost = options.cost;
-      if (options.schedule)
-        that.schedule = options.schedule;
-      if (options.customLog)
-      {
-        // for backward compatibility with code that used customLog
-        console.log('Deprecated: use schedule instead of customLog')
-        that.schedule = options.customLog;
-      }
-    }
-
-    // dynamic learning rate
-    currentRate = that.rate;
-    if(Array.isArray(that.rate)) {
-      bucketSize = Math.floor(that.iterations / that.rate.length);
-    }
-
-    // create a worker
-    var worker = that.network.worker();
-
-    // activate the network
-    function activateWorker(input)
-    {
-        worker.postMessage({
-            action: "activate",
-            input: input,
-            memoryBuffer: that.network.optimized.memory
-        }, [that.network.optimized.memory.buffer]);
-    }
-
-    // backpropagate the network
-    function propagateWorker(target){
-        if(bucketSize > 0) {
-          var currentBucket = Math.floor(iterations / bucketSize);
-          currentRate = that.rate[currentBucket] || currentRate;
-        }
-        worker.postMessage({
-            action: "propagate",
-            target: target,
-            rate: currentRate,
-            memoryBuffer: that.network.optimized.memory
-        }, [that.network.optimized.memory.buffer]);
-    }
+    // Create a new worker
+    var worker = this.network.worker(this.network.optimized.memory, set, options);
 
     // train the worker
-    worker.onmessage = function(e){
-        // give control of the memory back to the network
-        that.network.optimized.ownership(e.data.memoryBuffer);
+    worker.onmessage = function(e) {
+      switch(e.data.action) {
+          case 'done':
+            var iterations = e.data.message.iterations;
+            var error = e.data.message.error;
+            var time = e.data.message.time;
 
-        if (e.data.action == "propagate")
-        {
-            if (index >= length)
-            {
-                index = 0;
-                iterations++;
-                error /= set.length;
+            that.network.optimized.ownership(e.data.memoryBuffer);
 
-                // log
-                if (options) {
-                  if (that.schedule && that.schedule.every && iterations % that.schedule.every == 0)
-                    abort = that.schedule.do({
-                      error: error,
-                      iterations: iterations,
-                      rate: currentRate
-                    });
-                  else if (options.log && iterations % options.log == 0) {
-                    console.log('iterations', iterations, 'error', error);
-                  };
-                  if (options.shuffle)
-                    shuffle(set);
-                }
+            // Done callback
+            callback({
+              error: error,
+              iterations: iterations,
+              time: time
+            });
 
-                if (!abort && iterations < that.iterations && error > that.error)
-                {
-                    activateWorker(set[index].input);
-                } else {
-                    // callback
-                    callback({
-                      error: error,
-                      iterations: iterations,
-                      time: Date.now() - start
-                    })
-                }
-                error = 0;
-            } else {
-                activateWorker(set[index].input);
-            }
-        }
+            // Delete the worker and all its associated memory
+            worker.terminate();
+          break;
 
-        if (e.data.action == "activate")
-        {
-            error += cost(set[index].output, e.data.output);
-            propagateWorker(set[index].output);
-            index++;
-        }
+          case 'log':
+            console.log(e.data.message);
+          break;
+      }
     }
 
-    // kick it
-    var index = 0;
-    var iterations = 0;
-    activateWorker(set[index].input);
+    // Start the worker
+    worker.postMessage({action: 'startTraining'});
   },
 
   // trains an XOR to the network
