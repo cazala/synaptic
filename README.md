@@ -41,6 +41,10 @@ The source code of these demos can be found in [this branch](https://github.com/
 - [Trainer](https://github.com/cazala/synaptic/wiki/Trainer/)
 - [Architect](https://github.com/cazala/synaptic/wiki/Architect/)
 
+To try out the examples, checkout the [gh-pages](https://github.com/cazala/synaptic/tree/gh-pages) branch.
+
+`git checkout gh-pages`
+
 
 ##Overview
 
