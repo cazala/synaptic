@@ -4,6 +4,7 @@ if (module) module.exports = Network;
 // import
 var Neuron  = require('./neuron')
 ,   Layer   = require('./layer')
+,   Trainer = require('./trainer')
 
 /*******************************************************************************************
                                          NETWORK
@@ -500,7 +501,7 @@ Network.prototype = {
 
     // Copy the options and set defaults (options might be different for each worker)
     var workerOptions = {};
-    if(options) workerOptions = JSON.parse(JSON.stringify(options));
+    if(options) workerOptions = options
     workerOptions.rate = options.rate || .2;
     workerOptions.iterations = options.iterations || 100000;
     workerOptions.error = options.error || .005;
@@ -513,12 +514,21 @@ Network.prototype = {
     workerFunction = workerFunction.replace(/var cost = options && options\.cost \|\| this\.cost \|\| Trainer\.cost\.MSE;/g, costFunction);
 
     // Set what we do when training is finished
-    workerFunction = workerFunction.replace('return results;', 
+    workerFunction = workerFunction.replace('return results;',
                       'postMessage({action: "done", message: results, memoryBuffer: F}, [F.buffer]);');
 
     // Replace log with postmessage
     workerFunction = workerFunction.replace("console.log('iterations', iterations, 'error', error, 'rate', currentRate)",
               "postMessage({action: 'log', message: {\n" +
+                  "iterations: iterations,\n" +
+                  "error: error,\n" +
+                  "rate: currentRate\n" +
+                "}\n" +
+              "})");
+
+    // Replace schedule with postmessage
+    workerFunction = workerFunction.replace("abort = this.schedule.do({ error: error, iterations: iterations, rate: currentRate })",
+              "postMessage({action: 'schedule', message: {\n" +
                   "iterations: iterations,\n" +
                   "error: error,\n" +
                   "rate: currentRate\n" +
@@ -533,7 +543,7 @@ Network.prototype = {
     hardcode += "var F =  new Float64Array([" + this.optimized.memory.toString() + "]);\n";
     hardcode += "var activate = " + this.optimized.activate.toString() + ";\n";
     hardcode += "var propagate = " + this.optimized.propagate.toString() + ";\n";
-    hardcode += 
+    hardcode +=
         "onmessage = function(e) {\n" +
           "if (e.data.action == 'startTraining') {\n" +
             "train(" + JSON.stringify(set) + "," + JSON.stringify(workerOptions) + ");\n" +
@@ -556,7 +566,7 @@ Network.prototype = {
 /**
  * Creates a static String to store the source code of the functions
  *  that are identical for all the workers (train, _trainSet, test)
- *  
+ *
  * @return {String} Source code that can train a network inside a worker.
  * @static
  */

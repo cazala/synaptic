@@ -103,11 +103,7 @@ Trainer.prototype = {
       if (options) {
         if (this.schedule && this.schedule.every && iterations %
           this.schedule.every == 0)
-          abort = this.schedule.do({
-            error: error,
-            iterations: iterations,
-            rate: currentRate
-          });
+          abort = this.schedule.do({ error: error, iterations: iterations, rate: currentRate });
         else if (options.log && iterations % options.log == 0) {
           console.log('iterations', iterations, 'error', error, 'rate', currentRate);
         };
@@ -123,6 +119,18 @@ Trainer.prototype = {
     }
 
     return results;
+  },
+
+  // trains any given set to a network, using a WebWorker (only for the browser). Returns a Promise of the results.
+  trainAsync: function(set, options) {
+    var train = this.workerTrain.bind(this)
+    return new Promise(function(resolve, reject) {
+      try {
+        train(set, resolve, options, true)
+      } catch(e) {
+        reject(e)
+      }
+    })
   },
 
   // preforms one training epoch and returns the error (private function used in this.train)
@@ -167,13 +175,14 @@ Trainer.prototype = {
     return results;
   },
 
-  // trains any given set to a network using a WebWorker
-  workerTrain: function(set, callback, options) {
+  // trains any given set to a network using a WebWorker [deprecated: use trainAsync instead]
+  workerTrain: function(set, callback, options, suppressWarning) {
 
-    console.log('WorkerTrain initiated!');
-
+    if (!suppressWarning) {
+      console.warn('Deprecated: do not use `workerTrain`, use `trainAsync` instead.')
+    }
     var that = this;
-    
+
     if (!this.network.optimized)
       this.network.optimize();
 
@@ -203,6 +212,12 @@ Trainer.prototype = {
 
           case 'log':
             console.log(e.data.message);
+
+          case 'schedule':
+            if (options && options.schedule && typeof options.schedule.do === 'function') {
+              var scheduled = options.schedule.do
+              scheduled(e.data.message)
+            }
           break;
       }
     }
