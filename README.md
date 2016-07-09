@@ -69,7 +69,7 @@ bower install synaptic
 Or you can simply use the CDN link, kindly provided by [CDNjs](https://cdnjs.com/)
 
 ```html
-<script src="https://cdnjs.cloudflare.com/ajax/libs/synaptic/1.0.4/synaptic.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/synaptic/1.0.7/synaptic.js"></script>
 ```
 
 ###Usage
@@ -84,15 +84,6 @@ var Neuron = synaptic.Neuron,
 ```
 
 Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synaptic#architect).
-
-###Gulp Tasks
-
-- **gulp**: runs all the tests and builds the minified and unminified bundles into `/dist`.
-- **gulp build**: builds the bundle: `/dist/synaptic.js`.
-- **gulp min**: builds the minified bundle: `/dist/synaptic.min.js`.
-- **gulp debug**: builds the bundle `/dist/synaptic.js` with sourcemaps.
-- **gulp dev**: same as `gulp debug`, but watches the source files and rebuilds when any change is detected.
-- **gulp test**: runs all the tests.
 
 ###Examples
 
@@ -203,6 +194,6 @@ Multilayer LSTM network architectures.
 
 **Synaptic** is an Open Source project that started in Buenos Aires, Argentina. Anybody in the world is welcome to contribute to the development of the project.
 
-If you want to contribute feel free to send PR's, just make sure to run the default **gulp** task before submiting it. This way you'll run all the test specs and build the web distribution files.
+If you want to contribute feel free to send PR's, just make sure to run **npm run test** and **npm run build** before submiting it. This way you'll run all the test specs and build the web distribution files.
 
 <3
