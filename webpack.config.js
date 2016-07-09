@@ -7,7 +7,7 @@ module.exports = {
   ],
   output: {
     path: 'dist',
-    filename: 'bundle.js',
+    filename: 'synaptic.js',
   },
   plugins: [
     new webpack.NoErrorsPlugin(),
