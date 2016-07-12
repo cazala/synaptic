@@ -1988,6 +1988,10 @@
 	        var currentBucket = Math.floor(iterations / bucketSize);
 	        currentRate = this.rate[currentBucket] || currentRate;
 	      }
+	      
+	      if(typeof this.rate === 'function') {
+	        currentRate = this.rate(iterations, error);
+	      }
 
 	      if (crossValidate) {
 	        this._trainSet(trainSet, currentRate, cost);
