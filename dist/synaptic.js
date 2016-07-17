@@ -1983,6 +1983,7 @@
 
 	      var currentSetSize = set.length;
 	      error = 0;
+	      iterations++;
 
 	      if(bucketSize > 0) {
 	        var currentBucket = Math.floor(iterations / bucketSize);
@@ -2003,7 +2004,6 @@
 	      }
 
 	      // check error
-	      iterations++;
 	      error /= currentSetSize;
 
 	      if (options) {
