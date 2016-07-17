@@ -562,7 +562,7 @@ describe("Scheduled Tasks", function() {
     assert.equal( final_stats.iterations, 2000 )
   });
 
-  it('should work even if shedule.do() returns no value', function(){
+  it('should work even if schedule.do() returns no value', function(){
     var final_stats = perceptron.trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
@@ -575,4 +575,86 @@ describe("Scheduled Tasks", function() {
     assert.equal( final_stats.iterations, 3000 )
   });
 
+});
+
+describe("Rate Callback Check", function() {
+  var perceptron = new Perceptron(2, 3, 1);
+
+  it('should switch rate from 0.01 to 0.005 after 1000 iterations', function(){
+    var final_stats = perceptron.trainer.XOR({
+      iterations: 2000,
+      rate: function(iterations, error) {
+        return iterations < 1000 ? 0.01 : 0.005
+      },
+      error: 0.000001,
+      schedule: {
+        every: 1,
+        do: function(data) {
+          if(data.iterations == 1){
+            assert.equal( data.rate, 0.01 )
+          }
+
+          if(data.iterations == 500){
+            assert.equal( data.rate, 0.01 )
+          }
+
+          if(data.iterations == 999){
+            assert.equal( data.rate, 0.01 )
+          }
+
+          if(data.iterations == 1000){
+            assert.equal( data.rate, 0.005 )
+          }
+
+          if(data.iterations == 1500){
+            assert.equal( data.rate, 0.005 )
+          }
+
+          if(data.iterations == 2000){
+            assert.equal( data.rate, 0.005 )
+          }
+        }
+      }
+    });
+  });
+});
+
+describe("Rate Array Check", function() {
+  var perceptron = new Perceptron(2, 3, 1);
+
+  it('should switch rate from 0.01 to 0.005 after 1000 iterations', function(){
+    var final_stats = perceptron.trainer.XOR({
+      iterations: 2000,
+      rate: [0.01, 0.005],
+      error: 0.000001,
+      schedule: {
+        every: 1,
+        do: function(data) {
+          if(data.iterations == 1){
+            assert.equal( data.rate, 0.01 )
+          }
+
+          if(data.iterations == 500){
+            assert.equal( data.rate, 0.01 )
+          }
+
+          if(data.iterations == 999){
+            assert.equal( data.rate, 0.01 )
+          }
+
+          if(data.iterations == 1000){
+            assert.equal( data.rate, 0.005 )
+          }
+
+          if(data.iterations == 1500){
+            assert.equal( data.rate, 0.005 )
+          }
+
+          if(data.iterations == 2000){
+            assert.equal( data.rate, 0.005 )
+          }
+        }
+      }
+    });
+  });
 });
