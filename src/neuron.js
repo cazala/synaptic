@@ -66,7 +66,6 @@ Neuron.prototype = {
     var influences = [];
     for (var id in this.trace.extended) {
       // extended elegibility trace
-      var xtrace = this.trace.extended[id];
       var neuron = this.neighboors[id];
 
       // if gated neuron's selfconnection is gated by this unit, the influence keeps track of the neuron's old state
@@ -304,7 +303,6 @@ Neuron.prototype = {
   optimize: function(optimized, layer) {
 
     optimized = optimized || {};
-    var that = this;
     var store_activation = [];
     var store_trace = [];
     var store_propagation = [];
@@ -327,7 +325,7 @@ Neuron.prototype = {
         layers.__count = store.push([]) - 1;
         layers[layer] = layers.__count;
       }
-    }
+    };
     allocate(activation_sentences);
     allocate(trace_sentences);
     allocate(propagation_sentences);
@@ -386,7 +384,7 @@ Neuron.prototype = {
           sentence += 'F[' + args[i].id + ']';
 
       store.push(sentence + ';');
-    }
+    };
 
     // helper to check if an object is empty
     var isEmpty = function(obj) {
@@ -474,7 +472,6 @@ Neuron.prototype = {
       for (var id in this.trace.extended) {
         // calculate extended elegibility traces in advance
 
-        var xtrace = this.trace.extended[id];
         var neuron = this.neighboors[id];
         var influence = getVar('influences[' + neuron.ID + ']');
         var neuron_old = getVar(neuron, 'old');
@@ -532,10 +529,8 @@ Neuron.prototype = {
         }
         for (var id in this.trace.extended) {
           // extended elegibility trace
-          var xtrace = this.trace.extended[id];
           var neuron = this.neighboors[id];
           var influence = getVar('influences[' + neuron.ID + ']');
-          var neuron_old = getVar(neuron, 'old');
 
           var trace = getVar(this, 'trace', 'elegibility', input.ID, this.trace
             .elegibility[input.ID]);

@@ -28,7 +28,7 @@ var Architect = {
     var previous = input;
 
     // generate hidden layers
-    for (level in layers) {
+    for (var level in layers) {
       var size = layers[level];
       var layer = new Layer(size);
       hidden.push(layer);
@@ -217,8 +217,8 @@ var Architect = {
     this.trainer = new Trainer(this);
   },
 
-  Hopfield: function Hopfield(size)
-  {
+  Hopfield: function Hopfield(size) {
+
     var inputLayer = new Layer(size);
     var outputLayer = new Layer(size);
 
@@ -248,7 +248,7 @@ var Architect = {
         error: .00005,
         rate: 1
       });
-    }
+    };
 
     proto.feed = proto.feed || function(pattern)
     {
