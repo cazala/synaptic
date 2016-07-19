@@ -207,7 +207,6 @@
 	    var influences = [];
 	    for (var id in this.trace.extended) {
 	      // extended elegibility trace
-	      var xtrace = this.trace.extended[id];
 	      var neuron = this.neighboors[id];
 
 	      // if gated neuron's selfconnection is gated by this unit, the influence keeps track of the neuron's old state
@@ -445,7 +444,6 @@
 	  optimize: function(optimized, layer) {
 
 	    optimized = optimized || {};
-	    var that = this;
 	    var store_activation = [];
 	    var store_trace = [];
 	    var store_propagation = [];
@@ -468,7 +466,7 @@
 	        layers.__count = store.push([]) - 1;
 	        layers[layer] = layers.__count;
 	      }
-	    }
+	    };
 	    allocate(activation_sentences);
 	    allocate(trace_sentences);
 	    allocate(propagation_sentences);
@@ -527,7 +525,7 @@
 	          sentence += 'F[' + args[i].id + ']';
 
 	      store.push(sentence + ';');
-	    }
+	    };
 
 	    // helper to check if an object is empty
 	    var isEmpty = function(obj) {
@@ -615,7 +613,6 @@
 	      for (var id in this.trace.extended) {
 	        // calculate extended elegibility traces in advance
 
-	        var xtrace = this.trace.extended[id];
 	        var neuron = this.neighboors[id];
 	        var influence = getVar('influences[' + neuron.ID + ']');
 	        var neuron_old = getVar(neuron, 'old');
@@ -673,10 +670,8 @@
 	        }
 	        for (var id in this.trace.extended) {
 	          // extended elegibility trace
-	          var xtrace = this.trace.extended[id];
 	          var neuron = this.neighboors[id];
 	          var influence = getVar('influences[' + neuron.ID + ']');
-	          var neuron_old = getVar(neuron, 'old');
 
 	          var trace = getVar(this, 'trace', 'elegibility', input.ID, this.trace
 	            .elegibility[input.ID]);
@@ -1669,7 +1664,6 @@
 	            code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
 	          for (var from in connection.gatedfrom) { // gatings
 	            var layerfrom = connection.gatedfrom[from].layer;
-	            var type = connection.gatedfrom[from].type;
 	            var layerfromID = layers.indexOf(layerfrom);
 	            code += "    " + layerfromID + " -> " + fakeNode + " [color = blue]\n";
 	          }
@@ -1677,7 +1671,6 @@
 	          code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
 	          for (var from in connection.gatedfrom) { // gatings
 	            var layerfrom = connection.gatedfrom[from].layer;
-	            var type = connection.gatedfrom[from].type;
 	            var layerfromID = layers.indexOf(layerfrom);
 	            code += "    " + layerfromID + " -> " + layerToID + " [color = blue]\n";
 	          }
@@ -1749,7 +1742,7 @@
 
 	    // Copy the options and set defaults (options might be different for each worker)
 	    var workerOptions = {};
-	    if(options) workerOptions = options
+	    if(options) workerOptions = options;
 	    workerOptions.rate = options.rate || .2;
 	    workerOptions.iterations = options.iterations || 100000;
 	    workerOptions.error = options.error || .005;
@@ -1809,7 +1802,7 @@
 	  clone: function() {
 	    return Network.fromJSON(this.toJSON());
 	  }
-	}
+	};
 
 	/**
 	 * Creates a static String to store the source code of the functions
@@ -1853,7 +1846,7 @@
 	    input: new Layer(),
 	    hidden: [],
 	    output: new Layer()
-	  }
+	  };
 
 	  for (var i in json.neurons) {
 	    var config = json.neurons[i];
@@ -1883,7 +1876,7 @@
 	    var config = json.connections[i];
 	    var from = neurons[config.from];
 	    var to = neurons[config.to];
-	    var weight = config.weight
+	    var weight = config.weight;
 	    var gater = neurons[config.gater];
 
 	    var connection = from.project(to, weight);
@@ -1892,7 +1885,7 @@
 	  }
 
 	  return new Network(layers);
-	}
+	};
 
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)(module)))
 
@@ -1925,7 +1918,7 @@
 	    var error = 1;
 	    var iterations = bucketSize = 0;
 	    var abort = false;
-	    var input, output, target, currentRate;
+	    var currentRate;
 	    var cost = options && options.cost || this.cost || Trainer.cost.MSE;
 	    var crossValidate = false, testSet, trainSet;
 
@@ -1967,7 +1960,7 @@
 
 	    currentRate = this.rate;
 	    if(Array.isArray(this.rate)) {
-	      bucketSize = Math.floor(this.iterations / this.rate.length);
+	      var bucketSize = Math.floor(this.iterations / this.rate.length);
 	    }
 
 	    if(crossValidate) {
@@ -2022,14 +2015,14 @@
 	      error: error,
 	      iterations: iterations,
 	      time: Date.now() - start
-	    }
+	    };
 
 	    return results;
 	  },
 
 	  // trains any given set to a network, using a WebWorker (only for the browser). Returns a Promise of the results.
 	  trainAsync: function(set, options) {
-	    var train = this.workerTrain.bind(this)
+	    var train = this.workerTrain.bind(this);
 	    return new Promise(function(resolve, reject) {
 	      try {
 	        train(set, resolve, options, true)
@@ -2043,10 +2036,10 @@
 	  _trainSet: function(set, currentRate, costFunction) {
 	    var errorSum = 0;
 	    for (var train in set) {
-	      input = set[train].input;
-	      target = set[train].output;
+	      var input = set[train].input;
+	      var target = set[train].output;
 
-	      output = this.network.activate(input);
+	      var output = this.network.activate(input);
 	      this.network.propagate(currentRate, target);
 
 	      errorSum += costFunction(target, output);
@@ -2058,7 +2051,6 @@
 	  test: function(set, options) {
 
 	    var error = 0;
-	    var abort = false;
 	    var input, output, target;
 	    var cost = options && options.cost || this.cost || Trainer.cost.MSE;
 
@@ -2076,7 +2068,7 @@
 	    var results = {
 	      error: error,
 	      time: Date.now() - start
-	    }
+	    };
 
 	    return results;
 	  },
@@ -2126,7 +2118,7 @@
 	            }
 	          break;
 	      }
-	    }
+	    };
 
 	    // Start the worker
 	    worker.postMessage({action: 'startTraining'});
@@ -2143,7 +2135,7 @@
 	      log: false,
 	      shuffle: true,
 	      cost: Trainer.cost.MSE
-	    }
+	    };
 
 	    if (options)
 	      for (var i in options)
@@ -2179,8 +2171,9 @@
 	    var schedule = options.schedule || {};
 	    var cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
 
-	    var trial = correct = i = j = success = 0,
-	      error = 1,
+	    var trial, correct, i, j, success;
+	    trial = correct = i = j = success = 0;
+	    var error = 1,
 	      symbols = targets.length + distractors.length + prompts.length;
 
 	    var noRepeat = function(range, avoid) {
@@ -2190,14 +2183,14 @@
 	        if (number == avoid[i])
 	          used = true;
 	      return used ? noRepeat(range, avoid) : number;
-	    }
+	    };
 
 	    var equal = function(prediction, output) {
 	      for (var i in prediction)
 	        if (Math.round(prediction[i]) != output[i])
 	          return false;
 	      return true;
-	    }
+	    };
 
 	    var start = Date.now();
 
@@ -2222,6 +2215,7 @@
 	      }
 
 	      //train sequence
+	      var distractorsCorrect;
 	      var targetsCorrect = distractorsCorrect = 0;
 	      error = 0;
 	      for (i = 0; i < length; i++) {
@@ -2303,7 +2297,7 @@
 	    // gramar node
 	    var Node = function() {
 	      this.paths = [];
-	    }
+	    };
 	    Node.prototype = {
 	      connect: function(node, value) {
 	        this.paths.push({
@@ -2324,7 +2318,7 @@
 	            return this.paths[i];
 	        return false;
 	      }
-	    }
+	    };
 
 	    var reberGrammar = function() {
 
@@ -2333,19 +2327,19 @@
 	      var n1 = (new Node()).connect(output, "E");
 	      var n2 = (new Node()).connect(n1, "S");
 	      var n3 = (new Node()).connect(n1, "V").connect(n2, "P");
-	      var n4 = (new Node()).connect(n2, "X")
+	      var n4 = (new Node()).connect(n2, "X");
 	      n4.connect(n4, "S");
-	      var n5 = (new Node()).connect(n3, "V")
+	      var n5 = (new Node()).connect(n3, "V");
 	      n5.connect(n5, "T");
-	      n2.connect(n5, "X")
+	      n2.connect(n5, "X");
 	      var n6 = (new Node()).connect(n4, "T").connect(n5, "P");
-	      var input = (new Node()).connect(n6, "B")
+	      var input = (new Node()).connect(n6, "B");
 
 	      return {
 	        input: input,
 	        output: output
 	      }
-	    }
+	    };
 
 	    // build an embeded reber grammar
 	    var embededReberGrammar = function() {
@@ -2365,7 +2359,7 @@
 	        output: output
 	      }
 
-	    }
+	    };
 
 	    // generate an ERG sequence
 	    var generate = function() {
@@ -2377,7 +2371,7 @@
 	        next = next.node.any();
 	      }
 	      return str;
-	    }
+	    };
 
 	    // test if a string matches an embeded reber grammar
 	    var test = function(str) {
@@ -2392,7 +2386,7 @@
 	        ch = str.charAt(++i);
 	      }
 	      return true;
-	    }
+	    };
 
 	    // helper to check if the output and the target vectors match
 	    var different = function(array1, array2) {
@@ -2412,7 +2406,7 @@
 	      }
 
 	      return i1 != i2;
-	    }
+	    };
 
 	    var iteration = 0;
 	    var error = 1;
@@ -2423,7 +2417,7 @@
 	      "X": 3,
 	      "S": 4,
 	      "E": 5
-	    }
+	    };
 
 	    var start = Date.now();
 	    while (iteration < iterations && error > criterion) {
@@ -2482,7 +2476,7 @@
 	      throw new Error("Invalid Network: must have 2 inputs and one output");
 
 	    if (typeof options == 'undefined')
-	      var options = {};
+	      options = {};
 
 	    // helper
 	    function getSamples (trainingSize, testSize){
@@ -2492,7 +2486,7 @@
 
 	      // generate samples
 	      var t = 0;
-	      var set  = [];
+	      var set = [];
 	      for (var i = 0; i < size; i++) {
 	        set.push({ input: [0,0], output: [0] });
 	      }
@@ -2610,7 +2604,7 @@
 	    var previous = input;
 
 	    // generate hidden layers
-	    for (level in layers) {
+	    for (var level in layers) {
 	      var size = layers[level];
 	      var layer = new Layer(size);
 	      hidden.push(layer);
@@ -2799,8 +2793,8 @@
 	    this.trainer = new Trainer(this);
 	  },
 
-	  Hopfield: function Hopfield(size)
-	  {
+	  Hopfield: function Hopfield(size) {
+
 	    var inputLayer = new Layer(size);
 	    var outputLayer = new Layer(size);
 
@@ -2830,7 +2824,7 @@
 	        error: .00005,
 	        rate: 1
 	      });
-	    }
+	    };
 
 	    proto.feed = proto.feed || function(pattern)
 	    {
