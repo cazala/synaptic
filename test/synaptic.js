@@ -1,6 +1,8 @@
 // import
+var chai = require('chai');
+chai.use(require('chai-stats'));
+var assert = chai.assert;
 
-var assert = require('chai').assert;
 var synaptic = require('../src/synaptic');
 
 var Perceptron = synaptic.Architect.Perceptron;
@@ -10,53 +12,57 @@ var Network = synaptic.Network;
 var Trainer = synaptic.Trainer;
 
 
+
+var learningRate = .5;
+
+
 // utils
 
-function noRepeat (range, avoid) {
+function noRepeat(range, avoid) {
   var number = Math.random() * range | 0;
-  for (var i in avoid){
-    if (number == avoid[i]){
-      return noRepeat(range,avoid);
+  for (var i in avoid) {
+    if (number == avoid[i]) {
+      return noRepeat(range, avoid);
     }
   }
   return number;
 }
 
-function equal (prediction, output) {
+function equal(prediction, output) {
   for (var i in prediction)
     if (Math.round(prediction[i]) != output[i])
       return false;
   return true;
 }
 
-function generateRandomArray (size){
-    var array = [];
-    for (var j = 0; j < size; j++)
-        array.push(Math.random() + .5 | 0);
-    return array;
+function generateRandomArray(size) {
+  var array = [];
+  for (var j = 0; j < size; j++)
+    array.push(Math.random() + .5 | 0);
+  return array;
 }
 
-function compare (a, b) {
+function calculateMse(a, b) {
   var mse = 0;
   for (var k in a)
     mse += Math.pow(a[k] - b[k], 2);
   mse /= a.length;
 
-  return mse < 1e-10;
+  return mse;
 }
 
-function equalWithError (output, expected, error) {
+function equalWithError(output, expected, error) {
   return Math.abs(output - expected) <= error;
 }
 
 // specs
 
-describe('Basic Neural Network', function() {
+describe('Basic Neural Network', function () {
 
-  it("trains an AND gate", function() {
+  it("trains an AND gate", function () {
 
     var inputLayer = new Layer(2),
-        outputLayer = new Layer(1);
+      outputLayer = new Layer(1);
 
     inputLayer.project(outputLayer);
 
@@ -99,7 +105,7 @@ describe('Basic Neural Network', function() {
     assert.equal(test11, 1, "[1,1] did not output 1");
   });
 
-  it("trains an OR gate", function() {
+  it("trains an OR gate", function () {
 
     var inputLayer = new Layer(2),
       outputLayer = new Layer(1);
@@ -145,11 +151,10 @@ describe('Basic Neural Network', function() {
     assert.equal(test11, 1, "[1,1] did not output 1");
   });
 
-  it("trains a NOT gate", function() {
+  it("trains a NOT gate", function () {
 
     var inputLayer = new Layer(1),
-      outputLayer = new Layer(1),
-      network;
+      outputLayer = new Layer(1);
 
     inputLayer.project(outputLayer);
 
@@ -180,50 +185,43 @@ describe('Basic Neural Network', function() {
   });
 });
 
-describe("Perceptron - XOR", function() {
+describe("Perceptron - XOR", function () {
 
   var perceptron = new Perceptron(2, 3, 1);
   perceptron.trainer.XOR();
 
-  var test00 = Math.round(perceptron.activate([0, 0]));
-  it("input: [0,0] output: " + test00, function() {
-
-    assert.equal(test00, 0, "[0,0] did not output 0");
+  it("should return near-0 value on [0,0]", function () {
+    assert.isAtMost(perceptron.activate([0, 0]), .49, "[0,0] did not output 0");
   });
 
-  var test01 = Math.round(perceptron.activate([0, 1]));
-  it("input: [0,1] output: " + test01, function() {
-
-    assert.equal(test01, 1, "[0,1] did not output 1");
+  it("should return near-1 value on [0,1]", function () {
+    assert.isAtLeast(perceptron.activate([0, 1]), .51, "[0,1] did not output 1");
   });
 
-  var test10 = Math.round(perceptron.activate([1, 0]));
-  it("input: [1,0] output: " + test10, function() {
-
-    assert.equal(test10, 1, "[1,0] did not output 1");
+  it("should return near-1 value on [1,0]", function () {
+    assert.isAtLeast(perceptron.activate([1, 0]), .51, "[1,0] did not output 1");
   });
 
-  var test11 = Math.round(perceptron.activate([1, 1]));
-  it("input: [1,1] output: " + test11, function() {
-
-    assert.equal(test11, 0, "[1,1] did not output 0");
+  it("should return near-0 value on [1,1]", function () {
+    assert.isAtMost(perceptron.activate([1, 1]), .49, "[1,1] did not output 0");
   });
 });
 
-describe("Perceptron - SIN", function() {
-  var mySin = function(x) {
-    return (Math.sin(x)+1)/2;
+describe("Perceptron - SIN", function () {
+  var mySin = function (x) {
+    return (Math.sin(x) + 1) / 2;
   };
 
   var sinNetwork = new Perceptron(1, 12, 1);
+  var trainingSet = [];
 
-  var trainingSet = Array.apply(null, Array(800)).map(function () {
+  while (trainingSet.length < 800) {
     var inputValue = Math.random() * Math.PI * 2;
-    return {
+    trainingSet.push({
       input: [inputValue],
       output: [mySin(inputValue)]
-    };
-  });
+    });
+  }
 
   var results = sinNetwork.trainer.train(trainingSet, {
     iterations: 2000,
@@ -232,38 +230,26 @@ describe("Perceptron - SIN", function() {
     cost: Trainer.cost.MSE,
   });
 
-  var test0 = sinNetwork.activate([0])[0];
-  var expected0 = mySin(0);
-  it("input: [0] output: " + test0 + ", expected: " + expected0, function() {
-    var eq = equalWithError(test0, expected0, .035);
-    assert.equal(eq, true, "[0] did not output " + expected0);
-  });
-
-  var test05PI = sinNetwork.activate([.5*Math.PI])[0];
-  var expected05PI = mySin(.5*Math.PI);
-  it("input: [0.5*Math.PI] output: " + test05PI + ", expected: " + expected05PI, function() {
-    var eq = equalWithError(test05PI, expected05PI, .035);
-    assert.equal(eq, true, "[0.5*Math.PI] did not output " + expected05PI);
-  });
-
-  var test2 = sinNetwork.activate([2])[0];
-  var expected2 = mySin(2);
-  it("input: [2] output: " + test2 + ", expected: " + expected2, function() {
-    var eq = equalWithError(test2, expected2, .035);
-    assert.equal(eq, true, "[2] did not output " + expected2);
-  });
+  [0, .5 * Math.PI, 2]
+    .forEach(function (x) {
+      var y = mySin(x);
+      it("should return value around " + y + " when [" + x + "] is on input", function () {
+        // near scalability: abs(expected-actual) < 0.5 * 10**(-decimal)
+        // 0.5 * Math.pow(10, -.15) => 0.35397289219206896
+        assert.almostEqual(sinNetwork.activate([x])[0], y, .15);
+      });
+    });
 
   var errorResult = results.error;
-  it("Sin error: " + errorResult, function() {
-    var lessThanOrEqualError = errorResult <= .001;
-    assert.equal(lessThanOrEqualError, true, "Sin error not less than or equal to desired error.");
+  it("Sin error: " + errorResult, function () {
+    assert.isAtMost(errorResult, .001, "Sin error not less than or equal to desired error.");
   });
 });
 
-describe("Perceptron - SIN - CrossValidate", function() {
+describe("Perceptron - SIN - CrossValidate", function () {
 
-  var mySin = function(x) {
-    return (Math.sin(x)+1)/2;
+  var mySin = function (x) {
+    return (Math.sin(x) + 1) / 2;
   };
 
   var sinNetwork = new Perceptron(1, 12, 1);
@@ -289,33 +275,31 @@ describe("Perceptron - SIN - CrossValidate", function() {
 
   var test0 = sinNetwork.activate([0])[0];
   var expected0 = mySin(0);
-  it("input: [0] output: " + test0 + ", expected: " + expected0, function() {
-    var eq = equalWithError(test0, expected0, .035);
-    assert.equal(eq, true, "[0] did not output " + expected0);
+  it("input: [0] output: " + test0 + ", expected: " + expected0, function () {
+    assert.isAtMost(Math.abs(test0 - expected0), .035, "[0] did not output " + expected0);
   });
 
-  var test05PI = sinNetwork.activate([.5*Math.PI])[0];
-  var expected05PI = mySin(.5*Math.PI);
-  it("input: [0.5*Math.PI] output: " + test05PI + ", expected: " + expected05PI, function() {
-    var eq = equalWithError(test05PI, expected05PI, .035);
-    assert.equal(eq, true, "[0.5*Math.PI] did not output " + expected05PI);
+  var test05PI = sinNetwork.activate([.5 * Math.PI])[0];
+  var expected05PI = mySin(.5 * Math.PI);
+  it("input: [0.5*Math.PI] output: " + test05PI + ", expected: " + expected05PI, function () {
+    assert.isAtMost(Math.abs(test05PI - expected05PI), .035, "[0.5*Math.PI] did not output " + expected05PI);
   });
 
   var test2 = sinNetwork.activate([2])[0];
   var expected2 = mySin(2);
-  it("input: [2] output: " + test2 + ", expected: " + expected2, function() {
+  it("input: [2] output: " + test2 + ", expected: " + expected2, function () {
     var eq = equalWithError(test2, expected2, .035);
     assert.equal(eq, true, "[2] did not output " + expected2);
   });
 
   var errorResult = results.error;
-  it("CrossValidation error: " + errorResult, function() {
+  it("CrossValidation error: " + errorResult, function () {
     var lessThanOrEqualError = errorResult <= .001;
     assert.equal(lessThanOrEqualError, true, "CrossValidation error not less than or equal to desired error.");
   });
 });
 
-describe("LSTM - Discrete Sequence Recall", function() {
+describe("LSTM - Discrete Sequence Recall", function () {
 
   var targets = [2, 4];
   var distractors = [3, 5];
@@ -353,7 +337,7 @@ describe("LSTM - Discrete Sequence Recall", function() {
     sequence.push(prompts[i]);
   }
 
-  var check = function(which) {
+  var check = function (which) {
     // generate input from sequence
     var input = [];
     for (j = 0; j < symbols; j++)
@@ -378,7 +362,7 @@ describe("LSTM - Discrete Sequence Recall", function() {
     };
   };
 
-  var value = function(array) {
+  var value = function (array) {
     var max = .5;
     var res = -1;
     for (var i in array)
@@ -389,229 +373,196 @@ describe("LSTM - Discrete Sequence Recall", function() {
     return res == -1 ? '-' : targets[res];
   };
 
-  it("targets: " + targets, function() {
+  it("targets: " + targets, function () {
     assert(true);
   });
-  it("distractors: " + distractors, function() {
+  it("distractors: " + distractors, function () {
     assert(true);
   });
-  it("prompts: " + prompts, function() {
+  it("prompts: " + prompts, function () {
     assert(true);
   });
-  it("length: " + length + "\n", function() {
+  it("length: " + length + "\n", function () {
     assert(true);
   });
 
   for (var i = 0; i < length; i++) {
     var test = check(i);
     it((i + 1) + ") input: " + sequence[i] + " output: " + value(test.prediction),
-      function() {
+      function () {
         var ok = equal(test.prediction, test.output);
         assert(ok);
       });
   }
 });
 
-describe("LSTM - Timing Task", function() {
-  var network = new synaptic.Architect.LSTM(2,7,1);
+describe("LSTM - Timing Task", function () {
+  var network = new LSTM(2, 7, 1);
   var result = network.trainer.timingTask({
     log: false,
     trainSamples: 4000,
     testSamples: 500
   });
 
-  it("should complete the training in less than 200 iterations", function() {
+  it("should complete the training in less than 200 iterations", function () {
     assert(result.train.iterations <= 200);
   });
 
-  it("should pass the test with an error smaller than 0.05", function() {
+  it("should pass the test with an error smaller than 0.05", function () {
     assert(result.test.error < .05);
   });
 });
 
-describe("Optimized and Unoptimized Networks Equivalency", function() {
-  var optimized = new LSTM(2,1,1)
+describe("Optimized and Unoptimized Networks Equivalency", function () {
 
-  var unoptimized = optimized.clone();
-  unoptimized.setOptimize(false);
+  var optimized;
+  var unoptimized;
+  beforeEach(function () {
+    optimized = new LSTM(2, 1, 1);
+    unoptimized = optimized.clone();
+    unoptimized.setOptimize(false);
+  });
 
-  var learningRate = .5;
-  var iterations = 1000;
 
-  for (var i = 1; i <= iterations; i++)
-  {
-      //random input
+  it('should produce the same output for both networks', function () {
+    for (var i = 0; i < 1000; i++) {
       var input = generateRandomArray(2);
-
-      // activate networks
-      var output1 = optimized.activate(input);
-      var output2 = unoptimized.activate(input);
-
-      if (i % 100 == 0)
-        it('should produce the same output for both networks after ' + i + ' iterations', function(){
-          assert(compare(output1, output2));
-        });
-
-      // random target
       var target = generateRandomArray(1);
-
-      // propagate networks
+      optimized.activate(input);
+      unoptimized.activate(input);
       optimized.propagate(learningRate, target);
       unoptimized.propagate(learningRate, target);
-  }
+    }
+    var mse = calculateMse(optimized.activate(input), unoptimized.activate(input));
+    assert.isAtMost(mse, 1e-10, 'output should be same for both networks after ' + i + ' iterations');
+  });
 });
 
-describe("toJSON/fromJSON Networks Equivalency", function() {
-  var original = new LSTM(10,5,5);
+describe("toJSON/fromJSON Networks Equivalency", function () {
+  var original;
+  var imported;
+  beforeEach(function () {
+    original = new LSTM(10, 5, 5);
+    imported = Network.fromJSON(original.toJSON());
+  });
 
-  var exported = original.toJSON();
-  var imported = Network.fromJSON(exported);
-
-  var learningRate = .5;
-  var iterations = 1000;
-
-  for (var i = 1; i <= iterations; i++)
-  {
-      //random input
+  it('should produce the same output for both networks', function () {
+    for (var i = 0; i < 1000; i++) {
       var input = generateRandomArray(10);
-
-      // activate networks
       var output1 = original.activate(input);
       var output2 = imported.activate(input);
 
-      if (i % 100 == 0)
-        it('should produce the same output for both networks after ' + i + ' iterations', function(){
-          assert(compare(output1, output2));
-        });
-
-      // random target
       var target = generateRandomArray(5);
 
       // propagate networks
       original.propagate(learningRate, target);
       imported.propagate(learningRate, target);
-  }
+
+      assert.isAtMost(calculateMse(output1, output2), 1e-10,
+        'output should be same for both networks after ' + i + ' iterations');
+    }
+  });
 });
 
-describe("Cloned Networks Equivalency", function() {
+describe("Cloned Networks Equivalency", function () {
+  var original;
+  var cloned;
+  beforeEach(function () {
+    original = new LSTM(10, 5, 5);
+    cloned = Network.fromJSON(original.toJSON());
+  });
 
-  var original = new LSTM(10,5,5);
-
-  var cloned = original.clone();
-
-  var learningRate = .5;
-  var iterations = 1000;
-
-  for (var i = 1; i <= iterations; i++)
-  {
-      //random input
+  it('should produce the same output for both networks', function () {
+    for (var i = 0; i < 1000; i++) {
       var input = generateRandomArray(10);
-
-      // activate networks
       var output1 = original.activate(input);
       var output2 = cloned.activate(input);
 
-      if (i % 100 == 0)
-        it('should produce the same output for both networks after ' + i + ' iterations', function(){
-          assert(compare(output1, output2));
-        });
-
-      // random target
       var target = generateRandomArray(5);
 
       // propagate networks
       original.propagate(learningRate, target);
       cloned.propagate(learningRate, target);
-  }
+
+      assert.isAtMost(calculateMse(output1, output2), 1e-10,
+        'output should be same for both networks after ' + i + ' iterations');
+    }
+  });
 });
 
-describe("Scheduled Tasks", function() {
+describe("Scheduled Tasks", function () {
   var perceptron = new Perceptron(2, 3, 1);
 
-  it('should stop training at 3000 iterations', function(){
+  it('should stop training at 3000 iterations', function () {
     var final_stats = perceptron.trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
       error: 0.000001,
       schedule: {
-          every: 1000,
-          do: function(data) {
-            if( data.iterations == 20000){
-              return true
-            }
-          }
+        every: 1000,
+        do: function (data) {
+          return data.iterations == 20000;
         }
+      }
     });
-    assert.equal( final_stats.iterations, 3000 )
+    assert.equal(final_stats.iterations, 3000)
   });
 
-  it('should abort the training at 2000 iterations', function(){
+  it('should abort the training at 2000 iterations', function () {
     var final_stats = perceptron.trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
       error: 0.000001,
       schedule: {
-          every: 1000,
-          do: function(data) {
-            if( data.iterations == 2000){
-              return true
-            }
-          }
+        every: 1000,
+        do: function (data) {
+          return data.iterations == 2000;
         }
+      }
     });
-    assert.equal( final_stats.iterations, 2000 )
+    assert.equal(final_stats.iterations, 2000)
   });
 
-  it('should work even if schedule.do() returns no value', function(){
+  it('should work even if schedule.do() returns no value', function () {
     var final_stats = perceptron.trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
       error: 0.000001,
       schedule: {
-          every: 1000,
-          do: function(data) {}
-        }
+        every: 1000,
+        do: function (data) {}
+      }
     });
-    assert.equal( final_stats.iterations, 3000 )
+    assert.equal(final_stats.iterations, 3000)
   });
 
 });
 
-describe("Rate Callback Check", function() {
+describe("Rate Callback Check", function () {
   var perceptron = new Perceptron(2, 3, 1);
 
-  it('should switch rate from 0.01 to 0.005 after 1000 iterations', function(){
+  it('should switch rate from 0.01 to 0.005 after 1000 iterations', function () {
     var final_stats = perceptron.trainer.XOR({
       iterations: 2000,
-      rate: function(iterations, error) {
+      rate: function (iterations, error) {
         return iterations < 1000 ? 0.01 : 0.005
       },
       error: 0.000001,
       schedule: {
         every: 1,
-        do: function(data) {
-          if(data.iterations == 1){
-            assert.equal( data.rate, 0.01 )
-          }
+        do: function (data) {
+          switch (data.iterations) {
+            case 1:
+            case 500:
+            case 999:
+              assert.equal(data.rate, 0.01);
+              break;
 
-          if(data.iterations == 500){
-            assert.equal( data.rate, 0.01 )
-          }
-
-          if(data.iterations == 999){
-            assert.equal( data.rate, 0.01 )
-          }
-
-          if(data.iterations == 1000){
-            assert.equal( data.rate, 0.005 )
-          }
-
-          if(data.iterations == 1500){
-            assert.equal( data.rate, 0.005 )
-          }
-
-          if(data.iterations == 2000){
-            assert.equal( data.rate, 0.005 )
+            case 1000:
+            case 1500:
+            case 2000:
+              assert.equal(data.rate, 0.005);
+              break;
           }
         }
       }
@@ -619,39 +570,29 @@ describe("Rate Callback Check", function() {
   });
 });
 
-describe("Rate Array Check", function() {
+describe("Rate Array Check", function () {
   var perceptron = new Perceptron(2, 3, 1);
 
-  it('should switch rate from 0.01 to 0.005 after 1000 iterations', function(){
+  it('should switch rate from 0.01 to 0.005 after 1000 iterations', function () {
     var final_stats = perceptron.trainer.XOR({
       iterations: 2000,
       rate: [0.01, 0.005],
       error: 0.000001,
       schedule: {
         every: 1,
-        do: function(data) {
-          if(data.iterations == 1){
-            assert.equal( data.rate, 0.01 )
-          }
+        do: function (data) {
+          switch (data.iterations) {
+            case 1:
+            case 500:
+            case 999:
+              assert.equal(data.rate, 0.01);
+              break;
 
-          if(data.iterations == 500){
-            assert.equal( data.rate, 0.01 )
-          }
-
-          if(data.iterations == 999){
-            assert.equal( data.rate, 0.01 )
-          }
-
-          if(data.iterations == 1000){
-            assert.equal( data.rate, 0.005 )
-          }
-
-          if(data.iterations == 1500){
-            assert.equal( data.rate, 0.005 )
-          }
-
-          if(data.iterations == 2000){
-            assert.equal( data.rate, 0.005 )
+            case 1000:
+            case 1500:
+            case 2000:
+              assert.equal(data.rate, 0.005);
+              break;
           }
         }
       }
