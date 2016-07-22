@@ -1,13 +1,13 @@
 // import
 
-var assert = require('assert'),
-  synaptic = require('../src/synaptic');
+var assert = require('chai').assert;
+var synaptic = require('../src/synaptic');
 
-var Perceptron = synaptic.Architect.Perceptron,
-  LSTM = synaptic.Architect.LSTM,
-  Layer = synaptic.Layer,
-  Network = synaptic.Network,
-  Trainer = synaptic.Trainer;
+var Perceptron = synaptic.Architect.Perceptron;
+var LSTM = synaptic.Architect.LSTM;
+var Layer = synaptic.Layer;
+var Network = synaptic.Network;
+var Trainer = synaptic.Trainer;
 
 
 // utils
