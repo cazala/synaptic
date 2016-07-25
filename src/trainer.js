@@ -23,7 +23,7 @@ Trainer.prototype = {
     var error = 1;
     var iterations = bucketSize = 0;
     var abort = false;
-    var input, output, target, currentRate;
+    var currentRate;
     var cost = options && options.cost || this.cost || Trainer.cost.MSE;
     var crossValidate = false, testSet, trainSet;
 
@@ -65,7 +65,7 @@ Trainer.prototype = {
 
     currentRate = this.rate;
     if(Array.isArray(this.rate)) {
-      bucketSize = Math.floor(this.iterations / this.rate.length);
+      var bucketSize = Math.floor(this.iterations / this.rate.length);
     }
 
     if(crossValidate) {
@@ -120,14 +120,14 @@ Trainer.prototype = {
       error: error,
       iterations: iterations,
       time: Date.now() - start
-    }
+    };
 
     return results;
   },
 
   // trains any given set to a network, using a WebWorker (only for the browser). Returns a Promise of the results.
   trainAsync: function(set, options) {
-    var train = this.workerTrain.bind(this)
+    var train = this.workerTrain.bind(this);
     return new Promise(function(resolve, reject) {
       try {
         train(set, resolve, options, true)
@@ -141,10 +141,10 @@ Trainer.prototype = {
   _trainSet: function(set, currentRate, costFunction) {
     var errorSum = 0;
     for (var train in set) {
-      input = set[train].input;
-      target = set[train].output;
+      var input = set[train].input;
+      var target = set[train].output;
 
-      output = this.network.activate(input);
+      var output = this.network.activate(input);
       this.network.propagate(currentRate, target);
 
       errorSum += costFunction(target, output);
@@ -156,7 +156,6 @@ Trainer.prototype = {
   test: function(set, options) {
 
     var error = 0;
-    var abort = false;
     var input, output, target;
     var cost = options && options.cost || this.cost || Trainer.cost.MSE;
 
@@ -174,7 +173,7 @@ Trainer.prototype = {
     var results = {
       error: error,
       time: Date.now() - start
-    }
+    };
 
     return results;
   },
@@ -224,7 +223,7 @@ Trainer.prototype = {
             }
           break;
       }
-    }
+    };
 
     // Start the worker
     worker.postMessage({action: 'startTraining'});
@@ -241,7 +240,7 @@ Trainer.prototype = {
       log: false,
       shuffle: true,
       cost: Trainer.cost.MSE
-    }
+    };
 
     if (options)
       for (var i in options)
@@ -277,8 +276,9 @@ Trainer.prototype = {
     var schedule = options.schedule || {};
     var cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
 
-    var trial = correct = i = j = success = 0,
-      error = 1,
+    var trial, correct, i, j, success;
+    trial = correct = i = j = success = 0;
+    var error = 1,
       symbols = targets.length + distractors.length + prompts.length;
 
     var noRepeat = function(range, avoid) {
@@ -288,14 +288,14 @@ Trainer.prototype = {
         if (number == avoid[i])
           used = true;
       return used ? noRepeat(range, avoid) : number;
-    }
+    };
 
     var equal = function(prediction, output) {
       for (var i in prediction)
         if (Math.round(prediction[i]) != output[i])
           return false;
       return true;
-    }
+    };
 
     var start = Date.now();
 
@@ -320,6 +320,7 @@ Trainer.prototype = {
       }
 
       //train sequence
+      var distractorsCorrect;
       var targetsCorrect = distractorsCorrect = 0;
       error = 0;
       for (i = 0; i < length; i++) {
@@ -401,7 +402,7 @@ Trainer.prototype = {
     // gramar node
     var Node = function() {
       this.paths = [];
-    }
+    };
     Node.prototype = {
       connect: function(node, value) {
         this.paths.push({
@@ -422,7 +423,7 @@ Trainer.prototype = {
             return this.paths[i];
         return false;
       }
-    }
+    };
 
     var reberGrammar = function() {
 
@@ -431,19 +432,19 @@ Trainer.prototype = {
       var n1 = (new Node()).connect(output, "E");
       var n2 = (new Node()).connect(n1, "S");
       var n3 = (new Node()).connect(n1, "V").connect(n2, "P");
-      var n4 = (new Node()).connect(n2, "X")
+      var n4 = (new Node()).connect(n2, "X");
       n4.connect(n4, "S");
-      var n5 = (new Node()).connect(n3, "V")
+      var n5 = (new Node()).connect(n3, "V");
       n5.connect(n5, "T");
-      n2.connect(n5, "X")
+      n2.connect(n5, "X");
       var n6 = (new Node()).connect(n4, "T").connect(n5, "P");
-      var input = (new Node()).connect(n6, "B")
+      var input = (new Node()).connect(n6, "B");
 
       return {
         input: input,
         output: output
       }
-    }
+    };
 
     // build an embeded reber grammar
     var embededReberGrammar = function() {
@@ -463,7 +464,7 @@ Trainer.prototype = {
         output: output
       }
 
-    }
+    };
 
     // generate an ERG sequence
     var generate = function() {
@@ -475,7 +476,7 @@ Trainer.prototype = {
         next = next.node.any();
       }
       return str;
-    }
+    };
 
     // test if a string matches an embeded reber grammar
     var test = function(str) {
@@ -490,7 +491,7 @@ Trainer.prototype = {
         ch = str.charAt(++i);
       }
       return true;
-    }
+    };
 
     // helper to check if the output and the target vectors match
     var different = function(array1, array2) {
@@ -510,7 +511,7 @@ Trainer.prototype = {
       }
 
       return i1 != i2;
-    }
+    };
 
     var iteration = 0;
     var error = 1;
@@ -521,7 +522,7 @@ Trainer.prototype = {
       "X": 3,
       "S": 4,
       "E": 5
-    }
+    };
 
     var start = Date.now();
     while (iteration < iterations && error > criterion) {
@@ -580,7 +581,7 @@ Trainer.prototype = {
       throw new Error("Invalid Network: must have 2 inputs and one output");
 
     if (typeof options == 'undefined')
-      var options = {};
+      options = {};
 
     // helper
     function getSamples (trainingSize, testSize){
@@ -590,7 +591,7 @@ Trainer.prototype = {
 
       // generate samples
       var t = 0;
-      var set  = [];
+      var set = [];
       for (var i = 0; i < size; i++) {
         set.push({ input: [0,0], output: [0] });
       }

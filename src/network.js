@@ -421,7 +421,6 @@ Network.prototype = {
             code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
           for (var from in connection.gatedfrom) { // gatings
             var layerfrom = connection.gatedfrom[from].layer;
-            var type = connection.gatedfrom[from].type;
             var layerfromID = layers.indexOf(layerfrom);
             code += "    " + layerfromID + " -> " + fakeNode + " [color = blue]\n";
           }
@@ -429,7 +428,6 @@ Network.prototype = {
           code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
           for (var from in connection.gatedfrom) { // gatings
             var layerfrom = connection.gatedfrom[from].layer;
-            var type = connection.gatedfrom[from].type;
             var layerfromID = layers.indexOf(layerfrom);
             code += "    " + layerfromID + " -> " + layerToID + " [color = blue]\n";
           }
@@ -501,7 +499,7 @@ Network.prototype = {
 
     // Copy the options and set defaults (options might be different for each worker)
     var workerOptions = {};
-    if(options) workerOptions = options
+    if(options) workerOptions = options;
     workerOptions.rate = options.rate || .2;
     workerOptions.iterations = options.iterations || 100000;
     workerOptions.error = options.error || .005;
@@ -561,7 +559,7 @@ Network.prototype = {
   clone: function() {
     return Network.fromJSON(this.toJSON());
   }
-}
+};
 
 /**
  * Creates a static String to store the source code of the functions
@@ -605,7 +603,7 @@ Network.fromJSON = function(json) {
     input: new Layer(),
     hidden: [],
     output: new Layer()
-  }
+  };
 
   for (var i in json.neurons) {
     var config = json.neurons[i];
@@ -635,7 +633,7 @@ Network.fromJSON = function(json) {
     var config = json.connections[i];
     var from = neurons[config.from];
     var to = neurons[config.to];
-    var weight = config.weight
+    var weight = config.weight;
     var gater = neurons[config.gater];
 
     var connection = from.project(to, weight);
@@ -644,4 +642,4 @@ Network.fromJSON = function(json) {
   }
 
   return new Network(layers);
-}
+};
