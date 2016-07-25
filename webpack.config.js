@@ -1,5 +1,5 @@
 var webpack = require('webpack')
-var license = require('./license.js')
+var license = require('./prebuild.js')
 module.exports = {
   context: __dirname,
   entry: [
