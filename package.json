@@ -7,7 +7,7 @@
     "test": "mocha test",
     "build": "webpack --config webpack.config.js"
   },
-  "precommit": [
+  "prepush": [
     "test",
     "build"
   ],
@@ -15,7 +15,7 @@
     "chai": "^3.5.0",
     "chai-stats": "^0.3.0",
     "mocha": "^2.2.4",
-    "pre-commit": "^1.1.3",
+    "pre-push": "^0.1.1",
     "random-js": "^1.0.8",
     "webpack": "^1.13.1"
   },
