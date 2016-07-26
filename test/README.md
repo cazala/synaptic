@@ -1,6 +1,6 @@
-Test using gulp, from root directory:
+Test using mocha, from root directory:
 
-`gulp test`
+`mocha test`
 
 To test the web version, start a web server at the root dir of this repo, then use your OS browser. 
 
