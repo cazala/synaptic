@@ -4,7 +4,14 @@
   "description": "architecture-free neural network library",
   "main": "./src/synaptic",
   "scripts": {
-    "test": "mocha test",
+    "test": "npm run test:src",
+    "test:src": "mocha test --require src/synaptic.js ./test",
+    "test:dist": "npm run build && npm run test:mocha:dist && npm run test:karma:browsers",
+    "test:mocha:src": "mocha test --require src/synaptic.js ./test",
+    "test:mocha:dist": "mocha test --require dist/synaptic.js ./test",
+    "test:karma:browsers": "karma start --single-run --browsers Chrome,Firefox,SafariPrivate",
+    "test:karma:phantomjs": "karma start --single-run --browsers PhantomJS",
+    "test:travis": "npm run test:mocha:src && npm run build && npm run test:mocha:dist",
     "build": "webpack --config webpack.config.js"
   },
   "prepush": [
@@ -14,9 +21,15 @@
   "devDependencies": {
     "chai": "^3.5.0",
     "chai-stats": "^0.3.0",
+    "karma": "^1.1.2",
+    "karma-chrome-launcher": "^1.0.1",
+    "karma-firefox-launcher": "^1.0.0",
+    "karma-mocha": "^1.1.1",
+    "karma-phantomjs-launcher": "^1.0.1",
+    "karma-safari-launcher": "^1.0.0",
+    "karma-webpack": "^1.7.0",
     "mocha": "^2.2.4",
     "pre-push": "^0.1.1",
-    "random-js": "^1.0.8",
     "webpack": "^1.13.1"
   },
   "repository": {
