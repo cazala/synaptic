@@ -3,8 +3,6 @@ var chai = require('chai');
 chai.use(require('chai-stats'));
 var assert = chai.assert;
 
-var synaptic = require('../src/synaptic');
-
 var Perceptron = synaptic.Architect.Perceptron;
 var LSTM = synaptic.Architect.LSTM;
 var Layer = synaptic.Layer;
@@ -425,6 +423,7 @@ describe("Optimized and Unoptimized Networks Equivalency", function () {
 
 
   it('should produce the same output for both networks', function () {
+    this.timeout(30000);
     for (var i = 0; i < 1000; i++) {
       var input = generateRandomArray(2);
       var target = generateRandomArray(1);
@@ -434,7 +433,7 @@ describe("Optimized and Unoptimized Networks Equivalency", function () {
       unoptimized.propagate(learningRate, target);
     }
     var mse = calculateMse(optimized.activate(input), unoptimized.activate(input));
-    assert.isAtMost(mse, 1e-10, 'output should be same for both networks after ' + i + ' iterations');
+    assert.isAtMost(mse, 1e-9, 'output should be same for both networks after ' + i + ' iterations');
   });
 });
 
@@ -447,6 +446,7 @@ describe("toJSON/fromJSON Networks Equivalency", function () {
   });
 
   it('should produce the same output for both networks', function () {
+    this.timeout(30000);
     for (var i = 0; i < 1000; i++) {
       var input = generateRandomArray(10);
       var output1 = original.activate(input);
@@ -473,6 +473,7 @@ describe("Cloned Networks Equivalency", function () {
   });
 
   it('should produce the same output for both networks', function () {
+    this.timeout(30000);
     for (var i = 0; i < 1000; i++) {
       var input = generateRandomArray(10);
       var output1 = original.activate(input);
