@@ -1,1 +1,1 @@
-global.synaptic = require('../src/synaptic');
+global.synaptic = require('../.');

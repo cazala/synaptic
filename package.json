@@ -2,16 +2,16 @@
   "name": "synaptic",
   "version": "1.0.8",
   "description": "architecture-free neural network library",
-  "main": "./src/synaptic",
+  "main": "./index.js",
   "scripts": {
     "test": "npm run test:src",
-    "test:src": "mocha test --require src/synaptic.js ./test",
+    "test:src": "mocha test ./test",
     "test:dist": "npm run build && npm run test:mocha:dist && npm run test:karma:browsers",
     "test:mocha:src": "mocha test --require src/synaptic.js ./test",
     "test:mocha:dist": "mocha test --require dist/synaptic.js ./test",
     "test:karma:browsers": "karma start --single-run --browsers Chrome,Firefox,SafariPrivate",
     "test:karma:phantomjs": "karma start --single-run --browsers PhantomJS",
-    "test:travis": "npm run test:mocha:src && npm run build && npm run test:mocha:dist",
+    "test:travis": "npm run build && npm run test:mocha:dist",
     "build": "webpack --config webpack.config.js"
   },
   "prepush": [
@@ -19,6 +19,8 @@
     "build"
   ],
   "devDependencies": {
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.9.0",
     "chai": "^3.5.0",
     "chai-stats": "^0.3.0",
     "karma": "^1.1.2",

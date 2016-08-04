@@ -1,4 +1,4 @@
-var Synaptic = {
+const Synaptic = {
     Neuron: require('./neuron'),
     Layer: require('./layer'),
     Network: require('./network'),
@@ -6,28 +6,16 @@ var Synaptic = {
     Architect: require('./architect')
 };
 
-// CommonJS & AMD
-if (typeof define !== 'undefined' && define.amd)
-{
-  define([], function(){ return Synaptic });
-}
+module.exports = Synaptic;
+// for exports
+module.exports.synaptic = Synaptic;
 
-// Node.js
-if (typeof module !== 'undefined' && module.exports)
-{
-  module.exports = Synaptic;
-}
+if (global.synaptic) {
+  const oldSynaptic = global.synaptic;
+  Synaptic.ninja = () => {
+    global.synaptic = oldSynaptic;
+    return Synaptic;
+  };
 
-// Browser
-if (typeof window == 'object')
-{
-  (function(){
-    var oldSynaptic = window['synaptic'];
-    Synaptic.ninja = function(){
-      window['synaptic'] = oldSynaptic;
-      return Synaptic;
-    };
-  })();
-
-  window['synaptic'] = Synaptic;
+  global.synaptic = Synaptic;
 }
