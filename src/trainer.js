@@ -74,6 +74,7 @@ Trainer.prototype = {
       testSet = set.slice(numTrain);
     }
 
+    var lastError = 0;
     while ((!abort && iterations < this.iterations && error > this.error)) {
       if (crossValidate && error <= this.crossValidate.testError) {
         break;
@@ -89,7 +90,7 @@ Trainer.prototype = {
       }
       
       if(typeof this.rate === 'function') {
-        currentRate = this.rate(iterations, error);
+        currentRate = this.rate(iterations, lastError);
       }
 
       if (crossValidate) {
@@ -103,6 +104,7 @@ Trainer.prototype = {
 
       // check error
       error /= currentSetSize;
+      lastError = error;
 
       if (options) {
         if (this.schedule && this.schedule.every && iterations %
