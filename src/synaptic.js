@@ -6,21 +6,10 @@ var Synaptic = {
     Architect: require('./architect')
 };
 
-// CommonJS & AMD
-if (typeof define !== 'undefined' && define.amd)
-{
-  define([], function(){ return Synaptic });
-}
-
-// Node.js
-if (typeof module !== 'undefined' && module.exports)
-{
-  module.exports = Synaptic;
-}
+module.exports = Synaptic;
 
 // Browser
-if (typeof window == 'object')
-{
+if (typeof window == 'object') {
   (function(){
     var oldSynaptic = window['synaptic'];
     Synaptic.ninja = function(){

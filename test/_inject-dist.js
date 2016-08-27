@@ -1,1 +1,0 @@
-global.synaptic = require('../dist/synaptic');

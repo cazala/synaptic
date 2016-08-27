@@ -13,6 +13,9 @@ module.exports = function(config) {
     preprocessors: {
       'test/*.js': ['webpack'],
     },
+    client: {
+        grep: /^[^(Node)]/
+    },
     reporters: ['progress'],
     port: 9876,
     colors: true,

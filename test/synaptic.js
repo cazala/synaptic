@@ -1,4 +1,9 @@
 // import
+var synaptic = process.env.SYNAPTIC_PREFER_SRC
+    ? require('../src/synaptic.js')
+    : (typeof window !== 'undefined' ? window.synaptic : require('../dist/synaptic.js'));
+
+
 var chai = require('chai');
 chai.use(require('chai-stats'));
 var assert = chai.assert;
@@ -600,3 +605,12 @@ describe("Rate Array Check", function () {
     });
   });
 });
+
+if (typeof window !== 'undefined') {
+    // Browser-specific tests
+    describe('Browser: Web Worker', function () {
+
+    });
+} else {
+    // Node.js-specific tests
+}

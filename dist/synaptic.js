@@ -47,7 +47,17 @@
  * There are references to the equations in that paper commented through the source code.
  * 
  */
-/******/ (function(modules) { // webpackBootstrap
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define([], factory);
+	else {
+		var a = factory();
+		for(var i in a) (typeof exports === 'object' ? exports : root)[i] = a[i];
+	}
+})(this, function() {
+return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 
@@ -100,7 +110,7 @@
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;var Synaptic = {
+	var Synaptic = {
 	    Neuron: __webpack_require__(2),
 	    Layer: __webpack_require__(4),
 	    Network: __webpack_require__(5),
@@ -108,21 +118,10 @@
 	    Architect: __webpack_require__(7)
 	};
 
-	// CommonJS & AMD
-	if (true)
-	{
-	  !(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function(){ return Synaptic }.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__), __WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
-	}
-
-	// Node.js
-	if (typeof module !== 'undefined' && module.exports)
-	{
-	  module.exports = Synaptic;
-	}
+	module.exports = Synaptic;
 
 	// Browser
-	if (typeof window == 'object')
-	{
+	if (typeof window == 'object') {
 	  (function(){
 	    var oldSynaptic = window['synaptic'];
 	    Synaptic.ninja = function(){
@@ -2852,4 +2851,6 @@
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)(module)))
 
 /***/ }
-/******/ ]);
+/******/ ])
+});
+;
