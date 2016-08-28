@@ -1,9 +1,8 @@
 // Liquid State Machine
-const Network = require('../network');
+const AbstractArchitecture = require('./abstract-architecture');
 const Layer = require('../layer');
-const Trainer = require('../trainer');
 
-module.exports = class Liquid extends Network {
+module.exports = class Liquid extends AbstractArchitecture {
   constructor(inputs, hidden, outputs, connections, gates) {
     // create layers
     const inputLayer = new Layer(inputs);
@@ -41,8 +40,5 @@ module.exports = class Liquid extends Network {
       hidden: [hiddenLayer],
       output: outputLayer
     });
-
-    // trainer
-    this.trainer = new Trainer(this);
   }
 }

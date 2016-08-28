@@ -1,6 +1,4 @@
-module.exports = {
-  Hopfield: require('./hopfield'),
-  LSTM: require('./lstm'),
-  Liquid: require('./liquid'),
-  Perceptron: require('./perceptron')
-};
+module.exports.Hopfield = require('./hopfield');
+module.exports.LSTM = require('./lstm');
+module.exports.Liquid = require('./liquid');
+module.exports.Perceptron = require('./perceptron');

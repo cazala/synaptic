@@ -1,18 +1,15 @@
 // import
-var synaptic = process.env.SYNAPTIC_PREFER_SRC
-    ? require('../src/synaptic.js')
-    : (typeof window !== 'undefined' ? window.synaptic : require('../dist/synaptic.js'));
+
+var synaptic = require('../src/synaptic.js');
 
 
 var chai = require('chai');
-chai.use(require('chai-stats'));
-var assert = chai.assert;
+chai.use(require('chai-stats/lib/stats'));
+chai.use(require('chai-as-promised'));
+var {assert, expect} = chai;
 
-var Perceptron = synaptic.Architect.Perceptron;
-var LSTM = synaptic.Architect.LSTM;
-var Layer = synaptic.Layer;
-var Network = synaptic.Network;
-var Trainer = synaptic.Trainer;
+var {Layer, Network, Trainer} = synaptic;
+var {Perceptron, LSTM} = synaptic.Architect;
 
 
 
@@ -607,10 +604,7 @@ describe("Rate Array Check", function () {
 });
 
 if (typeof window !== 'undefined') {
-    // Browser-specific tests
-    describe('Browser: Web Worker', function () {
-
-    });
+  // browser-specific tests
 } else {
-    // Node.js-specific tests
+  // Node.js-specific tests
 }

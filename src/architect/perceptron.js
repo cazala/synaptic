@@ -1,12 +1,11 @@
 // Multilayer Perceptron
-const Network = require('../network');
+const AbstractArchitecture = require('./abstract-architecture');
 const Layer = require('../layer');
-const Trainer = require('../trainer');
 
-module.exports = class Perceptron extends Network {
+module.exports = class Perceptron extends AbstractArchitecture {
   constructor(...args) {
     if (args.length < 3)
-      throw new Error("not enough layers (minimum 3) !!");
+      throw new Error(`Not enough layers. Minimum 3 expected, instead got ${args[0]}, ${args[1]}`);
 
     const inputs = args.shift(); // first argument
     const outputs = args.pop(); // last argument
@@ -34,8 +33,5 @@ module.exports = class Perceptron extends Network {
       hidden,
       output
     });
-
-    // trainer for the network
-    this.trainer = new Trainer(this);
   }
 };

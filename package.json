@@ -10,6 +10,7 @@
     "test:mocha:src": "SYNAPTIC_PREFER_SRC=true mocha test",
     "test:mocha:dist": "mocha test",
     "test:karma:browsers": "karma start --single-run --browsers Chrome,Firefox,SafariPrivate",
+    "test:karma:chrome": "karma start --browsers Chrome",
     "test:karma:phantomjs": "karma start --single-run --browsers PhantomJS",
     "test:travis": "npm run build && npm run test:mocha:dist",
     "build": "webpack --config webpack.config.js"
@@ -22,6 +23,7 @@
     "babel-loader": "^6.2.4",
     "babel-preset-es2015": "^6.9.0",
     "chai": "^3.5.0",
+    "chai-as-promised": "^5.3.0",
     "chai-stats": "^0.3.0",
     "karma": "^1.1.2",
     "karma-chrome-launcher": "^1.0.1",
@@ -32,7 +34,9 @@
     "karma-webpack": "^1.7.0",
     "mocha": "^2.2.4",
     "pre-push": "^0.1.1",
+    "tiny-worker": "^1.1.5",
     "webpack": "^1.13.1",
+    "webworker-threads": "^0.7.8",
     "worker-loader": "^0.7.1"
   },
   "repository": {
@@ -57,5 +61,9 @@
   "homepage": "http://synaptic.juancazala.com",
   "engines": {
     "node": ">=4"
+  },
+  "dependencies": {
+    "node-worker": "0.0.2",
+    "pseudo-worker": "^1.1.0"
   }
 }

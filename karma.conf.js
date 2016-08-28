@@ -1,3 +1,5 @@
+var webpack = require('webpack');
+var webpackConfig = require('./webpack.config');
 // Karma configuration
 
 module.exports = function(config) {
@@ -5,8 +7,7 @@ module.exports = function(config) {
     basePath: '',
     frameworks: ['mocha'],
     files: [
-      'dist/synaptic.js',
-      'test/[^_]*.js'
+      'test/*.js',
     ],
     exclude: [
     ],
@@ -24,5 +25,17 @@ module.exports = function(config) {
     singleRun: false,
     concurrency: Infinity,
     browserNoActivityTimeout: 60000,
+    webpack: {
+      loaders: webpackConfig.loaders,
+      plugins: webpackConfig.plugins
+        .concat([
+        // does not affect production build, only used for tests
+        new webpack.DefinePlugin({
+          'process.env.SYNAPTIC_PREFER_SRC': JSON.stringify(process.env.SYNAPTIC_PREFER_SRC),
+          'process.env.KARMA': 'true',
+        }),
+        new webpack.NoErrorsPlugin(),
+      ])
+    },
   })
 }

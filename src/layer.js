@@ -1,14 +1,5 @@
 const Neuron = require('./neuron');
 
-// avoiding cyclic dependency
-const isNetwork = (object) => {
-  if (!isNetwork.Network) {
-    isNetwork.Network = require('./network');
-  }
-
-  return object instanceof isNetwork.Network;
-};
-
 /*******************************************************************************************
  LAYER
  *******************************************************************************************/
@@ -78,15 +69,15 @@ class Layer {
 
   // projects a connection from this layer to another one
   project(layer, type, weights) {
-
-    if (isNetwork(layer))
-      layer = layer.layers.input;
+    if (layer && layer.layers && layer.layers.input)
+      return this.project(layer.layers.input, type, weights);
 
     if (layer instanceof Layer) {
       if (!this.connected(layer))
         return new Layer.connection(this, layer, type, weights);
-    } else
+    } else {
       throw new Error("Invalid argument, you can only project connections to LAYERS and NETWORKS!");
+    }
   }
 
   // gates a connection betwenn two layers

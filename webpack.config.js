@@ -15,23 +15,15 @@ module.exports = {
   loaders: [
     {
       test: /\.js$/,
-      exclude: /node_modules/,
-      loader: 'babel',
-      query: {
-        presets: ['es2015']
-      }
+      exclude: /\/node_modules\//,
+      loaders: ['babel'],
     },
-    {
-      test: /\.worker\.js/,
-      loader: 'worker'
-    }
   ],
   plugins: [
-    // does not affect production build, only used for tests
+    new webpack.BannerPlugin(license()),
     new webpack.DefinePlugin({
-      SYNAPTIC_PREFER_SRC: JSON.stringify(process.env.SYNAPTIC_PREFER_SRC)
+      'process.env.WEBPACK': 'true',
     }),
-    new webpack.NoErrorsPlugin(),
-    new webpack.BannerPlugin(license())
+
   ]
 };

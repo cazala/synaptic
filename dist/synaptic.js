@@ -110,25 +110,21 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Synaptic = {
-	    Neuron: __webpack_require__(2),
-	    Layer: __webpack_require__(4),
-	    Network: __webpack_require__(5),
-	    Trainer: __webpack_require__(6),
-	    Architect: __webpack_require__(7)
-	};
+	var Synaptic = {};
+
+	Synaptic.Neuron = __webpack_require__(2);
+	Synaptic.Layer = __webpack_require__(3);
+	Synaptic.Network = __webpack_require__(4);
+	Synaptic.Trainer = __webpack_require__(11);
+	Synaptic.Architect = __webpack_require__(12);
 
 	module.exports = Synaptic;
 
 	// Browser
 	if (typeof window == 'object') {
-	  (function(){
-	    var oldSynaptic = window['synaptic'];
-	    Synaptic.ninja = function(){
-	      window['synaptic'] = oldSynaptic;
-	      return Synaptic;
-	    };
-	  })();
+	  //noinspection CommaExpressionJS
+	  Synaptic.ninja = ((oldSynaptic = window['synaptic']) =>
+	      () => (window['synaptic'] = oldSynaptic, Synaptic))();
 
 	  window['synaptic'] = Synaptic;
 	}
@@ -136,46 +132,42 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
-	/* WEBPACK VAR INJECTION */(function(module) {// export
-	if (module) module.exports = Neuron;
+/***/ function(module, exports) {
 
 	/******************************************************************************************
-	                                         NEURON
-	*******************************************************************************************/
+	 NEURON
+	 *******************************************************************************************/
 
-	function Neuron() {
-	  this.ID = Neuron.uid();
-	  this.label = null;
-	  this.connections = {
-	    inputs: {},
-	    projected: {},
-	    gated: {}
-	  };
-	  this.error = {
-	    responsibility: 0,
-	    projected: 0,
-	    gated: 0
-	  };
-	  this.trace = {
-	    elegibility: {},
-	    extended: {},
-	    influences: {}
-	  };
-	  this.state = 0;
-	  this.old = 0;
-	  this.activation = 0;
-	  this.selfconnection = new Neuron.connection(this, this, 0); // weight = 0 -> not connected
-	  this.squash = Neuron.squash.LOGISTIC;
-	  this.neighboors = {};
-	  this.bias = Math.random() * .2 - .1;
-	}
-
-	Neuron.prototype = {
+	class Neuron {
+	  constructor() {
+	    this.ID = Neuron.uid();
+	    this.label = null;
+	    this.connections = {
+	      inputs: {},
+	      projected: {},
+	      gated: {}
+	    };
+	    this.error = {
+	      responsibility: 0,
+	      projected: 0,
+	      gated: 0
+	    };
+	    this.trace = {
+	      elegibility: {},
+	      extended: {},
+	      influences: {}
+	    };
+	    this.state = 0;
+	    this.old = 0;
+	    this.activation = 0;
+	    this.selfconnection = new Neuron.connection(this, this, 0); // weight = 0 -> not connected
+	    this.squash = Neuron.squash.LOGISTIC;
+	    this.neighboors = {};
+	    this.bias = Math.random() * .2 - .1;
+	  }
 
 	  // activate the neuron
-	  activate: function(input) {
+	  activate(input) {
 	    // activation from enviroment (for input neurons)
 	    if (typeof input != 'undefined') {
 	      this.activation = input;
@@ -203,7 +195,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.derivative = this.squash(this.state, true);
 
 	    // update traces
-	    var influences = [];
+	    const influences = [];
 	    for (var id in this.trace.extended) {
 	      // extended elegibility trace
 	      var neuron = this.neighboors[id];
@@ -212,7 +204,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var influence = neuron.selfconnection.gater == this ? neuron.old : 0;
 
 	      // index runs over all the incoming connections to the gated neuron that are gated by this unit
-	      for (var incoming in this.trace.influences[neuron.ID]) { // captures the effect that has an input connection to this unit, on a neuron that is gated by this unit
+	      for (let incoming in this.trace.influences[neuron.ID]) { // captures the effect that has an input connection to this unit, on a neuron that is gated by this unit
 	        influence += this.trace.influences[neuron.ID][incoming].weight *
 	          this.trace.influences[neuron.ID][incoming].from.activation;
 	      }
@@ -224,37 +216,37 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      // elegibility trace - Eq. 17
 	      this.trace.elegibility[input.ID] = this.selfconnection.gain * this.selfconnection
-	        .weight * this.trace.elegibility[input.ID] + input.gain * input.from
-	        .activation;
+	          .weight * this.trace.elegibility[input.ID] + input.gain * input.from
+	          .activation;
 
 	      for (var id in this.trace.extended) {
 	        // extended elegibility trace
-	        var xtrace = this.trace.extended[id];
+	        const xtrace = this.trace.extended[id];
 	        var neuron = this.neighboors[id];
 	        var influence = influences[neuron.ID];
 
 	        // eq. 18
 	        xtrace[input.ID] = neuron.selfconnection.gain * neuron.selfconnection
-	          .weight * xtrace[input.ID] + this.derivative * this.trace.elegibility[
+	            .weight * xtrace[input.ID] + this.derivative * this.trace.elegibility[
 	            input.ID] * influence;
 	      }
 	    }
 
 	    //  update gated connection's gains
-	    for (var connection in this.connections.gated) {
+	    for (let connection in this.connections.gated) {
 	      this.connections.gated[connection].gain = this.activation;
 	    }
 
 	    return this.activation;
-	  },
+	  }
 
 	  // back-propagate the error
-	  propagate: function(rate, target) {
+	  propagate(rate, target) {
 	    // error accumulator
-	    var error = 0;
+	    let error = 0;
 
 	    // whether or not this neuron is in the output layer
-	    var isOutput = typeof target != 'undefined';
+	    const isOutput = typeof target != 'undefined';
 
 	    // output neurons get their error from the enviroment
 	    if (isOutput)
@@ -264,7 +256,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    {
 	      // error responsibilities from all the connections projected from this neuron
 	      for (var id in this.connections.projected) {
-	        var connection = this.connections.projected[id];
+	        const connection = this.connections.projected[id];
 	        var neuron = connection.to;
 	        // Eq. 21
 	        error += neuron.error.responsibility * connection.gain * connection.weight;
@@ -277,12 +269,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // error responsibilities from all the connections gated by this neuron
 	      for (var id in this.trace.extended) {
 	        var neuron = this.neighboors[id]; // gated neuron
-	        var influence = neuron.selfconnection.gater == this ? neuron.old : 0; // if gated neuron's selfconnection is gated by this neuron
+	        let influence = neuron.selfconnection.gater == this ? neuron.old : 0; // if gated neuron's selfconnection is gated by this neuron
 
 	        // index runs over all the connections to the gated neuron that are gated by this neuron
 	        for (var input in this.trace.influences[id]) { // captures the effect that the input connection of this neuron have, on a neuron which its input/s is/are gated by this neuron
 	          influence += this.trace.influences[id][input].weight * this.trace.influences[
-	            neuron.ID][input].from.activation;
+	              neuron.ID][input].from.activation;
 	        }
 	        // eq. 22
 	        error += neuron.error.responsibility * influence;
@@ -303,20 +295,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var input = this.connections.inputs[id];
 
 	      // Eq. 24
-	      var gradient = this.error.projected * this.trace.elegibility[input.ID];
+	      let gradient = this.error.projected * this.trace.elegibility[input.ID];
 	      for (var id in this.trace.extended) {
 	        var neuron = this.neighboors[id];
 	        gradient += neuron.error.responsibility * this.trace.extended[
-	          neuron.ID][input.ID];
+	            neuron.ID][input.ID];
 	      }
 	      input.weight += rate * gradient; // adjust weights - aka learn
 	    }
 
 	    // adjust bias
 	    this.bias += rate * this.error.responsibility;
-	  },
+	  }
 
-	  project: function(neuron, weight) {
+	  project(neuron, weight) {
 	    // self-connection
 	    if (neuron == this) {
 	      this.selfconnection.weight = 1;
@@ -324,7 +316,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    // check if connection already exists
-	    var connected = this.connected(neuron);
+	    const connected = this.connected(neuron);
 	    if (connected && connected.type == "projected") {
 	      // update connection
 	      if (typeof weight != 'undefined')
@@ -342,25 +334,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	    neuron.connections.inputs[connection.ID] = connection;
 	    neuron.trace.elegibility[connection.ID] = 0;
 
-	    for (var id in neuron.trace.extended) {
-	      var trace = neuron.trace.extended[id];
+	    for (let id in neuron.trace.extended) {
+	      const trace = neuron.trace.extended[id];
 	      trace[connection.ID] = 0;
 	    }
 
 	    return connection;
-	  },
+	  }
 
-	  gate: function(connection) {
+	  gate(connection) {
 	    // add connection to gated list
 	    this.connections.gated[connection.ID] = connection;
 
-	    var neuron = connection.to;
+	    const neuron = connection.to;
 	    if (!(neuron.ID in this.trace.extended)) {
 	      // extended trace
 	      this.neighboors[neuron.ID] = neuron;
-	      var xtrace = this.trace.extended[neuron.ID] = {};
-	      for (var id in this.connections.inputs) {
-	        var input = this.connections.inputs[id];
+	      const xtrace = this.trace.extended[neuron.ID] = {};
+	      for (let id in this.connections.inputs) {
+	        const input = this.connections.inputs[id];
 	        xtrace[input.ID] = 0;
 	      }
 	    }
@@ -373,16 +365,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // set gater
 	    connection.gater = this;
-	  },
+	  }
 
 	  // returns true or false whether the neuron is self-connected or not
-	  selfconnected: function() {
+	  selfconnected() {
 	    return this.selfconnection.weight !== 0;
-	  },
+	  }
 
 	  // returns true or false whether the neuron is connected to another neuron (parameter)
-	  connected: function(neuron) {
-	    var result = {
+	  connected(neuron) {
+	    const result = {
 	      type: null,
 	      connection: false
 	    };
@@ -396,7 +388,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return false;
 	    }
 
-	    for (var type in this.connections) {
+	    for (let type in this.connections) {
 	      for (var connection in this.connections[type]) {
 	        var connection = this.connections[type][connection];
 	        if (connection.to == neuron) {
@@ -412,56 +404,53 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    return false;
-	  },
+	  }
 
 	  // clears all the traces (the neuron forgets it's context, but the connections remain intact)
-	  clear: function() {
+	  clear() {
 
 	    for (var trace in this.trace.elegibility)
 	      this.trace.elegibility[trace] = 0;
 
 	    for (var trace in this.trace.extended)
-	      for (var extended in this.trace.extended[trace])
+	      for (let extended in this.trace.extended[trace])
 	        this.trace.extended[trace][extended] = 0;
 
 	    this.error.responsibility = this.error.projected = this.error.gated = 0;
-	  },
+	  }
 
 	  // all the connections are randomized and the traces are cleared
-	  reset: function() {
+	  reset() {
 	    this.clear();
 
-	    for (var type in this.connections)
-	      for (var connection in this.connections[type])
+	    for (let type in this.connections)
+	      for (let connection in this.connections[type])
 	        this.connections[type][connection].weight = Math.random() * .2 - .1;
 	    this.bias = Math.random() * .2 - .1;
 
 	    this.old = this.state = this.activation = 0;
-	  },
+	  }
 
 	  // hardcodes the behaviour of the neuron into an optimized function
-	  optimize: function(optimized, layer) {
-
-	    optimized = optimized || {};
-	    var store_activation = [];
-	    var store_trace = [];
-	    var store_propagation = [];
-	    var varID = optimized.memory || 0;
-	    var neurons = optimized.neurons || 1;
-	    var inputs = optimized.inputs || [];
-	    var targets = optimized.targets || [];
-	    var outputs = optimized.outputs || [];
-	    var variables = optimized.variables || {};
-	    var activation_sentences = optimized.activation_sentences || [];
-	    var trace_sentences = optimized.trace_sentences || [];
-	    var propagation_sentences = optimized.propagation_sentences || [];
-	    var layers = optimized.layers || { __count: 0, __neuron: 0 };
+	  optimize(optimized = {}, layer) {
+	    const store_activation = [];
+	    const store_trace = [];
+	    const store_propagation = [];
+	    let varID = optimized.memory || 0;
+	    const neurons = optimized.neurons || 1;
+	    const inputs = optimized.inputs || [];
+	    const targets = optimized.targets || [];
+	    const outputs = optimized.outputs || [];
+	    const variables = optimized.variables || {};
+	    const activation_sentences = optimized.activation_sentences || [];
+	    const trace_sentences = optimized.trace_sentences || [];
+	    const propagation_sentences = optimized.propagation_sentences || [];
+	    const layers = optimized.layers || {__count: 0, __neuron: 0};
 
 	    // allocate sentences
-	    var allocate = function(store){
-	      var allocated = layer in layers && store[layers.__count];
-	      if (!allocated)
-	      {
+	    const allocate = store => {
+	      const allocated = layer in layers && store[layers.__count];
+	      if (!allocated) {
 	        layers.__count = store.push([]) - 1;
 	        layers[layer] = layers.__count;
 	      }
@@ -469,15 +458,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    allocate(activation_sentences);
 	    allocate(trace_sentences);
 	    allocate(propagation_sentences);
-	    var currentLayer = layers.__count;
+	    const currentLayer = layers.__count;
 
 	    // get/reserve space in memory by creating a unique ID for a variablel
-	    var getVar = function() {
-	      var args = Array.prototype.slice.call(arguments);
+	    const getVar = function () {
+	      const args = Array.prototype.slice.call(arguments);
 
 	      if (args.length == 1) {
 	        if (args[0] == 'target') {
-	          var id = 'target_' + targets.length;
+	          var id = `target_${targets.length}`;
 	          targets.push(varID);
 	        } else
 	          var id = args[0];
@@ -488,47 +477,47 @@ return /******/ (function(modules) { // webpackBootstrap
 	          id: varID++
 	        };
 	      } else {
-	        var extended = args.length > 2;
+	        const extended = args.length > 2;
 	        if (extended)
 	          var value = args.pop();
 
-	        var unit = args.shift();
-	        var prop = args.pop();
+	        const unit = args.shift();
+	        const prop = args.pop();
 
 	        if (!extended)
 	          var value = unit[prop];
 
-	        var id = prop + '_';
-	        for (var property in args)
-	          id += args[property] + '_';
+	        var id = `${prop}_`;
+	        for (let property in args)
+	          id += `${args[property]}_`;
 	        id += unit.ID;
 	        if (id in variables)
 	          return variables[id];
 
 	        return variables[id] = {
-	          value: value,
+	          value,
 	          id: varID++
 	        };
 	      }
 	    };
 
 	    // build sentence
-	    var buildSentence = function() {
-	      var args = Array.prototype.slice.call(arguments);
-	      var store = args.pop();
-	      var sentence = "";
-	      for (var i in args)
+	    const buildSentence = function () {
+	      const args = Array.prototype.slice.call(arguments);
+	      const store = args.pop();
+	      let sentence = "";
+	      for (let i in args)
 	        if (typeof args[i] == 'string')
 	          sentence += args[i];
 	        else
-	          sentence += 'F[' + args[i].id + ']';
+	          sentence += `F[${args[i].id}]`;
 
-	      store.push(sentence + ';');
+	      store.push(`${sentence};`);
 	    };
 
 	    // helper to check if an object is empty
-	    var isEmpty = function(obj) {
-	      for (var prop in obj) {
+	    const isEmpty = obj => {
+	      for (let prop in obj) {
 	        if (obj.hasOwnProperty(prop))
 	          return false;
 	      }
@@ -536,22 +525,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 
 	    // characteristics of the neuron
-	    var noProjections = isEmpty(this.connections.projected);
-	    var noGates = isEmpty(this.connections.gated);
-	    var isInput = layer == 'input' ? true : isEmpty(this.connections.inputs);
-	    var isOutput = layer == 'output' ? true : noProjections && noGates;
+	    const noProjections = isEmpty(this.connections.projected);
+	    const noGates = isEmpty(this.connections.gated);
+	    const isInput = layer == 'input' ? true : isEmpty(this.connections.inputs);
+	    const isOutput = layer == 'output' ? true : noProjections && noGates;
 
 	    // optimize neuron's behaviour
-	    var rate = getVar('rate');
-	    var activation = getVar(this, 'activation');
+	    const rate = getVar('rate');
+	    const activation = getVar(this, 'activation');
 	    if (isInput)
 	      inputs.push(activation.id);
 	    else {
 	      activation_sentences[currentLayer].push(store_activation);
 	      trace_sentences[currentLayer].push(store_trace);
 	      propagation_sentences[currentLayer].push(store_propagation);
-	      var old = getVar(this, 'old');
-	      var state = getVar(this, 'state');
+	      const old = getVar(this, 'old');
+	      const state = getVar(this, 'state');
 	      var bias = getVar(this, 'bias');
 	      if (this.selfconnection.gater)
 	        var self_gain = getVar(this.selfconnection, 'gain');
@@ -589,8 +578,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            activation, ')', store_activation);
 	          break;
 	        case Neuron.squash.TANH:
-	          var eP = getVar('aux');
-	          var eN = getVar('aux_2');
+	          const eP = getVar('aux');
+	          const eN = getVar('aux_2');
 	          buildSentence(eP, ' = Math.exp(', state, ')', store_activation);
 	          buildSentence(eN, ' = 1 / ', eP, store_activation);
 	          buildSentence(activation, ' = (', eP, ' - ', eN, ') / (', eP, ' + ', eN, ')', store_activation);
@@ -613,18 +602,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	        // calculate extended elegibility traces in advance
 
 	        var neuron = this.neighboors[id];
-	        var influence = getVar('influences[' + neuron.ID + ']');
+	        var influence = getVar(`influences[${neuron.ID}]`);
 	        var neuron_old = getVar(neuron, 'old');
-	        var initialized = false;
-	        if (neuron.selfconnection.gater == this)
-	        {
+	        let initialized = false;
+	        if (neuron.selfconnection.gater == this) {
 	          buildSentence(influence, ' = ', neuron_old, store_trace);
 	          initialized = true;
 	        }
-	        for (var incoming in this.trace.influences[neuron.ID]) {
-	          var incoming_weight = getVar(this.trace.influences[neuron.ID]
+	        for (let incoming in this.trace.influences[neuron.ID]) {
+	          const incoming_weight = getVar(this.trace.influences[neuron.ID]
 	            [incoming], 'weight');
-	          var incoming_activation = getVar(this.trace.influences[neuron.ID]
+	          const incoming_activation = getVar(this.trace.influences[neuron.ID]
 	            [incoming].from, 'activation');
 
 	          if (initialized)
@@ -670,7 +658,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        for (var id in this.trace.extended) {
 	          // extended elegibility trace
 	          var neuron = this.neighboors[id];
-	          var influence = getVar('influences[' + neuron.ID + ']');
+	          var influence = getVar(`influences[${neuron.ID}]`);
 
 	          var trace = getVar(this, 'trace', 'elegibility', input.ID, this.trace
 	            .elegibility[input.ID]);
@@ -695,15 +683,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	      }
 	      for (var connection in this.connections.gated) {
-	        var gated_gain = getVar(this.connections.gated[connection], 'gain');
+	        const gated_gain = getVar(this.connections.gated[connection], 'gain');
 	        buildSentence(gated_gain, ' = ', activation, store_activation);
 	      }
 	    }
 	    if (!isInput) {
-	      var responsibility = getVar(this, 'error', 'responsibility', this.error
+	      const responsibility = getVar(this, 'error', 'responsibility', this.error
 	        .responsibility);
 	      if (isOutput) {
-	        var target = getVar('target');
+	        const target = getVar('target');
 	        buildSentence(responsibility, ' = ', target, ' - ', activation,
 	          store_propagation);
 	        for (var id in this.connections.inputs) {
@@ -717,7 +705,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        outputs.push(activation.id);
 	      } else {
 	        if (!noProjections && !noGates) {
-	          var error = getVar('aux');
+	          const error = getVar('aux');
 	          for (var id in this.connections.projected) {
 	            var connection = this.connections.projected[id];
 	            var neuron = connection.to;
@@ -733,7 +721,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	              buildSentence(error, ' += ', neuron_responsibility, ' * ',
 	                connection_weight, store_propagation);
 	          }
-	          var projected = getVar(this, 'error', 'projected', this.error.projected);
+	          const projected = getVar(this, 'error', 'projected', this.error.projected);
 	          buildSentence(projected, ' = ', derivative, ' * ', error,
 	            store_propagation);
 	          buildSentence(error, ' = 0', store_propagation);
@@ -757,7 +745,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            buildSentence(error, ' += ', neuron_responsibility, ' * ',
 	              influence, store_propagation);
 	          }
-	          var gated = getVar(this, 'error', 'gated', this.error.gated);
+	          const gated = getVar(this, 'error', 'gated', this.error.gated);
 	          buildSentence(gated, ' = ', derivative, ' * ', error,
 	            store_propagation);
 	          buildSentence(responsibility, ' = ', projected, ' + ', gated,
@@ -859,133 +847,114 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return {
 	      memory: varID,
 	      neurons: neurons + 1,
-	      inputs: inputs,
-	      outputs: outputs,
-	      targets: targets,
-	      variables: variables,
-	      activation_sentences: activation_sentences,
-	      trace_sentences: trace_sentences,
-	      propagation_sentences: propagation_sentences,
-	      layers: layers
+	      inputs,
+	      outputs,
+	      targets,
+	      variables,
+	      activation_sentences,
+	      trace_sentences,
+	      propagation_sentences,
+	      layers
 	    }
 	  }
 	}
-
-
 	// represents a connection between two neurons
-	Neuron.connection = function Connection(from, to, weight) {
+	Neuron.connection = class NeuronConnection {
+	  constructor(from, to, weight) {
 
-	  if (!from || !to)
-	    throw new Error("Connection Error: Invalid neurons");
+	    if (!from || !to)
+	      throw new Error("Connection Error: Invalid neurons");
 
-	  this.ID = Neuron.connection.uid();
-	  this.from = from;
-	  this.to = to;
-	  this.weight = typeof weight == 'undefined' ? Math.random() * .2 - .1 :
-	    weight;
-	  this.gain = 1;
-	  this.gater = null;
+	    this.ID = Neuron.connection.uid();
+	    this.from = from;
+	    this.to = to;
+	    this.weight = typeof weight == 'undefined' ? Math.random() * .2 - .1 :
+	      weight;
+	    this.gain = 1;
+	    this.gater = null;
+	  }
 	}
 
 
 	// squashing functions
 	Neuron.squash = {};
 
+	function registerSquash(name, fn) {
+	  Neuron.squash[name] = fn;
+	  fn.squashType = [name];
+	}
+
 	// eq. 5 & 5'
-	Neuron.squash.LOGISTIC = function(x, derivate) {
+	registerSquash('LOGISTIC', (x, derivate) => {
 	  if (!derivate)
 	    return 1 / (1 + Math.exp(-x));
-	  var fx = Neuron.squash.LOGISTIC(x);
+	  const fx = Neuron.squash.LOGISTIC(x);
 	  return fx * (1 - fx);
-	};
-	Neuron.squash.TANH = function(x, derivate) {
+	});
+	registerSquash('TANH', (x, derivate) => {
 	  if (derivate)
 	    return 1 - Math.pow(Neuron.squash.TANH(x), 2);
-	  var eP = Math.exp(x);
-	  var eN = 1 / eP;
+	  const eP = Math.exp(x);
+	  const eN = 1 / eP;
 	  return (eP - eN) / (eP + eN);
-	};
-	Neuron.squash.IDENTITY = function(x, derivate) {
-	  return derivate ? 1 : x;
-	};
-	Neuron.squash.HLIM = function(x, derivate) {
-	  return derivate ? 1 : x > 0 ? 1 : 0;
-	};
-	Neuron.squash.RELU = function(x, derivate) {
+	});
+	registerSquash('IDENTITY', (x, derivate) => derivate ? 1 : x);
+	registerSquash('HLIM', (x, derivate) => derivate ? 1 : x > 0 ? 1 : 0);
+	registerSquash('RELU', (x, derivate) => {
 	  if (derivate)
 	    return x > 0 ? 1 : 0;
 	  return x > 0 ? x : 0;
-	};
+	});
 
 	// unique ID's
-	(function() {
-	  var neurons = 0;
-	  var connections = 0;
-	  Neuron.uid = function() {
-	    return neurons++;
-	  }
-	  Neuron.connection.uid = function() {
-	    return connections++;
-	  }
-	  Neuron.quantity = function() {
-	    return {
-	      neurons: neurons,
-	      connections: connections
-	    }
-	  }
-	})();
+	((() => {
+	  let neurons = 0;
+	  let connections = 0;
+	  Neuron.uid = () => neurons++
+	  Neuron.connection.uid = () => connections++
+	  Neuron.quantity = () => ({
+	    neurons,
+	    connections
+	  })
+	}))();
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)(module)))
+	module.exports = Neuron;
+
 
 /***/ },
 /* 3 */
-/***/ function(module, exports) {
-
-	module.exports = function(module) {
-		if(!module.webpackPolyfill) {
-			module.deprecate = function() {};
-			module.paths = [];
-			// module.parent = undefined by default
-			module.children = [];
-			module.webpackPolyfill = 1;
-		}
-		return module;
-	}
-
-
-/***/ },
-/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(module) {// export
-	if (module) module.exports = Layer;
-
-	// import
-	var Neuron  = __webpack_require__(2)
-	,   Network = __webpack_require__(5)
+	const Neuron = __webpack_require__(2);
 
 	/*******************************************************************************************
-	                                            LAYER
-	*******************************************************************************************/
+	 LAYER
+	 *******************************************************************************************/
 
-	function Layer(size, label) {
-	  this.size = size | 0;
-	  this.list = [];
-	  this.label = label || null;
-	  this.connectedTo = [];
+	class Layer {
+	  constructor(size, label) {
+	    this.label = label || null;
+	    this.connectedTo = [];
 
-	  while (size--) {
-	    var neuron = new Neuron();
-	    this.list.push(neuron);
+	    if (Array.isArray(size)) {
+	      const neurons = size;
+	      this.size = neurons.length;
+	      this.list = neurons.slice(); // cloning the array
+	    } else {
+	      this.size = size | 0;
+	      this.list = [];
+
+	      while (size--) {
+	        const neuron = new Neuron();
+	        this.list.push(neuron);
+	      }
+	    }
 	  }
-	}
-
-	Layer.prototype = {
 
 	  // activates all the neurons in the layer
-	  activate: function(input) {
+	  activate(input) {
 
-	    var activations = [];
+	    const activations = [];
 
 	    if (typeof input != 'undefined') {
 	      if (input.length != this.size)
@@ -1004,10 +973,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    }
 	    return activations;
-	  },
+	  }
 
 	  // propagates the error on all the neurons of the layer
-	  propagate: function(rate, target) {
+	  propagate(rate, target) {
 
 	    if (typeof target != 'undefined') {
 	      if (target.length != this.size)
@@ -1023,25 +992,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	        neuron.propagate(rate);
 	      }
 	    }
-	  },
+	  }
 
 	  // projects a connection from this layer to another one
-	  project: function(layer, type, weights) {
-
-	    if (layer instanceof Network)
-	      layer = layer.layers.input;
+	  project(layer, type, weights) {
+	    if (layer && layer.layers && layer.layers.input)
+	      return this.project(layer.layers.input, type, weights);
 
 	    if (layer instanceof Layer) {
 	      if (!this.connected(layer))
 	        return new Layer.connection(this, layer, type, weights);
-	    } else
+	    } else {
 	      throw new Error("Invalid argument, you can only project connections to LAYERS and NETWORKS!");
-
-
-	  },
+	    }
+	  }
 
 	  // gates a connection betwenn two layers
-	  gate: function(connection, type) {
+	  gate(connection, type) {
 
 	    if (type == Layer.gateType.INPUT) {
 	      if (connection.to.size != this.size)
@@ -1050,7 +1017,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      for (var id in connection.to.list) {
 	        var neuron = connection.to.list[id];
 	        var gater = this.list[id];
-	        for (var input in neuron.connections.inputs) {
+	        for (let input in neuron.connections.inputs) {
 	          var gated = neuron.connections.inputs[input];
 	          if (gated.ID in connection.connections)
 	            gater.gate(gated);
@@ -1063,7 +1030,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      for (var id in connection.from.list) {
 	        var neuron = connection.from.list[id];
 	        var gater = this.list[id];
-	        for (var projected in neuron.connections.projected) {
+	        for (let projected in neuron.connections.projected) {
 	          var gated = neuron.connections.projected[projected];
 	          if (gated.ID in connection.connections)
 	            gater.gate(gated);
@@ -1079,26 +1046,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	        gater.gate(gated);
 	      }
 	    }
-	    connection.gatedfrom.push({layer: this, type: type});
-	  },
+	    connection.gatedfrom.push({layer: this, type});
+	  }
 
 	  // true or false whether the whole layer is self-connected or not
-	  selfconnected: function() {
+	  selfconnected() {
 
-	    for (var id in this.list) {
-	      var neuron = this.list[id];
+	    for (let id in this.list) {
+	      const neuron = this.list[id];
 	      if (!neuron.selfconnected())
 	        return false;
 	    }
 	    return true;
-	  },
+	  }
 
 	  // true of false whether the layer is connected to another layer (parameter) or not
-	  connected: function(layer) {
+	  connected(layer) {
 	    // Check if ALL to ALL connection
-	    var connections = 0;
-	    for (var here in this.list) {
-	      for (var there in layer.list) {
+	    let connections = 0;
+	    for (let here in this.list) {
+	      for (let there in layer.list) {
 	        var from = this.list[here];
 	        var to = layer.list[there];
 	        var connected = from.connected(to);
@@ -1111,7 +1078,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // Check if ONE to ONE connection
 	    connections = 0;
-	    for (var neuron in this.list) {
+	    for (let neuron in this.list) {
 	      var from = this.list[neuron];
 	      var to = layer.list[neuron];
 	      var connected = from.connected(to);
@@ -1120,43 +1087,35 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	    if (connections == this.size)
 	      return Layer.connectionType.ONE_TO_ONE;
-	  },
+	  }
 
 	  // clears all the neuorns in the layer
-	  clear: function() {
-	    for (var id in this.list) {
-	      var neuron = this.list[id];
+	  clear() {
+	    for (let id in this.list) {
+	      const neuron = this.list[id];
 	      neuron.clear();
 	    }
-	  },
+	  }
 
 	  // resets all the neurons in the layer
-	  reset: function() {
-	    for (var id in this.list) {
-	      var neuron = this.list[id];
+	  reset() {
+	    for (let id in this.list) {
+	      const neuron = this.list[id];
 	      neuron.reset();
 	    }
-	  },
+	  }
 
 	  // returns all the neurons in the layer (array)
-	  neurons: function() {
+	  neurons() {
 	    return this.list;
-	  },
+	  }
 
-	  // adds a neuron to the layer
-	  add: function(neuron) {
-	    this.neurons[neuron.ID] = neuron || new Neuron();
-	    this.list.push(neuron);
-	    this.size++;
-	  },
 
-	  set: function(options) {
-	    options = options || {};
-
-	    for (var i in this.list) {
-	      var neuron = this.list[i];
+	  set(options = {}) {
+	    for (let i in this.list) {
+	      const neuron = this.list[i];
 	      if (options.label)
-	        neuron.label = options.label + '_' + neuron.ID;
+	        neuron.label = `${options.label}_${neuron.ID}`;
 	      if (options.squash)
 	        neuron.squash = options.squash;
 	      if (options.bias)
@@ -1167,52 +1126,53 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	// represents a connection from one layer to another, and keeps track of its weight and gain
-	Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
-	  this.ID = Layer.connection.uid();
-	  this.from = fromLayer;
-	  this.to = toLayer;
-	  this.selfconnection = toLayer == fromLayer;
-	  this.type = type;
-	  this.connections = {};
-	  this.list = [];
-	  this.size = 0;
-	  this.gatedfrom = [];
+	Layer.connection = class LayerConnection {
+	  constructor(fromLayer, toLayer, type, weights) {
+	    this.ID = Layer.connection.uid();
+	    this.from = fromLayer;
+	    this.to = toLayer;
+	    this.selfconnection = toLayer == fromLayer;
+	    this.type = type;
+	    this.connections = {};
+	    this.list = [];
+	    this.size = 0;
+	    this.gatedfrom = [];
 
-	  if (typeof this.type == 'undefined')
-	  {
-	    if (fromLayer == toLayer)
-	      this.type = Layer.connectionType.ONE_TO_ONE;
-	    else
-	      this.type = Layer.connectionType.ALL_TO_ALL;
-	  }
+	    if (typeof this.type == 'undefined') {
+	      if (fromLayer == toLayer)
+	        this.type = Layer.connectionType.ONE_TO_ONE;
+	      else
+	        this.type = Layer.connectionType.ALL_TO_ALL;
+	    }
 
-	  if (this.type == Layer.connectionType.ALL_TO_ALL ||
+	    if (this.type == Layer.connectionType.ALL_TO_ALL ||
 	      this.type == Layer.connectionType.ALL_TO_ELSE) {
-	    for (var here in this.from.list) {
-	      for (var there in this.to.list) {
-	        var from = this.from.list[here];
-	        var to = this.to.list[there];
-	        if(this.type == Layer.connectionType.ALL_TO_ELSE && from == to)
-	          continue;
+	      for (let here in this.from.list) {
+	        for (let there in this.to.list) {
+	          var from = this.from.list[here];
+	          var to = this.to.list[there];
+	          if (this.type == Layer.connectionType.ALL_TO_ELSE && from == to)
+	            continue;
+	          var connection = from.project(to, weights);
+
+	          this.connections[connection.ID] = connection;
+	          this.size = this.list.push(connection);
+	        }
+	      }
+	    } else if (this.type == Layer.connectionType.ONE_TO_ONE) {
+
+	      for (let neuron in this.from.list) {
+	        var from = this.from.list[neuron];
+	        var to = this.to.list[neuron];
 	        var connection = from.project(to, weights);
 
 	        this.connections[connection.ID] = connection;
 	        this.size = this.list.push(connection);
 	      }
 	    }
-	  } else if (this.type == Layer.connectionType.ONE_TO_ONE) {
 
-	    for (var neuron in this.from.list) {
-	      var from = this.from.list[neuron];
-	      var to = this.to.list[neuron];
-	      var connection = from.project(to, weights);
-
-	      this.connections[connection.ID] = connection;
-	      this.size = this.list.push(connection);
-	    }
+	    fromLayer.connectedTo.push(this);
 	  }
-
-	  fromLayer.connectedTo.push(this);
 	}
 
 	// types of connections
@@ -1227,84 +1187,90 @@ return /******/ (function(modules) { // webpackBootstrap
 	Layer.gateType.OUTPUT = "OUTPUT";
 	Layer.gateType.ONE_TO_ONE = "ONE TO ONE";
 
-	(function() {
-	  var connections = 0;
-	  Layer.connection.uid = function() {
-	    return connections++;
-	  }
-	})();
+	((() => {
+	  let connections = 0;
+	  Layer.connection.uid = () => connections++
+	}))();
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)(module)))
+	module.exports = Layer;
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(global) {const Network = __webpack_require__(5);
+
+	class SynapticNetwork extends Network {
+	}
+
+	// features enabling
+	if (global.Worker) {
+	  // this code should be kept on
+	  const WorkerProxyNetwork = __webpack_require__(6);
+	  // Return a HTML5 WebWorker specialized on training the network stored in `memory`.
+	  // Train based on the given dataSet and options.
+	  // The worker returns the updated `memory` when done.
+	  SynapticNetwork.prototype.worker = function () {
+	    return WorkerProxyNetwork.fromJSON(this.toJSON());
+	  }
+	}
+
+	module.exports = SynapticNetwork;
+	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(module) {// export
-	if (module) module.exports = Network;
-
-	// import
-	var Neuron  = __webpack_require__(2)
-	,   Layer   = __webpack_require__(4)
-	,   Trainer = __webpack_require__(6)
+	const Layer = __webpack_require__(3);
+	const Neuron = __webpack_require__(2);
 
 	/*******************************************************************************************
-	                                         NETWORK
-	*******************************************************************************************/
+	 NETWORK
+	 *******************************************************************************************/
 
-	function Network(layers) {
-	  if (typeof layers != 'undefined') {
-	    this.layers = layers || {
-	      input: null,
-	      hidden: {},
-	      output: null
-	    };
+	class Network {
+	  constructor(layers) {
+	    this.layers = layers;
 	    this.optimized = null;
 	  }
-	}
-	Network.prototype = {
 
 	  // feed-forward activation of all the layers to produce an ouput
-	  activate: function(input) {
-
-	    if (this.optimized === false)
-	    {
+	  activate(input) {
+	    if (this.optimized === false) {
 	      this.layers.input.activate(input);
-	      for (var layer in this.layers.hidden)
+	      for (let layer in this.layers.hidden)
 	        this.layers.hidden[layer].activate();
 	      return this.layers.output.activate();
 	    }
-	    else
-	    {
+	    else {
 	      if (this.optimized == null)
 	        this.optimize();
 	      return this.optimized.activate(input);
 	    }
-	  },
+	  }
 
 	  // back-propagate the error thru the network
-	  propagate: function(rate, target) {
+	  propagate(rate, target) {
 
-	    if (this.optimized === false)
-	    {
+	    if (this.optimized === false) {
 	      this.layers.output.propagate(rate, target);
-	      var reverse = [];
+	      const reverse = [];
 	      for (var layer in this.layers.hidden)
 	        reverse.push(this.layers.hidden[layer]);
 	      reverse.reverse();
 	      for (var layer in reverse)
 	        reverse[layer].propagate(rate);
 	    }
-	    else
-	    {
+	    else {
 	      if (this.optimized == null)
 	        this.optimize();
 	      this.optimized.propagate(rate, target);
 	    }
-	  },
+	  }
 
 	  // project a connection to another unit (either a network or a layer)
-	  project: function(unit, type, weights) {
+	  project(unit, type, weights) {
 
 	    if (this.optimized)
 	      this.optimized.reset();
@@ -1316,63 +1282,61 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return this.layers.output.project(unit, type, weights);
 
 	    throw new Error("Invalid argument, you can only project connections to LAYERS and NETWORKS!");
-	  },
+	  }
 
 	  // let this network gate a connection
-	  gate: function(connection, type) {
+	  gate(connection, type) {
 	    if (this.optimized)
 	      this.optimized.reset();
 	    this.layers.output.gate(connection, type);
-	  },
+	  }
 
 	  // clear all elegibility traces and extended elegibility traces (the network forgets its context, but not what was trained)
-	  clear: function() {
+	  clear() {
 
 	    this.restore();
 
-	    var inputLayer = this.layers.input,
-	      outputLayer = this.layers.output;
+	    const inputLayer = this.layers.input, outputLayer = this.layers.output;
 
 	    inputLayer.clear();
-	    for (var layer in this.layers.hidden) {
-	      var hiddenLayer = this.layers.hidden[layer];
+	    for (let layer in this.layers.hidden) {
+	      const hiddenLayer = this.layers.hidden[layer];
 	      hiddenLayer.clear();
 	    }
 	    outputLayer.clear();
 
 	    if (this.optimized)
 	      this.optimized.reset();
-	  },
+	  }
 
 	  // reset all weights and clear all traces (ends up like a new network)
-	  reset: function() {
+	  reset() {
 
 	    this.restore();
 
-	    var inputLayer = this.layers.input,
-	      outputLayer = this.layers.output;
+	    const inputLayer = this.layers.input, outputLayer = this.layers.output;
 
 	    inputLayer.reset();
-	    for (var layer in this.layers.hidden) {
-	      var hiddenLayer = this.layers.hidden[layer];
+	    for (let layer in this.layers.hidden) {
+	      const hiddenLayer = this.layers.hidden[layer];
 	      hiddenLayer.reset();
 	    }
 	    outputLayer.reset();
 
 	    if (this.optimized)
 	      this.optimized.reset();
-	  },
+	  }
 
 	  // hardcodes the behaviour of the whole network into a single optimized function
-	  optimize: function() {
+	  optimize() {
 
-	    var that = this;
-	    var optimized = {};
-	    var neurons = this.neurons();
+	    const that = this;
+	    let optimized = {};
+	    const neurons = this.neurons();
 
 	    for (var i in neurons) {
-	      var neuron = neurons[i].neuron;
-	      var layer = neurons[i].layer;
+	      let neuron = neurons[i].neuron;
+	      const layer = neurons[i].layer;
 	      while (neuron.neuron)
 	        neuron = neuron.neuron;
 	      optimized = neuron.optimize(optimized, layer);
@@ -1381,15 +1345,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	      optimized.propagation_sentences[i].reverse();
 	    optimized.propagation_sentences.reverse();
 
-	    var hardcode = "";
-	    hardcode += "var F = Float64Array ? new Float64Array(" + optimized.memory +
-	      ") : []; ";
+	    let hardcode = "";
+	    hardcode += `var F = Float64Array ? new Float64Array(${optimized.memory}) : []; `;
 	    for (var i in optimized.variables)
-	      hardcode += "F[" + optimized.variables[i].id + "] = " + (optimized.variables[
-	        i].value || 0) + "; ";
+	      hardcode += `F[${optimized.variables[i].id}] = ${optimized.variables[
+	        i].value || 0}; `;
 	    hardcode += "var activate = function(input){\n";
 	    for (var i in optimized.inputs)
-	      hardcode += "F[" + optimized.inputs[i] + "] = input[" + i + "]; ";
+	      hardcode += `F[${optimized.inputs[i]}] = input[${i}]; `;
 	    for (var currentLayer in optimized.activation_sentences) {
 	      if (optimized.activation_sentences[currentLayer].length > 0) {
 	        for (var currentNeuron in optimized.activation_sentences[currentLayer]) {
@@ -1400,15 +1363,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	    hardcode += " var output = []; "
 	    for (var i in optimized.outputs)
-	      hardcode += "output[" + i + "] = F[" + optimized.outputs[i] + "]; ";
+	      hardcode += `output[${i}] = F[${optimized.outputs[i]}]; `;
 	    hardcode += "return output; }; "
 	    hardcode += "var propagate = function(rate, target){\n";
-	    hardcode += "F[" + optimized.variables.rate.id + "] = rate; ";
+	    hardcode += `F[${optimized.variables.rate.id}] = rate; `;
 	    for (var i in optimized.targets)
-	      hardcode += "F[" + optimized.targets[i] + "] = target[" + i + "]; ";
+	      hardcode += `F[${optimized.targets[i]}] = target[${i}]; `;
 	    for (var currentLayer in optimized.propagation_sentences)
 	      for (var currentNeuron in optimized.propagation_sentences[currentLayer])
-	        hardcode += optimized.propagation_sentences[currentLayer][currentNeuron].join(" ") + " ";
+	        hardcode += `${optimized.propagation_sentences[currentLayer][currentNeuron].join(" ")} `;
 	    hardcode += " };\n";
 	    hardcode +=
 	      "var ownership = function(memoryBuffer){\nF = memoryBuffer;\nthis.memory = F;\n};\n";
@@ -1416,9 +1379,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	      "return {\nmemory: F,\nactivate: activate,\npropagate: propagate,\nownership: ownership\n};";
 	    hardcode = hardcode.split(";").join(";\n");
 
-	    var constructor = new Function(hardcode);
+	    const constructor = new Function(hardcode);
 
-	    var network = constructor();
+	    const network = constructor();
 	    network.data = {
 	      variables: optimized.variables,
 	      activate: optimized.activation_sentences,
@@ -1430,7 +1393,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      check_propagation: this.propagate
 	    }
 
-	    network.reset = function() {
+	    network.reset = () => {
 	      if (that.optimized) {
 	        that.optimized = null;
 	        that.activate = network.data.check_activation;
@@ -1441,38 +1404,38 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this.optimized = network;
 	    this.activate = network.activate;
 	    this.propagate = network.propagate;
-	  },
+	  }
 
 	  // restores all the values from the optimized network the their respective objects in order to manipulate the network
-	  restore: function() {
+	  restore() {
 	    if (!this.optimized)
 	      return;
 
-	    var optimized = this.optimized;
+	    const optimized = this.optimized;
 
-	    var getValue = function() {
-	      var args = Array.prototype.slice.call(arguments);
+	    const getValue = function () {
+	      const args = Array.prototype.slice.call(arguments);
 
-	      var unit = args.shift();
-	      var prop = args.pop();
+	      const unit = args.shift();
+	      const prop = args.pop();
 
-	      var id = prop + '_';
-	      for (var property in args)
-	        id += args[property] + '_';
+	      let id = `${prop}_`;
+	      for (let property in args)
+	        id += `${args[property]}_`;
 	      id += unit.ID;
 
-	      var memory = optimized.memory;
-	      var variables = optimized.data.variables;
+	      const memory = optimized.memory;
+	      const variables = optimized.data.variables;
 
 	      if (id in variables)
 	        return memory[variables[id].id];
 	      return 0;
-	    }
+	    };
 
-	    var list = this.neurons();
+	    const list = this.neurons();
 
 	    // link id's to positions in the array
-	    var ids = {};
+	    const ids = {};
 	    for (var i in list) {
 	      var neuron = list[i].neuron;
 	      while (neuron.neuron)
@@ -1487,7 +1450,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        neuron.trace.elegibility[input] = getValue(neuron, 'trace',
 	          'elegibility', input);
 
-	      for (var gated in neuron.trace.extended)
+	      for (let gated in neuron.trace.extended)
 	        for (var input in neuron.trace.extended[gated])
 	          neuron.trace.extended[gated][input] = getValue(neuron, 'trace',
 	            'extended', gated, input);
@@ -1499,21 +1462,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	      while (neuron.neuron)
 	        neuron = neuron.neuron;
 
-	      for (var j in neuron.connections.projected) {
-	        var connection = neuron.connections.projected[j];
+	      for (let j in neuron.connections.projected) {
+	        const connection = neuron.connections.projected[j];
 	        connection.weight = getValue(connection, 'weight');
 	        connection.gain = getValue(connection, 'gain');
 	      }
 	    }
-	  },
+	  }
 
 	  // returns all the neurons in the network
-	  neurons: function() {
+	  neurons() {
 
-	    var neurons = [];
+	    const neurons = [];
 
-	    var inputLayer = this.layers.input.neurons(),
-	      outputLayer = this.layers.output.neurons();
+	    const inputLayer = this.layers.input.neurons(), outputLayer = this.layers.output.neurons();
 
 	    for (var neuron in inputLayer)
 	      neurons.push({
@@ -1521,12 +1483,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        layer: 'input'
 	      });
 
-	    for (var layer in this.layers.hidden) {
-	      var hiddenLayer = this.layers.hidden[layer].neurons();
+	    for (let layer in this.layers.hidden) {
+	      const hiddenLayer = this.layers.hidden[layer].neurons();
 	      for (var neuron in hiddenLayer)
 	        neurons.push({
 	          neuron: hiddenLayer[neuron],
-	          layer: layer
+	          layer
 	        });
 	    }
 	    for (var neuron in outputLayer)
@@ -1536,51 +1498,51 @@ return /******/ (function(modules) { // webpackBootstrap
 	      });
 
 	    return neurons;
-	  },
+	  }
 
 	  // returns number of inputs of the network
-	  inputs: function() {
+	  inputs() {
 	    return this.layers.input.size;
-	  },
+	  }
 
 	  // returns number of outputs of hte network
-	  outputs: function() {
+	  outputs() {
 	    return this.layers.output.size;
-	  },
+	  }
 
 	  // sets the layers of the network
-	  set: function(layers) {
-
+	  set(layers) {
+	    console.warn('This method is deprecated! Use super(layers) in constructor instead');
 	    this.layers = layers;
 	    if (this.optimized)
 	      this.optimized.reset();
-	  },
+	  }
 
-	  setOptimize: function(bool){
+	  setOptimize(bool) {
 	    this.restore();
 	    if (this.optimized)
 	      this.optimized.reset();
-	    this.optimized = bool? null : false;
-	  },
+	    this.optimized = bool ? null : false;
+	  }
 
 	  // returns a json that represents all the neurons and connections of the network
-	  toJSON: function(ignoreTraces) {
+	  toJSON(ignoreTraces) {
 
 	    this.restore();
 
-	    var list = this.neurons();
-	    var neurons = [];
-	    var connections = [];
+	    const list = this.neurons();
+	    const neurons = [];
+	    const connections = [];
 
 	    // link id's to positions in the array
-	    var ids = {};
+	    const ids = {};
 	    for (var i in list) {
 	      var neuron = list[i].neuron;
 	      while (neuron.neuron)
 	        neuron = neuron.neuron;
 	      ids[neuron.ID] = i;
 
-	      var copy = {
+	      const copy = {
 	        trace: {
 	          elegibility: {},
 	          extended: {}
@@ -1592,11 +1554,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        layer: list[i].layer
 	      };
 
-	      copy.squash = neuron.squash == Neuron.squash.LOGISTIC ? "LOGISTIC" :
-	        neuron.squash == Neuron.squash.TANH ? "TANH" :
-	        neuron.squash == Neuron.squash.IDENTITY ? "IDENTITY" :
-	        neuron.squash == Neuron.squash.HLIM ? "HLIM" :
-	        null;
+	      copy.squash = neuron.squash.squashType || neuron.squash.toString();
 
 	      neurons.push(copy);
 	    }
@@ -1607,8 +1565,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	      while (neuron.neuron)
 	        neuron = neuron.neuron;
 
-	      for (var j in neuron.connections.projected) {
-	        var connection = neuron.connections.projected[j];
+	      for (let j in neuron.connections.projected) {
+	        const connection = neuron.connections.projected[j];
 	        connections.push({
 	          from: ids[connection.from.ID],
 	          to: ids[connection.to.ID],
@@ -1626,312 +1584,370 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    return {
-	      neurons: neurons,
-	      connections: connections
+	      neurons,
+	      connections
 	    }
-	  },
+	  }
 
 	  // export the topology into dot language which can be visualized as graphs using dot
 	  /* example: ... console.log(net.toDotLang());
-	              $ node example.js > example.dot
-	              $ dot example.dot -Tpng > out.png
-	  */
-	  toDot: function(edgeConnection) {
-	    if (! typeof edgeConnection)
+	   $ node example.js > example.dot
+	   $ dot example.dot -Tpng > out.png
+	   */
+	  toDot(edgeConnection) {
+	    if (!typeof edgeConnection)
 	      edgeConnection = false;
-	    var code = "digraph nn {\n    rankdir = BT\n";
-	    var layers = [this.layers.input].concat(this.layers.hidden, this.layers.output);
-	    for (var layer in layers) {
-	      for (var to in layers[layer].connectedTo) { // projections
-	        var connection = layers[layer].connectedTo[to];
-	        var layerTo = connection.to;
-	        var size = connection.size;
-	        var layerID = layers.indexOf(layers[layer]);
-	        var layerToID = layers.indexOf(layerTo);
+	    let code = "digraph nn {\n    rankdir = BT\n";
+	    const layers = [this.layers.input].concat(this.layers.hidden, this.layers.output);
+	    for (let layer in layers) {
+	      for (let to in layers[layer].connectedTo) { // projections
+	        const connection = layers[layer].connectedTo[to];
+	        const layerTo = connection.to;
+	        const size = connection.size;
+	        const layerID = layers.indexOf(layers[layer]);
+	        const layerToID = layers.indexOf(layerTo);
 	        /* http://stackoverflow.com/questions/26845540/connect-edges-with-graph-dot
 	         * DOT does not support edge-to-edge connections
 	         * This workaround produces somewhat weird graphs ...
-	        */
-	        if ( edgeConnection) {
+	         */
+	        if (edgeConnection) {
 	          if (connection.gatedfrom.length) {
-	            var fakeNode = "fake" + layerID + "_" + layerToID;
-	            code += "    " + fakeNode +
-	              " [label = \"\", shape = point, width = 0.01, height = 0.01]\n";
-	            code += "    " + layerID + " -> " + fakeNode + " [label = " + size + ", arrowhead = none]\n";
-	            code += "    " + fakeNode + " -> " + layerToID + "\n";
+	            var fakeNode = `fake${layerID}_${layerToID}`;
+	            code += `    ${fakeNode} [label = "", shape = point, width = 0.01, height = 0.01]\n`;
+	            code += `    ${layerID} -> ${fakeNode} [label = ${size}, arrowhead = none]\n`;
+	            code += `    ${fakeNode} -> ${layerToID}\n`;
 	          } else
-	            code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
+	            code += `    ${layerID} -> ${layerToID} [label = ${size}]\n`;
 	          for (var from in connection.gatedfrom) { // gatings
 	            var layerfrom = connection.gatedfrom[from].layer;
 	            var layerfromID = layers.indexOf(layerfrom);
-	            code += "    " + layerfromID + " -> " + fakeNode + " [color = blue]\n";
+	            code += `    ${layerfromID} -> ${fakeNode} [color = blue]\n`;
 	          }
 	        } else {
-	          code += "    " + layerID + " -> " + layerToID + " [label = " + size + "]\n";
+	          code += `    ${layerID} -> ${layerToID} [label = ${size}]\n`;
 	          for (var from in connection.gatedfrom) { // gatings
 	            var layerfrom = connection.gatedfrom[from].layer;
 	            var layerfromID = layers.indexOf(layerfrom);
-	            code += "    " + layerfromID + " -> " + layerToID + " [color = blue]\n";
+	            code += `    ${layerfromID} -> ${layerToID} [color = blue]\n`;
 	          }
 	        }
 	      }
 	    }
 	    code += "}\n";
 	    return {
-	      code: code,
-	      link: "https://chart.googleapis.com/chart?chl=" + escape(code.replace("/ /g", "+")) + "&cht=gv"
+	      code,
+	      link: `https://chart.googleapis.com/chart?chl=${escape(code.replace("/ /g", "+"))}&cht=gv`
 	    }
-	  },
+	  }
 
 	  // returns a function that works as the activation of the network and can be used without depending on the library
-	  standalone: function() {
+	  standalone() {
 	    if (!this.optimized)
 	      this.optimize();
 
-	    var data = this.optimized.data;
+	    const data = this.optimized.data;
 
 	    // build activation function
-	    var activation = "function (input) {\n";
+	    let activation = "function (input) {\n";
 
 	    // build inputs
 	    for (var i in data.inputs)
-	      activation += "F[" + data.inputs[i] + "] = input[" + i + "];\n";
+	      activation += `F[${data.inputs[i]}] = input[${i}];\n`;
 
 	    // build network activation
-	    for (var neuron in data.activate) { // shouldn't this be layer?
-	      for (var sentence in data.activate[neuron])
-	        activation += data.activate[neuron][sentence].join('') + "\n";
+	    for (let neuron in data.activate) { // shouldn't this be layer?
+	      for (let sentence in data.activate[neuron])
+	        activation += `${data.activate[neuron][sentence].join('')}\n`;
 	    }
 
 	    // build outputs
 	    activation += "var output = [];\n";
 	    for (var i in data.outputs)
-	      activation += "output[" + i + "] = F[" + data.outputs[i] + "];\n";
+	      activation += `output[${i}] = F[${data.outputs[i]}];\n`;
 	    activation += "return output;\n}";
 
 	    // reference all the positions in memory
-	    var memory = activation.match(/F\[(\d+)\]/g);
-	    var dimension = 0;
-	    var ids = {};
-	    for (var address in memory) {
-	      var tmp = memory[address].match(/\d+/)[0];
+	    const memory = activation.match(/F\[(\d+)\]/g);
+	    let dimension = 0;
+	    const ids = {};
+	    for (let address in memory) {
+	      const tmp = memory[address].match(/\d+/)[0];
 	      if (!(tmp in ids)) {
 	        ids[tmp] = dimension++;
 	      }
 	    }
-	    var hardcode = "F = {\n";
+	    let hardcode = "F = {\n";
 	    for (var i in ids)
-	      hardcode += ids[i] + ": " + this.optimized.memory[i] + ",\n";
-	    hardcode = hardcode.substring(0, hardcode.length - 2) + "\n};\n";
-	    hardcode = "var run = " + activation.replace(/F\[(\d+)]/g, function(
-	      index) {
-	      return 'F[' + ids[index.match(/\d+/)[0]] + ']'
-	    }).replace("{\n", "{\n" + hardcode + "") + ";\n";
+	      hardcode += `${ids[i]}: ${this.optimized.memory[i]},\n`;
+	    hardcode = `${hardcode.substring(0, hardcode.length - 2)}\n};\n`;
+	    hardcode = `var run = ${activation.replace(/F\[(\d+)]/g, index => 'F[' + ids[index.match(/\d+/)[0]] + ']').replace("{\n", "{\n" + hardcode + "")};\n`;
 	    hardcode += "return run";
 
 	    // return standalone function
 	    return new Function(hardcode)();
-	  },
-
-
-	  // Return a HTML5 WebWorker specialized on training the network stored in `memory`.
-	  // Train based on the given dataSet and options.
-	  // The worker returns the updated `memory` when done.
-	  worker: function(memory, set, options) {
-
-	    // Copy the options and set defaults (options might be different for each worker)
-	    var workerOptions = {};
-	    if(options) workerOptions = options;
-	    workerOptions.rate = options.rate || .2;
-	    workerOptions.iterations = options.iterations || 100000;
-	    workerOptions.error = options.error || .005;
-	    workerOptions.cost = options.cost || null;
-	    workerOptions.crossValidate = options.crossValidate || null;
-
-	    // Cost function might be different for each worker
-	    costFunction = "var cost = " + (options && options.cost || this.cost || Trainer.cost.MSE) + ";\n";
-	    var workerFunction = Network.getWorkerSharedFunctions();
-	    workerFunction = workerFunction.replace(/var cost = options && options\.cost \|\| this\.cost \|\| Trainer\.cost\.MSE;/g, costFunction);
-
-	    // Set what we do when training is finished
-	    workerFunction = workerFunction.replace('return results;',
-	                      'postMessage({action: "done", message: results, memoryBuffer: F}, [F.buffer]);');
-
-	    // Replace log with postmessage
-	    workerFunction = workerFunction.replace("console.log('iterations', iterations, 'error', error, 'rate', currentRate)",
-	              "postMessage({action: 'log', message: {\n" +
-	                  "iterations: iterations,\n" +
-	                  "error: error,\n" +
-	                  "rate: currentRate\n" +
-	                "}\n" +
-	              "})");
-
-	    // Replace schedule with postmessage
-	    workerFunction = workerFunction.replace("abort = this.schedule.do({ error: error, iterations: iterations, rate: currentRate })",
-	              "postMessage({action: 'schedule', message: {\n" +
-	                  "iterations: iterations,\n" +
-	                  "error: error,\n" +
-	                  "rate: currentRate\n" +
-	                "}\n" +
-	              "})");
-
-	    if (!this.optimized)
-	      this.optimize();
-
-	    var hardcode = "var inputs = " + this.optimized.data.inputs.length + ";\n";
-	    hardcode += "var outputs = " + this.optimized.data.outputs.length + ";\n";
-	    hardcode += "var F =  new Float64Array([" + this.optimized.memory.toString() + "]);\n";
-	    hardcode += "var activate = " + this.optimized.activate.toString() + ";\n";
-	    hardcode += "var propagate = " + this.optimized.propagate.toString() + ";\n";
-	    hardcode +=
-	        "onmessage = function(e) {\n" +
-	          "if (e.data.action == 'startTraining') {\n" +
-	            "train(" + JSON.stringify(set) + "," + JSON.stringify(workerOptions) + ");\n" +
-	          "}\n" +
-	        "}";
-
-	    var workerSourceCode = workerFunction + '\n' + hardcode;
-	    var blob = new Blob([workerSourceCode]);
-	    var blobURL = window.URL.createObjectURL(blob);
-
-	    return new Worker(blobURL);
-	  },
+	  }
 
 	  // returns a copy of the network
-	  clone: function() {
-	    return Network.fromJSON(this.toJSON());
+	  clone() {
+	    return this.constructor.fromJSON(this.toJSON());
 	  }
-	};
-
-	/**
-	 * Creates a static String to store the source code of the functions
-	 *  that are identical for all the workers (train, _trainSet, test)
-	 *
-	 * @return {String} Source code that can train a network inside a worker.
-	 * @static
-	 */
-	Network.getWorkerSharedFunctions = function() {
-	  // If we already computed the source code for the shared functions
-	  if(typeof Network._SHARED_WORKER_FUNCTIONS !== 'undefined')
-	    return Network._SHARED_WORKER_FUNCTIONS;
-
-	  // Otherwise compute and return the source code
-	  // We compute them by simply copying the source code of the train, _trainSet and test functions
-	  //  using the .toString() method
-
-	  // Load and name the train function
-	  var train_f = Trainer.prototype.train.toString();
-	  train_f = train_f.replace('function (set', 'function train(set') + '\n';
-
-	  // Load and name the _trainSet function
-	  var _trainSet_f = Trainer.prototype._trainSet.toString().replace(/this.network./g, '');
-	  _trainSet_f = _trainSet_f.replace('function (set', 'function _trainSet(set') + '\n';
-	  _trainSet_f = _trainSet_f.replace('this.crossValidate', 'crossValidate');
-	  _trainSet_f = _trainSet_f.replace('crossValidate = true', 'crossValidate = { }');
-
-	  // Load and name the test function
-	  var test_f = Trainer.prototype.test.toString().replace(/this.network./g, '');
-	  test_f = test_f.replace('function (set', 'function test(set') + '\n';
-
-	  return Network._SHARED_WORKER_FUNCTIONS = train_f + _trainSet_f + test_f;
-	};
+	}
 
 	// rebuild a network that has been stored in a json using the method toJSON()
-	Network.fromJSON = function(json) {
+	Network.fromJSON = function (json) {
 
-	  var neurons = [];
+	  const neurons = [];
 
-	  var layers = {
-	    input: new Layer(),
+	  const layers = {
+	    input: [],
 	    hidden: [],
-	    output: new Layer()
+	    output: []
 	  };
 
 	  for (var i in json.neurons) {
 	    var config = json.neurons[i];
 
-	    var neuron = new Neuron();
+	    const neuron = new Neuron();
 	    neuron.trace.elegibility = {};
 	    neuron.trace.extended = {};
 	    neuron.state = config.state;
 	    neuron.old = config.old;
 	    neuron.activation = config.activation;
 	    neuron.bias = config.bias;
-	    neuron.squash = config.squash in Neuron.squash ? Neuron.squash[config.squash] : Neuron.squash.LOGISTIC;
+	    if (Neuron.squash[config.squash] instanceof Function && Neuron.squash[config.squash].length === 1) {
+	      neuron.squash = Neuron.squash[config.squash];
+	    }
+
+	    if (!neuron.squash) {
+	      neuron.squash = Neuron.squash.LOGISTIC;
+	    }
+
 	    neurons.push(neuron);
 
 	    if (config.layer == 'input')
-	      layers.input.add(neuron);
+	      layers.input.push(neuron);
 	    else if (config.layer == 'output')
-	      layers.output.add(neuron);
+	      layers.output.push(neuron);
 	    else {
 	      if (typeof layers.hidden[config.layer] == 'undefined')
-	        layers.hidden[config.layer] = new Layer();
-	      layers.hidden[config.layer].add(neuron);
+	        layers.hidden[config.layer] = [];
+	      layers.hidden[config.layer].push(neuron);
 	    }
 	  }
 
 	  for (var i in json.connections) {
 	    var config = json.connections[i];
-	    var from = neurons[config.from];
-	    var to = neurons[config.to];
-	    var weight = config.weight;
-	    var gater = neurons[config.gater];
+	    const from = neurons[config.from];
+	    const to = neurons[config.to];
+	    const weight = config.weight;
+	    const gater = neurons[config.gater];
 
-	    var connection = from.project(to, weight);
+	    const connection = from.project(to, weight);
 	    if (gater)
 	      gater.gate(connection);
 	  }
 
-	  return new Network(layers);
+	  return new this({
+	    input: new Layer(layers.input),
+	    hidden: layers.hidden.map(layer => new Layer(layer)),
+	    output: new Layer(layers.output)
+	  });
 	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)(module)))
+	module.exports = Network;
+
 
 /***/ },
 /* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(module) {// export
-	if (module) module.exports = Trainer;
+	var Network = __webpack_require__(5);
+	var constants = __webpack_require__(7);
+	var WorkerNetworkProxyAPI = __webpack_require__(8);
+
+	const workerNetworkConstructorInternalKey = {};
+
+	const workerNetworkProxyKey = '_workerNetworkProxyAPI';
+	const getGetterName = key => `get${key[0].toUpperCase()}${key.slice(1)}`;
+	const getSetterName = key => `set${key[0].toUpperCase()}${key.slice(1)}`;
+
+	class WorkerProxyNetwork extends Network {
+	  constructor(key, workerNetworkProxyAPI) {
+	    if (key !== workerNetworkConstructorInternalKey)
+	      throw new Error(
+	        `cannot initiate ${this.name} directly as it is constructed in an async manner. ` +
+	        `Instead of that use ${this.name}.fromJSON() or ${this.name}.construct`);
+
+	    super();
+	    this[workerNetworkProxyKey] = workerNetworkProxyAPI;
+	  }
+	}
+
+	module.exports = WorkerProxyNetwork;
+
+	WorkerProxyNetwork.construct = function (proxy) { return new this(workerNetworkConstructorInternalKey, proxy) };
+
+	WorkerProxyNetwork.fromJSON = function (jsonAlikeObject, proxyAPI = new WorkerNetworkProxyAPI()) {
+	  return proxyAPI.callMethod(constants.FROM_JSON, [jsonAlikeObject])
+	    .then(() => this.construct(proxyAPI))
+	};
+
+
+	const prototypeKeys = Object.getOwnPropertyNames(Network.prototype);
+
+	const methodKeys = prototypeKeys.filter(key => (Network.prototype[key] instanceof Function));
+	const propertyKeys = prototypeKeys.filter(key => !(Network.prototype[key] instanceof Function));
+
+	const createDef = (key, value, length) => {
+	  Object.defineProperty(value, 'name', {value: key});
+	  if (length !== undefined)
+	    Object.defineProperty(value, 'length', {value: length});
+	  return {key, descriptor: {value}};
+	};
+
+	const definitions = [
+	  ...methodKeys
+	    .map(key =>
+	      createDef(key,
+	        function (...args) { return this[workerNetworkProxyKey].callMethod(key, args) }, Network.prototype[key].length)),
+	  ...propertyKeys
+	    .map(key => ({
+	      key,
+	      descriptor: {
+	        get() {
+	          throw new Error(`cannot get property ${this.constructor.name}#${key} directly as actual data reflected is stored in a worker. `
+	            + `To get it use method ${this.constructor.name}#${getGetterName(key)} with a signature () => Promise<value>`)
+	        },
+	        set() {
+	          throw new Error(`cannot set property ${this.constructor.name}#${key} directly as actual data reflected is stored in a worker. `
+	            + `To set it use method ${this.constructor.name}#${getSetterName(key)} with a signature (value) => Promise<>`)
+	        }
+	      }
+	    })),
+	  ...propertyKeys
+	    .map(key => createDef(getGetterName(key),
+	      function () { return this[workerNetworkProxyKey].callMethod(constants.GET, [key]) })),
+	  ...propertyKeys
+	    .map(key => createDef(getSetterName(key),
+	      function (value) { return this[workerNetworkProxyKey].callMethod(constants.SET, [key, value]) }))
+	];
+
+	for (const definition of definitions)
+	  Object.defineProperty(WorkerProxyNetwork.prototype, definition.key, definition.descriptor);
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	module.exports.GET = '%get';
+	module.exports.SET = '%set';
+	module.exports.FROM_JSON = '%fromJSON';
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var WorkerNetworkWorker = __webpack_require__(9);
+
+	module.exports = class WorkerNetworkProxyAPI {
+	  constructor() {
+	    var worker = this.worker = new WorkerNetworkWorker();
+	    this.callbacks = {};
+	    this.nextCallbackId = 1;
+
+	    worker.onmessage = ({data: {response: [error, data] = [], callbackId} = {}}) =>
+	      this.callbacks[callbackId](error, data);
+	  }
+
+	  subscribe(method, args, callback) {
+	    const callbackId = this.nextCallbackId++;
+	    this.callbacks[callbackId] = callback;
+	    this.worker.postMessage({method, args, callbackId});
+	    return callbackId;
+	  }
+
+	  unsubscribe(callbackId) {
+	    return delete this.callbacks[callbackId];
+	  }
+
+	  callMethod(method, args) {
+	    return new Promise((resolve, reject) => {
+	      const callbackId = this.subscribe(method, args, (err, data) => {
+	        this.unsubscribe(callbackId);
+	        err ? reject(err) : resolve(data);
+	      });
+	    })
+	  };
+	};
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	module.exports = function() {
+		return __webpack_require__(10)("/*!\n * The MIT License (MIT)\n * \n * Copyright (c) 2016 Juan Cazala - juancazala.com\n * \n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n * \n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n * \n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE\n * \n * \n * \n * ********************************************************************************************\n *                                   SYNAPTIC (v1.0.8)\n * ********************************************************************************************\n * \n * Synaptic is a javascript neural network library for node.js and the browser, its generalized\n * algorithm is architecture-free, so you can build and train basically any type of first order\n * or even second order neural network architectures.\n * \n * http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network\n * \n * The library includes a few built-in architectures like multilayer perceptrons, multilayer\n * long-short term memory networks (LSTM) or liquid state machines, and a trainer capable of\n * training any given network, and includes built-in training tasks/tests like solving an XOR,\n * passing a Distracted Sequence Recall test or an Embeded Reber Grammar test.\n * \n * The algorithm implemented by this library has been taken from Derek D. Monner's paper:\n * \n * \n * A generalized LSTM-like training algorithm for second-order recurrent neural networks\n * http://www.overcomplete.net/papers/nn2012.pdf\n * \n * There are references to the equations in that paper commented through the source code.\n * \n */\n/******/ (function(modules) { // webpackBootstrap\n/******/ \t// The module cache\n/******/ \tvar installedModules = {};\n\n/******/ \t// The require function\n/******/ \tfunction __webpack_require__(moduleId) {\n\n/******/ \t\t// Check if module is in cache\n/******/ \t\tif(installedModules[moduleId])\n/******/ \t\t\treturn installedModules[moduleId].exports;\n\n/******/ \t\t// Create a new module (and put it into the cache)\n/******/ \t\tvar module = installedModules[moduleId] = {\n/******/ \t\t\texports: {},\n/******/ \t\t\tid: moduleId,\n/******/ \t\t\tloaded: false\n/******/ \t\t};\n\n/******/ \t\t// Execute the module function\n/******/ \t\tmodules[moduleId].call(module.exports, module, module.exports, __webpack_require__);\n\n/******/ \t\t// Flag the module as loaded\n/******/ \t\tmodule.loaded = true;\n\n/******/ \t\t// Return the exports of the module\n/******/ \t\treturn module.exports;\n/******/ \t}\n\n\n/******/ \t// expose the modules object (__webpack_modules__)\n/******/ \t__webpack_require__.m = modules;\n\n/******/ \t// expose the module cache\n/******/ \t__webpack_require__.c = installedModules;\n\n/******/ \t// __webpack_public_path__\n/******/ \t__webpack_require__.p = \"\";\n\n/******/ \t// Load entry module and return exports\n/******/ \treturn __webpack_require__(0);\n/******/ })\n/************************************************************************/\n/******/ ([\n/* 0 */\n/***/ function(module, exports, __webpack_require__) {\n\n\tvar WorkerNetwork = __webpack_require__(1);\n\tvar constants = __webpack_require__(4);\n\n\tonmessage = function (e) {\n\t  const {method, args, callbackId} = e.data;\n\t  try {\n\t    var response = callMethod(method, args);\n\t    postMessage({response: [null, response], callbackId})\n\t  } catch (e) {\n\t    postMessage({response: [e.message], callbackId})\n\t  }\n\t};\n\n\tconst callMethod = (function() {\n\t  var instance;\n\n\t  return function callMethod(method, args) {\n\t    var result;\n\t    switch (method) {\n\t      case constants.GET:\n\t        result = instance[args[0]];\n\t        break;\n\t      case constants.SET:\n\t        instance[method][args[0]] = args[1];\n\t        break;\n\t      case constants.FROM_JSON:\n\t        instance = WorkerNetwork.fromJSON(args[0]);\n\t        break;\n\t      default:\n\t        result = instance[method](...args);\n\t        break;\n\t    }\n\n\n\t    return result;\n\t  }\n\t})();\n\n\n\n/***/ },\n/* 1 */\n/***/ function(module, exports, __webpack_require__) {\n\n\tconst Layer = __webpack_require__(2);\n\tconst Neuron = __webpack_require__(3);\n\n\t/*******************************************************************************************\n\t NETWORK\n\t *******************************************************************************************/\n\n\tclass Network {\n\t  constructor(layers) {\n\t    this.layers = layers;\n\t    this.optimized = null;\n\t  }\n\n\t  // feed-forward activation of all the layers to produce an ouput\n\t  activate(input) {\n\t    if (this.optimized === false) {\n\t      this.layers.input.activate(input);\n\t      for (let layer in this.layers.hidden)\n\t        this.layers.hidden[layer].activate();\n\t      return this.layers.output.activate();\n\t    }\n\t    else {\n\t      if (this.optimized == null)\n\t        this.optimize();\n\t      return this.optimized.activate(input);\n\t    }\n\t  }\n\n\t  // back-propagate the error thru the network\n\t  propagate(rate, target) {\n\n\t    if (this.optimized === false) {\n\t      this.layers.output.propagate(rate, target);\n\t      const reverse = [];\n\t      for (var layer in this.layers.hidden)\n\t        reverse.push(this.layers.hidden[layer]);\n\t      reverse.reverse();\n\t      for (var layer in reverse)\n\t        reverse[layer].propagate(rate);\n\t    }\n\t    else {\n\t      if (this.optimized == null)\n\t        this.optimize();\n\t      this.optimized.propagate(rate, target);\n\t    }\n\t  }\n\n\t  // project a connection to another unit (either a network or a layer)\n\t  project(unit, type, weights) {\n\n\t    if (this.optimized)\n\t      this.optimized.reset();\n\n\t    if (unit instanceof Network)\n\t      return this.layers.output.project(unit.layers.input, type, weights);\n\n\t    if (unit instanceof Layer)\n\t      return this.layers.output.project(unit, type, weights);\n\n\t    throw new Error(\"Invalid argument, you can only project connections to LAYERS and NETWORKS!\");\n\t  }\n\n\t  // let this network gate a connection\n\t  gate(connection, type) {\n\t    if (this.optimized)\n\t      this.optimized.reset();\n\t    this.layers.output.gate(connection, type);\n\t  }\n\n\t  // clear all elegibility traces and extended elegibility traces (the network forgets its context, but not what was trained)\n\t  clear() {\n\n\t    this.restore();\n\n\t    const inputLayer = this.layers.input, outputLayer = this.layers.output;\n\n\t    inputLayer.clear();\n\t    for (let layer in this.layers.hidden) {\n\t      const hiddenLayer = this.layers.hidden[layer];\n\t      hiddenLayer.clear();\n\t    }\n\t    outputLayer.clear();\n\n\t    if (this.optimized)\n\t      this.optimized.reset();\n\t  }\n\n\t  // reset all weights and clear all traces (ends up like a new network)\n\t  reset() {\n\n\t    this.restore();\n\n\t    const inputLayer = this.layers.input, outputLayer = this.layers.output;\n\n\t    inputLayer.reset();\n\t    for (let layer in this.layers.hidden) {\n\t      const hiddenLayer = this.layers.hidden[layer];\n\t      hiddenLayer.reset();\n\t    }\n\t    outputLayer.reset();\n\n\t    if (this.optimized)\n\t      this.optimized.reset();\n\t  }\n\n\t  // hardcodes the behaviour of the whole network into a single optimized function\n\t  optimize() {\n\n\t    const that = this;\n\t    let optimized = {};\n\t    const neurons = this.neurons();\n\n\t    for (var i in neurons) {\n\t      let neuron = neurons[i].neuron;\n\t      const layer = neurons[i].layer;\n\t      while (neuron.neuron)\n\t        neuron = neuron.neuron;\n\t      optimized = neuron.optimize(optimized, layer);\n\t    }\n\t    for (var i in optimized.propagation_sentences)\n\t      optimized.propagation_sentences[i].reverse();\n\t    optimized.propagation_sentences.reverse();\n\n\t    let hardcode = \"\";\n\t    hardcode += `var F = Float64Array ? new Float64Array(${optimized.memory}) : []; `;\n\t    for (var i in optimized.variables)\n\t      hardcode += `F[${optimized.variables[i].id}] = ${optimized.variables[\n\t        i].value || 0}; `;\n\t    hardcode += \"var activate = function(input){\\n\";\n\t    for (var i in optimized.inputs)\n\t      hardcode += `F[${optimized.inputs[i]}] = input[${i}]; `;\n\t    for (var currentLayer in optimized.activation_sentences) {\n\t      if (optimized.activation_sentences[currentLayer].length > 0) {\n\t        for (var currentNeuron in optimized.activation_sentences[currentLayer]) {\n\t          hardcode += optimized.activation_sentences[currentLayer][currentNeuron].join(\" \");\n\t          hardcode += optimized.trace_sentences[currentLayer][currentNeuron].join(\" \");\n\t        }\n\t      }\n\t    }\n\t    hardcode += \" var output = []; \"\n\t    for (var i in optimized.outputs)\n\t      hardcode += `output[${i}] = F[${optimized.outputs[i]}]; `;\n\t    hardcode += \"return output; }; \"\n\t    hardcode += \"var propagate = function(rate, target){\\n\";\n\t    hardcode += `F[${optimized.variables.rate.id}] = rate; `;\n\t    for (var i in optimized.targets)\n\t      hardcode += `F[${optimized.targets[i]}] = target[${i}]; `;\n\t    for (var currentLayer in optimized.propagation_sentences)\n\t      for (var currentNeuron in optimized.propagation_sentences[currentLayer])\n\t        hardcode += `${optimized.propagation_sentences[currentLayer][currentNeuron].join(\" \")} `;\n\t    hardcode += \" };\\n\";\n\t    hardcode +=\n\t      \"var ownership = function(memoryBuffer){\\nF = memoryBuffer;\\nthis.memory = F;\\n};\\n\";\n\t    hardcode +=\n\t      \"return {\\nmemory: F,\\nactivate: activate,\\npropagate: propagate,\\nownership: ownership\\n};\";\n\t    hardcode = hardcode.split(\";\").join(\";\\n\");\n\n\t    const constructor = new Function(hardcode);\n\n\t    const network = constructor();\n\t    network.data = {\n\t      variables: optimized.variables,\n\t      activate: optimized.activation_sentences,\n\t      propagate: optimized.propagation_sentences,\n\t      trace: optimized.trace_sentences,\n\t      inputs: optimized.inputs,\n\t      outputs: optimized.outputs,\n\t      check_activation: this.activate,\n\t      check_propagation: this.propagate\n\t    }\n\n\t    network.reset = () => {\n\t      if (that.optimized) {\n\t        that.optimized = null;\n\t        that.activate = network.data.check_activation;\n\t        that.propagate = network.data.check_propagation;\n\t      }\n\t    }\n\n\t    this.optimized = network;\n\t    this.activate = network.activate;\n\t    this.propagate = network.propagate;\n\t  }\n\n\t  // restores all the values from the optimized network the their respective objects in order to manipulate the network\n\t  restore() {\n\t    if (!this.optimized)\n\t      return;\n\n\t    const optimized = this.optimized;\n\n\t    const getValue = function () {\n\t      const args = Array.prototype.slice.call(arguments);\n\n\t      const unit = args.shift();\n\t      const prop = args.pop();\n\n\t      let id = `${prop}_`;\n\t      for (let property in args)\n\t        id += `${args[property]}_`;\n\t      id += unit.ID;\n\n\t      const memory = optimized.memory;\n\t      const variables = optimized.data.variables;\n\n\t      if (id in variables)\n\t        return memory[variables[id].id];\n\t      return 0;\n\t    };\n\n\t    const list = this.neurons();\n\n\t    // link id's to positions in the array\n\t    const ids = {};\n\t    for (var i in list) {\n\t      var neuron = list[i].neuron;\n\t      while (neuron.neuron)\n\t        neuron = neuron.neuron;\n\n\t      neuron.state = getValue(neuron, 'state');\n\t      neuron.old = getValue(neuron, 'old');\n\t      neuron.activation = getValue(neuron, 'activation');\n\t      neuron.bias = getValue(neuron, 'bias');\n\n\t      for (var input in neuron.trace.elegibility)\n\t        neuron.trace.elegibility[input] = getValue(neuron, 'trace',\n\t          'elegibility', input);\n\n\t      for (let gated in neuron.trace.extended)\n\t        for (var input in neuron.trace.extended[gated])\n\t          neuron.trace.extended[gated][input] = getValue(neuron, 'trace',\n\t            'extended', gated, input);\n\t    }\n\n\t    // get connections\n\t    for (var i in list) {\n\t      var neuron = list[i].neuron;\n\t      while (neuron.neuron)\n\t        neuron = neuron.neuron;\n\n\t      for (let j in neuron.connections.projected) {\n\t        const connection = neuron.connections.projected[j];\n\t        connection.weight = getValue(connection, 'weight');\n\t        connection.gain = getValue(connection, 'gain');\n\t      }\n\t    }\n\t  }\n\n\t  // returns all the neurons in the network\n\t  neurons() {\n\n\t    const neurons = [];\n\n\t    const inputLayer = this.layers.input.neurons(), outputLayer = this.layers.output.neurons();\n\n\t    for (var neuron in inputLayer)\n\t      neurons.push({\n\t        neuron: inputLayer[neuron],\n\t        layer: 'input'\n\t      });\n\n\t    for (let layer in this.layers.hidden) {\n\t      const hiddenLayer = this.layers.hidden[layer].neurons();\n\t      for (var neuron in hiddenLayer)\n\t        neurons.push({\n\t          neuron: hiddenLayer[neuron],\n\t          layer\n\t        });\n\t    }\n\t    for (var neuron in outputLayer)\n\t      neurons.push({\n\t        neuron: outputLayer[neuron],\n\t        layer: 'output'\n\t      });\n\n\t    return neurons;\n\t  }\n\n\t  // returns number of inputs of the network\n\t  inputs() {\n\t    return this.layers.input.size;\n\t  }\n\n\t  // returns number of outputs of hte network\n\t  outputs() {\n\t    return this.layers.output.size;\n\t  }\n\n\t  // sets the layers of the network\n\t  set(layers) {\n\t    console.warn('This method is deprecated! Use super(layers) in constructor instead');\n\t    this.layers = layers;\n\t    if (this.optimized)\n\t      this.optimized.reset();\n\t  }\n\n\t  setOptimize(bool) {\n\t    this.restore();\n\t    if (this.optimized)\n\t      this.optimized.reset();\n\t    this.optimized = bool ? null : false;\n\t  }\n\n\t  // returns a json that represents all the neurons and connections of the network\n\t  toJSON(ignoreTraces) {\n\n\t    this.restore();\n\n\t    const list = this.neurons();\n\t    const neurons = [];\n\t    const connections = [];\n\n\t    // link id's to positions in the array\n\t    const ids = {};\n\t    for (var i in list) {\n\t      var neuron = list[i].neuron;\n\t      while (neuron.neuron)\n\t        neuron = neuron.neuron;\n\t      ids[neuron.ID] = i;\n\n\t      const copy = {\n\t        trace: {\n\t          elegibility: {},\n\t          extended: {}\n\t        },\n\t        state: neuron.state,\n\t        old: neuron.old,\n\t        activation: neuron.activation,\n\t        bias: neuron.bias,\n\t        layer: list[i].layer\n\t      };\n\n\t      copy.squash = neuron.squash.squashType || neuron.squash.toString();\n\n\t      neurons.push(copy);\n\t    }\n\n\t    // get connections\n\t    for (var i in list) {\n\t      var neuron = list[i].neuron;\n\t      while (neuron.neuron)\n\t        neuron = neuron.neuron;\n\n\t      for (let j in neuron.connections.projected) {\n\t        const connection = neuron.connections.projected[j];\n\t        connections.push({\n\t          from: ids[connection.from.ID],\n\t          to: ids[connection.to.ID],\n\t          weight: connection.weight,\n\t          gater: connection.gater ? ids[connection.gater.ID] : null,\n\t        });\n\t      }\n\t      if (neuron.selfconnected())\n\t        connections.push({\n\t          from: ids[neuron.ID],\n\t          to: ids[neuron.ID],\n\t          weight: neuron.selfconnection.weight,\n\t          gater: neuron.selfconnection.gater ? ids[neuron.selfconnection.gater.ID] : null,\n\t        });\n\t    }\n\n\t    return {\n\t      neurons,\n\t      connections\n\t    }\n\t  }\n\n\t  // export the topology into dot language which can be visualized as graphs using dot\n\t  /* example: ... console.log(net.toDotLang());\n\t   $ node example.js > example.dot\n\t   $ dot example.dot -Tpng > out.png\n\t   */\n\t  toDot(edgeConnection) {\n\t    if (!typeof edgeConnection)\n\t      edgeConnection = false;\n\t    let code = \"digraph nn {\\n    rankdir = BT\\n\";\n\t    const layers = [this.layers.input].concat(this.layers.hidden, this.layers.output);\n\t    for (let layer in layers) {\n\t      for (let to in layers[layer].connectedTo) { // projections\n\t        const connection = layers[layer].connectedTo[to];\n\t        const layerTo = connection.to;\n\t        const size = connection.size;\n\t        const layerID = layers.indexOf(layers[layer]);\n\t        const layerToID = layers.indexOf(layerTo);\n\t        /* http://stackoverflow.com/questions/26845540/connect-edges-with-graph-dot\n\t         * DOT does not support edge-to-edge connections\n\t         * This workaround produces somewhat weird graphs ...\n\t         */\n\t        if (edgeConnection) {\n\t          if (connection.gatedfrom.length) {\n\t            var fakeNode = `fake${layerID}_${layerToID}`;\n\t            code += `    ${fakeNode} [label = \"\", shape = point, width = 0.01, height = 0.01]\\n`;\n\t            code += `    ${layerID} -> ${fakeNode} [label = ${size}, arrowhead = none]\\n`;\n\t            code += `    ${fakeNode} -> ${layerToID}\\n`;\n\t          } else\n\t            code += `    ${layerID} -> ${layerToID} [label = ${size}]\\n`;\n\t          for (var from in connection.gatedfrom) { // gatings\n\t            var layerfrom = connection.gatedfrom[from].layer;\n\t            var layerfromID = layers.indexOf(layerfrom);\n\t            code += `    ${layerfromID} -> ${fakeNode} [color = blue]\\n`;\n\t          }\n\t        } else {\n\t          code += `    ${layerID} -> ${layerToID} [label = ${size}]\\n`;\n\t          for (var from in connection.gatedfrom) { // gatings\n\t            var layerfrom = connection.gatedfrom[from].layer;\n\t            var layerfromID = layers.indexOf(layerfrom);\n\t            code += `    ${layerfromID} -> ${layerToID} [color = blue]\\n`;\n\t          }\n\t        }\n\t      }\n\t    }\n\t    code += \"}\\n\";\n\t    return {\n\t      code,\n\t      link: `https://chart.googleapis.com/chart?chl=${escape(code.replace(\"/ /g\", \"+\"))}&cht=gv`\n\t    }\n\t  }\n\n\t  // returns a function that works as the activation of the network and can be used without depending on the library\n\t  standalone() {\n\t    if (!this.optimized)\n\t      this.optimize();\n\n\t    const data = this.optimized.data;\n\n\t    // build activation function\n\t    let activation = \"function (input) {\\n\";\n\n\t    // build inputs\n\t    for (var i in data.inputs)\n\t      activation += `F[${data.inputs[i]}] = input[${i}];\\n`;\n\n\t    // build network activation\n\t    for (let neuron in data.activate) { // shouldn't this be layer?\n\t      for (let sentence in data.activate[neuron])\n\t        activation += `${data.activate[neuron][sentence].join('')}\\n`;\n\t    }\n\n\t    // build outputs\n\t    activation += \"var output = [];\\n\";\n\t    for (var i in data.outputs)\n\t      activation += `output[${i}] = F[${data.outputs[i]}];\\n`;\n\t    activation += \"return output;\\n}\";\n\n\t    // reference all the positions in memory\n\t    const memory = activation.match(/F\\[(\\d+)\\]/g);\n\t    let dimension = 0;\n\t    const ids = {};\n\t    for (let address in memory) {\n\t      const tmp = memory[address].match(/\\d+/)[0];\n\t      if (!(tmp in ids)) {\n\t        ids[tmp] = dimension++;\n\t      }\n\t    }\n\t    let hardcode = \"F = {\\n\";\n\t    for (var i in ids)\n\t      hardcode += `${ids[i]}: ${this.optimized.memory[i]},\\n`;\n\t    hardcode = `${hardcode.substring(0, hardcode.length - 2)}\\n};\\n`;\n\t    hardcode = `var run = ${activation.replace(/F\\[(\\d+)]/g, index => 'F[' + ids[index.match(/\\d+/)[0]] + ']').replace(\"{\\n\", \"{\\n\" + hardcode + \"\")};\\n`;\n\t    hardcode += \"return run\";\n\n\t    // return standalone function\n\t    return new Function(hardcode)();\n\t  }\n\n\t  // returns a copy of the network\n\t  clone() {\n\t    return this.constructor.fromJSON(this.toJSON());\n\t  }\n\t}\n\n\t// rebuild a network that has been stored in a json using the method toJSON()\n\tNetwork.fromJSON = function (json) {\n\n\t  const neurons = [];\n\n\t  const layers = {\n\t    input: [],\n\t    hidden: [],\n\t    output: []\n\t  };\n\n\t  for (var i in json.neurons) {\n\t    var config = json.neurons[i];\n\n\t    const neuron = new Neuron();\n\t    neuron.trace.elegibility = {};\n\t    neuron.trace.extended = {};\n\t    neuron.state = config.state;\n\t    neuron.old = config.old;\n\t    neuron.activation = config.activation;\n\t    neuron.bias = config.bias;\n\t    if (Neuron.squash[config.squash] instanceof Function && Neuron.squash[config.squash].length === 1) {\n\t      neuron.squash = Neuron.squash[config.squash];\n\t    }\n\n\t    if (!neuron.squash) {\n\t      neuron.squash = Neuron.squash.LOGISTIC;\n\t    }\n\n\t    neurons.push(neuron);\n\n\t    if (config.layer == 'input')\n\t      layers.input.push(neuron);\n\t    else if (config.layer == 'output')\n\t      layers.output.push(neuron);\n\t    else {\n\t      if (typeof layers.hidden[config.layer] == 'undefined')\n\t        layers.hidden[config.layer] = [];\n\t      layers.hidden[config.layer].push(neuron);\n\t    }\n\t  }\n\n\t  for (var i in json.connections) {\n\t    var config = json.connections[i];\n\t    const from = neurons[config.from];\n\t    const to = neurons[config.to];\n\t    const weight = config.weight;\n\t    const gater = neurons[config.gater];\n\n\t    const connection = from.project(to, weight);\n\t    if (gater)\n\t      gater.gate(connection);\n\t  }\n\n\t  return new this({\n\t    input: new Layer(layers.input),\n\t    hidden: layers.hidden.map(layer => new Layer(layer)),\n\t    output: new Layer(layers.output)\n\t  });\n\t};\n\n\tmodule.exports = Network;\n\n\n/***/ },\n/* 2 */\n/***/ function(module, exports, __webpack_require__) {\n\n\tconst Neuron = __webpack_require__(3);\n\n\t/*******************************************************************************************\n\t LAYER\n\t *******************************************************************************************/\n\n\tclass Layer {\n\t  constructor(size, label) {\n\t    this.label = label || null;\n\t    this.connectedTo = [];\n\n\t    if (Array.isArray(size)) {\n\t      const neurons = size;\n\t      this.size = neurons.length;\n\t      this.list = neurons.slice(); // cloning the array\n\t    } else {\n\t      this.size = size | 0;\n\t      this.list = [];\n\n\t      while (size--) {\n\t        const neuron = new Neuron();\n\t        this.list.push(neuron);\n\t      }\n\t    }\n\t  }\n\n\t  // activates all the neurons in the layer\n\t  activate(input) {\n\n\t    const activations = [];\n\n\t    if (typeof input != 'undefined') {\n\t      if (input.length != this.size)\n\t        throw new Error(\"INPUT size and LAYER size must be the same to activate!\");\n\n\t      for (var id in this.list) {\n\t        var neuron = this.list[id];\n\t        var activation = neuron.activate(input[id]);\n\t        activations.push(activation);\n\t      }\n\t    } else {\n\t      for (var id in this.list) {\n\t        var neuron = this.list[id];\n\t        var activation = neuron.activate();\n\t        activations.push(activation);\n\t      }\n\t    }\n\t    return activations;\n\t  }\n\n\t  // propagates the error on all the neurons of the layer\n\t  propagate(rate, target) {\n\n\t    if (typeof target != 'undefined') {\n\t      if (target.length != this.size)\n\t        throw new Error(\"TARGET size and LAYER size must be the same to propagate!\");\n\n\t      for (var id = this.list.length - 1; id >= 0; id--) {\n\t        var neuron = this.list[id];\n\t        neuron.propagate(rate, target[id]);\n\t      }\n\t    } else {\n\t      for (var id = this.list.length - 1; id >= 0; id--) {\n\t        var neuron = this.list[id];\n\t        neuron.propagate(rate);\n\t      }\n\t    }\n\t  }\n\n\t  // projects a connection from this layer to another one\n\t  project(layer, type, weights) {\n\t    if (layer && layer.layers && layer.layers.input)\n\t      return this.project(layer.layers.input, type, weights);\n\n\t    if (layer instanceof Layer) {\n\t      if (!this.connected(layer))\n\t        return new Layer.connection(this, layer, type, weights);\n\t    } else {\n\t      throw new Error(\"Invalid argument, you can only project connections to LAYERS and NETWORKS!\");\n\t    }\n\t  }\n\n\t  // gates a connection betwenn two layers\n\t  gate(connection, type) {\n\n\t    if (type == Layer.gateType.INPUT) {\n\t      if (connection.to.size != this.size)\n\t        throw new Error(\"GATER layer and CONNECTION.TO layer must be the same size in order to gate!\");\n\n\t      for (var id in connection.to.list) {\n\t        var neuron = connection.to.list[id];\n\t        var gater = this.list[id];\n\t        for (let input in neuron.connections.inputs) {\n\t          var gated = neuron.connections.inputs[input];\n\t          if (gated.ID in connection.connections)\n\t            gater.gate(gated);\n\t        }\n\t      }\n\t    } else if (type == Layer.gateType.OUTPUT) {\n\t      if (connection.from.size != this.size)\n\t        throw new Error(\"GATER layer and CONNECTION.FROM layer must be the same size in order to gate!\");\n\n\t      for (var id in connection.from.list) {\n\t        var neuron = connection.from.list[id];\n\t        var gater = this.list[id];\n\t        for (let projected in neuron.connections.projected) {\n\t          var gated = neuron.connections.projected[projected];\n\t          if (gated.ID in connection.connections)\n\t            gater.gate(gated);\n\t        }\n\t      }\n\t    } else if (type == Layer.gateType.ONE_TO_ONE) {\n\t      if (connection.size != this.size)\n\t        throw new Error(\"The number of GATER UNITS must be the same as the number of CONNECTIONS to gate!\");\n\n\t      for (var id in connection.list) {\n\t        var gater = this.list[id];\n\t        var gated = connection.list[id];\n\t        gater.gate(gated);\n\t      }\n\t    }\n\t    connection.gatedfrom.push({layer: this, type});\n\t  }\n\n\t  // true or false whether the whole layer is self-connected or not\n\t  selfconnected() {\n\n\t    for (let id in this.list) {\n\t      const neuron = this.list[id];\n\t      if (!neuron.selfconnected())\n\t        return false;\n\t    }\n\t    return true;\n\t  }\n\n\t  // true of false whether the layer is connected to another layer (parameter) or not\n\t  connected(layer) {\n\t    // Check if ALL to ALL connection\n\t    let connections = 0;\n\t    for (let here in this.list) {\n\t      for (let there in layer.list) {\n\t        var from = this.list[here];\n\t        var to = layer.list[there];\n\t        var connected = from.connected(to);\n\t        if (connected.type == 'projected')\n\t          connections++;\n\t      }\n\t    }\n\t    if (connections == this.size * layer.size)\n\t      return Layer.connectionType.ALL_TO_ALL;\n\n\t    // Check if ONE to ONE connection\n\t    connections = 0;\n\t    for (let neuron in this.list) {\n\t      var from = this.list[neuron];\n\t      var to = layer.list[neuron];\n\t      var connected = from.connected(to);\n\t      if (connected.type == 'projected')\n\t        connections++;\n\t    }\n\t    if (connections == this.size)\n\t      return Layer.connectionType.ONE_TO_ONE;\n\t  }\n\n\t  // clears all the neuorns in the layer\n\t  clear() {\n\t    for (let id in this.list) {\n\t      const neuron = this.list[id];\n\t      neuron.clear();\n\t    }\n\t  }\n\n\t  // resets all the neurons in the layer\n\t  reset() {\n\t    for (let id in this.list) {\n\t      const neuron = this.list[id];\n\t      neuron.reset();\n\t    }\n\t  }\n\n\t  // returns all the neurons in the layer (array)\n\t  neurons() {\n\t    return this.list;\n\t  }\n\n\n\t  set(options = {}) {\n\t    for (let i in this.list) {\n\t      const neuron = this.list[i];\n\t      if (options.label)\n\t        neuron.label = `${options.label}_${neuron.ID}`;\n\t      if (options.squash)\n\t        neuron.squash = options.squash;\n\t      if (options.bias)\n\t        neuron.bias = options.bias;\n\t    }\n\t    return this;\n\t  }\n\t}\n\n\t// represents a connection from one layer to another, and keeps track of its weight and gain\n\tLayer.connection = class LayerConnection {\n\t  constructor(fromLayer, toLayer, type, weights) {\n\t    this.ID = Layer.connection.uid();\n\t    this.from = fromLayer;\n\t    this.to = toLayer;\n\t    this.selfconnection = toLayer == fromLayer;\n\t    this.type = type;\n\t    this.connections = {};\n\t    this.list = [];\n\t    this.size = 0;\n\t    this.gatedfrom = [];\n\n\t    if (typeof this.type == 'undefined') {\n\t      if (fromLayer == toLayer)\n\t        this.type = Layer.connectionType.ONE_TO_ONE;\n\t      else\n\t        this.type = Layer.connectionType.ALL_TO_ALL;\n\t    }\n\n\t    if (this.type == Layer.connectionType.ALL_TO_ALL ||\n\t      this.type == Layer.connectionType.ALL_TO_ELSE) {\n\t      for (let here in this.from.list) {\n\t        for (let there in this.to.list) {\n\t          var from = this.from.list[here];\n\t          var to = this.to.list[there];\n\t          if (this.type == Layer.connectionType.ALL_TO_ELSE && from == to)\n\t            continue;\n\t          var connection = from.project(to, weights);\n\n\t          this.connections[connection.ID] = connection;\n\t          this.size = this.list.push(connection);\n\t        }\n\t      }\n\t    } else if (this.type == Layer.connectionType.ONE_TO_ONE) {\n\n\t      for (let neuron in this.from.list) {\n\t        var from = this.from.list[neuron];\n\t        var to = this.to.list[neuron];\n\t        var connection = from.project(to, weights);\n\n\t        this.connections[connection.ID] = connection;\n\t        this.size = this.list.push(connection);\n\t      }\n\t    }\n\n\t    fromLayer.connectedTo.push(this);\n\t  }\n\t}\n\n\t// types of connections\n\tLayer.connectionType = {};\n\tLayer.connectionType.ALL_TO_ALL = \"ALL TO ALL\";\n\tLayer.connectionType.ONE_TO_ONE = \"ONE TO ONE\";\n\tLayer.connectionType.ALL_TO_ELSE = \"ALL TO ELSE\";\n\n\t// types of gates\n\tLayer.gateType = {};\n\tLayer.gateType.INPUT = \"INPUT\";\n\tLayer.gateType.OUTPUT = \"OUTPUT\";\n\tLayer.gateType.ONE_TO_ONE = \"ONE TO ONE\";\n\n\t((() => {\n\t  let connections = 0;\n\t  Layer.connection.uid = () => connections++\n\t}))();\n\n\tmodule.exports = Layer;\n\n/***/ },\n/* 3 */\n/***/ function(module, exports) {\n\n\t/******************************************************************************************\n\t NEURON\n\t *******************************************************************************************/\n\n\tclass Neuron {\n\t  constructor() {\n\t    this.ID = Neuron.uid();\n\t    this.label = null;\n\t    this.connections = {\n\t      inputs: {},\n\t      projected: {},\n\t      gated: {}\n\t    };\n\t    this.error = {\n\t      responsibility: 0,\n\t      projected: 0,\n\t      gated: 0\n\t    };\n\t    this.trace = {\n\t      elegibility: {},\n\t      extended: {},\n\t      influences: {}\n\t    };\n\t    this.state = 0;\n\t    this.old = 0;\n\t    this.activation = 0;\n\t    this.selfconnection = new Neuron.connection(this, this, 0); // weight = 0 -> not connected\n\t    this.squash = Neuron.squash.LOGISTIC;\n\t    this.neighboors = {};\n\t    this.bias = Math.random() * .2 - .1;\n\t  }\n\n\t  // activate the neuron\n\t  activate(input) {\n\t    // activation from enviroment (for input neurons)\n\t    if (typeof input != 'undefined') {\n\t      this.activation = input;\n\t      this.derivative = 0;\n\t      this.bias = 0;\n\t      return this.activation;\n\t    }\n\n\t    // old state\n\t    this.old = this.state;\n\n\t    // eq. 15\n\t    this.state = this.selfconnection.gain * this.selfconnection.weight *\n\t      this.state + this.bias;\n\n\t    for (var i in this.connections.inputs) {\n\t      var input = this.connections.inputs[i];\n\t      this.state += input.from.activation * input.weight * input.gain;\n\t    }\n\n\t    // eq. 16\n\t    this.activation = this.squash(this.state);\n\n\t    // f'(s)\n\t    this.derivative = this.squash(this.state, true);\n\n\t    // update traces\n\t    const influences = [];\n\t    for (var id in this.trace.extended) {\n\t      // extended elegibility trace\n\t      var neuron = this.neighboors[id];\n\n\t      // if gated neuron's selfconnection is gated by this unit, the influence keeps track of the neuron's old state\n\t      var influence = neuron.selfconnection.gater == this ? neuron.old : 0;\n\n\t      // index runs over all the incoming connections to the gated neuron that are gated by this unit\n\t      for (let incoming in this.trace.influences[neuron.ID]) { // captures the effect that has an input connection to this unit, on a neuron that is gated by this unit\n\t        influence += this.trace.influences[neuron.ID][incoming].weight *\n\t          this.trace.influences[neuron.ID][incoming].from.activation;\n\t      }\n\t      influences[neuron.ID] = influence;\n\t    }\n\n\t    for (var i in this.connections.inputs) {\n\t      var input = this.connections.inputs[i];\n\n\t      // elegibility trace - Eq. 17\n\t      this.trace.elegibility[input.ID] = this.selfconnection.gain * this.selfconnection\n\t          .weight * this.trace.elegibility[input.ID] + input.gain * input.from\n\t          .activation;\n\n\t      for (var id in this.trace.extended) {\n\t        // extended elegibility trace\n\t        const xtrace = this.trace.extended[id];\n\t        var neuron = this.neighboors[id];\n\t        var influence = influences[neuron.ID];\n\n\t        // eq. 18\n\t        xtrace[input.ID] = neuron.selfconnection.gain * neuron.selfconnection\n\t            .weight * xtrace[input.ID] + this.derivative * this.trace.elegibility[\n\t            input.ID] * influence;\n\t      }\n\t    }\n\n\t    //  update gated connection's gains\n\t    for (let connection in this.connections.gated) {\n\t      this.connections.gated[connection].gain = this.activation;\n\t    }\n\n\t    return this.activation;\n\t  }\n\n\t  // back-propagate the error\n\t  propagate(rate, target) {\n\t    // error accumulator\n\t    let error = 0;\n\n\t    // whether or not this neuron is in the output layer\n\t    const isOutput = typeof target != 'undefined';\n\n\t    // output neurons get their error from the enviroment\n\t    if (isOutput)\n\t      this.error.responsibility = this.error.projected = target - this.activation; // Eq. 10\n\n\t    else // the rest of the neuron compute their error responsibilities by backpropagation\n\t    {\n\t      // error responsibilities from all the connections projected from this neuron\n\t      for (var id in this.connections.projected) {\n\t        const connection = this.connections.projected[id];\n\t        var neuron = connection.to;\n\t        // Eq. 21\n\t        error += neuron.error.responsibility * connection.gain * connection.weight;\n\t      }\n\n\t      // projected error responsibility\n\t      this.error.projected = this.derivative * error;\n\n\t      error = 0;\n\t      // error responsibilities from all the connections gated by this neuron\n\t      for (var id in this.trace.extended) {\n\t        var neuron = this.neighboors[id]; // gated neuron\n\t        let influence = neuron.selfconnection.gater == this ? neuron.old : 0; // if gated neuron's selfconnection is gated by this neuron\n\n\t        // index runs over all the connections to the gated neuron that are gated by this neuron\n\t        for (var input in this.trace.influences[id]) { // captures the effect that the input connection of this neuron have, on a neuron which its input/s is/are gated by this neuron\n\t          influence += this.trace.influences[id][input].weight * this.trace.influences[\n\t              neuron.ID][input].from.activation;\n\t        }\n\t        // eq. 22\n\t        error += neuron.error.responsibility * influence;\n\t      }\n\n\t      // gated error responsibility\n\t      this.error.gated = this.derivative * error;\n\n\t      // error responsibility - Eq. 23\n\t      this.error.responsibility = this.error.projected + this.error.gated;\n\t    }\n\n\t    // learning rate\n\t    rate = rate || .1;\n\n\t    // adjust all the neuron's incoming connections\n\t    for (var id in this.connections.inputs) {\n\t      var input = this.connections.inputs[id];\n\n\t      // Eq. 24\n\t      let gradient = this.error.projected * this.trace.elegibility[input.ID];\n\t      for (var id in this.trace.extended) {\n\t        var neuron = this.neighboors[id];\n\t        gradient += neuron.error.responsibility * this.trace.extended[\n\t            neuron.ID][input.ID];\n\t      }\n\t      input.weight += rate * gradient; // adjust weights - aka learn\n\t    }\n\n\t    // adjust bias\n\t    this.bias += rate * this.error.responsibility;\n\t  }\n\n\t  project(neuron, weight) {\n\t    // self-connection\n\t    if (neuron == this) {\n\t      this.selfconnection.weight = 1;\n\t      return this.selfconnection;\n\t    }\n\n\t    // check if connection already exists\n\t    const connected = this.connected(neuron);\n\t    if (connected && connected.type == \"projected\") {\n\t      // update connection\n\t      if (typeof weight != 'undefined')\n\t        connected.connection.weight = weight;\n\t      // return existing connection\n\t      return connected.connection;\n\t    } else {\n\t      // create a new connection\n\t      var connection = new Neuron.connection(this, neuron, weight);\n\t    }\n\n\t    // reference all the connections and traces\n\t    this.connections.projected[connection.ID] = connection;\n\t    this.neighboors[neuron.ID] = neuron;\n\t    neuron.connections.inputs[connection.ID] = connection;\n\t    neuron.trace.elegibility[connection.ID] = 0;\n\n\t    for (let id in neuron.trace.extended) {\n\t      const trace = neuron.trace.extended[id];\n\t      trace[connection.ID] = 0;\n\t    }\n\n\t    return connection;\n\t  }\n\n\t  gate(connection) {\n\t    // add connection to gated list\n\t    this.connections.gated[connection.ID] = connection;\n\n\t    const neuron = connection.to;\n\t    if (!(neuron.ID in this.trace.extended)) {\n\t      // extended trace\n\t      this.neighboors[neuron.ID] = neuron;\n\t      const xtrace = this.trace.extended[neuron.ID] = {};\n\t      for (let id in this.connections.inputs) {\n\t        const input = this.connections.inputs[id];\n\t        xtrace[input.ID] = 0;\n\t      }\n\t    }\n\n\t    // keep track\n\t    if (neuron.ID in this.trace.influences)\n\t      this.trace.influences[neuron.ID].push(connection);\n\t    else\n\t      this.trace.influences[neuron.ID] = [connection];\n\n\t    // set gater\n\t    connection.gater = this;\n\t  }\n\n\t  // returns true or false whether the neuron is self-connected or not\n\t  selfconnected() {\n\t    return this.selfconnection.weight !== 0;\n\t  }\n\n\t  // returns true or false whether the neuron is connected to another neuron (parameter)\n\t  connected(neuron) {\n\t    const result = {\n\t      type: null,\n\t      connection: false\n\t    };\n\n\t    if (this == neuron) {\n\t      if (this.selfconnected()) {\n\t        result.type = 'selfconnection';\n\t        result.connection = this.selfconnection;\n\t        return result;\n\t      } else\n\t        return false;\n\t    }\n\n\t    for (let type in this.connections) {\n\t      for (var connection in this.connections[type]) {\n\t        var connection = this.connections[type][connection];\n\t        if (connection.to == neuron) {\n\t          result.type = type;\n\t          result.connection = connection;\n\t          return result;\n\t        } else if (connection.from == neuron) {\n\t          result.type = type;\n\t          result.connection = connection;\n\t          return result;\n\t        }\n\t      }\n\t    }\n\n\t    return false;\n\t  }\n\n\t  // clears all the traces (the neuron forgets it's context, but the connections remain intact)\n\t  clear() {\n\n\t    for (var trace in this.trace.elegibility)\n\t      this.trace.elegibility[trace] = 0;\n\n\t    for (var trace in this.trace.extended)\n\t      for (let extended in this.trace.extended[trace])\n\t        this.trace.extended[trace][extended] = 0;\n\n\t    this.error.responsibility = this.error.projected = this.error.gated = 0;\n\t  }\n\n\t  // all the connections are randomized and the traces are cleared\n\t  reset() {\n\t    this.clear();\n\n\t    for (let type in this.connections)\n\t      for (let connection in this.connections[type])\n\t        this.connections[type][connection].weight = Math.random() * .2 - .1;\n\t    this.bias = Math.random() * .2 - .1;\n\n\t    this.old = this.state = this.activation = 0;\n\t  }\n\n\t  // hardcodes the behaviour of the neuron into an optimized function\n\t  optimize(optimized = {}, layer) {\n\t    const store_activation = [];\n\t    const store_trace = [];\n\t    const store_propagation = [];\n\t    let varID = optimized.memory || 0;\n\t    const neurons = optimized.neurons || 1;\n\t    const inputs = optimized.inputs || [];\n\t    const targets = optimized.targets || [];\n\t    const outputs = optimized.outputs || [];\n\t    const variables = optimized.variables || {};\n\t    const activation_sentences = optimized.activation_sentences || [];\n\t    const trace_sentences = optimized.trace_sentences || [];\n\t    const propagation_sentences = optimized.propagation_sentences || [];\n\t    const layers = optimized.layers || {__count: 0, __neuron: 0};\n\n\t    // allocate sentences\n\t    const allocate = store => {\n\t      const allocated = layer in layers && store[layers.__count];\n\t      if (!allocated) {\n\t        layers.__count = store.push([]) - 1;\n\t        layers[layer] = layers.__count;\n\t      }\n\t    };\n\t    allocate(activation_sentences);\n\t    allocate(trace_sentences);\n\t    allocate(propagation_sentences);\n\t    const currentLayer = layers.__count;\n\n\t    // get/reserve space in memory by creating a unique ID for a variablel\n\t    const getVar = function () {\n\t      const args = Array.prototype.slice.call(arguments);\n\n\t      if (args.length == 1) {\n\t        if (args[0] == 'target') {\n\t          var id = `target_${targets.length}`;\n\t          targets.push(varID);\n\t        } else\n\t          var id = args[0];\n\t        if (id in variables)\n\t          return variables[id];\n\t        return variables[id] = {\n\t          value: 0,\n\t          id: varID++\n\t        };\n\t      } else {\n\t        const extended = args.length > 2;\n\t        if (extended)\n\t          var value = args.pop();\n\n\t        const unit = args.shift();\n\t        const prop = args.pop();\n\n\t        if (!extended)\n\t          var value = unit[prop];\n\n\t        var id = `${prop}_`;\n\t        for (let property in args)\n\t          id += `${args[property]}_`;\n\t        id += unit.ID;\n\t        if (id in variables)\n\t          return variables[id];\n\n\t        return variables[id] = {\n\t          value,\n\t          id: varID++\n\t        };\n\t      }\n\t    };\n\n\t    // build sentence\n\t    const buildSentence = function () {\n\t      const args = Array.prototype.slice.call(arguments);\n\t      const store = args.pop();\n\t      let sentence = \"\";\n\t      for (let i in args)\n\t        if (typeof args[i] == 'string')\n\t          sentence += args[i];\n\t        else\n\t          sentence += `F[${args[i].id}]`;\n\n\t      store.push(`${sentence};`);\n\t    };\n\n\t    // helper to check if an object is empty\n\t    const isEmpty = obj => {\n\t      for (let prop in obj) {\n\t        if (obj.hasOwnProperty(prop))\n\t          return false;\n\t      }\n\t      return true;\n\t    };\n\n\t    // characteristics of the neuron\n\t    const noProjections = isEmpty(this.connections.projected);\n\t    const noGates = isEmpty(this.connections.gated);\n\t    const isInput = layer == 'input' ? true : isEmpty(this.connections.inputs);\n\t    const isOutput = layer == 'output' ? true : noProjections && noGates;\n\n\t    // optimize neuron's behaviour\n\t    const rate = getVar('rate');\n\t    const activation = getVar(this, 'activation');\n\t    if (isInput)\n\t      inputs.push(activation.id);\n\t    else {\n\t      activation_sentences[currentLayer].push(store_activation);\n\t      trace_sentences[currentLayer].push(store_trace);\n\t      propagation_sentences[currentLayer].push(store_propagation);\n\t      const old = getVar(this, 'old');\n\t      const state = getVar(this, 'state');\n\t      var bias = getVar(this, 'bias');\n\t      if (this.selfconnection.gater)\n\t        var self_gain = getVar(this.selfconnection, 'gain');\n\t      if (this.selfconnected())\n\t        var self_weight = getVar(this.selfconnection, 'weight');\n\t      buildSentence(old, ' = ', state, store_activation);\n\t      if (this.selfconnected())\n\t        if (this.selfconnection.gater)\n\t          buildSentence(state, ' = ', self_gain, ' * ', self_weight, ' * ',\n\t            state, ' + ', bias, store_activation);\n\t        else\n\t          buildSentence(state, ' = ', self_weight, ' * ', state, ' + ',\n\t            bias, store_activation);\n\t      else\n\t        buildSentence(state, ' = ', bias, store_activation);\n\t      for (var i in this.connections.inputs) {\n\t        var input = this.connections.inputs[i];\n\t        var input_activation = getVar(input.from, 'activation');\n\t        var input_weight = getVar(input, 'weight');\n\t        if (input.gater)\n\t          var input_gain = getVar(input, 'gain');\n\t        if (this.connections.inputs[i].gater)\n\t          buildSentence(state, ' += ', input_activation, ' * ',\n\t            input_weight, ' * ', input_gain, store_activation);\n\t        else\n\t          buildSentence(state, ' += ', input_activation, ' * ',\n\t            input_weight, store_activation);\n\t      }\n\t      var derivative = getVar(this, 'derivative');\n\t      switch (this.squash) {\n\t        case Neuron.squash.LOGISTIC:\n\t          buildSentence(activation, ' = (1 / (1 + Math.exp(-', state, ')))',\n\t            store_activation);\n\t          buildSentence(derivative, ' = ', activation, ' * (1 - ',\n\t            activation, ')', store_activation);\n\t          break;\n\t        case Neuron.squash.TANH:\n\t          const eP = getVar('aux');\n\t          const eN = getVar('aux_2');\n\t          buildSentence(eP, ' = Math.exp(', state, ')', store_activation);\n\t          buildSentence(eN, ' = 1 / ', eP, store_activation);\n\t          buildSentence(activation, ' = (', eP, ' - ', eN, ') / (', eP, ' + ', eN, ')', store_activation);\n\t          buildSentence(derivative, ' = 1 - (', activation, ' * ', activation, ')', store_activation);\n\t          break;\n\t        case Neuron.squash.IDENTITY:\n\t          buildSentence(activation, ' = ', state, store_activation);\n\t          buildSentence(derivative, ' = 1', store_activation);\n\t          break;\n\t        case Neuron.squash.HLIM:\n\t          buildSentence(activation, ' = +(', state, ' > 0)', store_activation);\n\t          buildSentence(derivative, ' = 1', store_activation);\n\t        case Neuron.squash.RELU:\n\t          buildSentence(activation, ' = ', state, ' > 0 ? ', state, ' : 0', store_activation);\n\t          buildSentence(derivative, ' = ', state, ' > 0 ? 1 : 0', store_activation);\n\t          break;\n\t      }\n\n\t      for (var id in this.trace.extended) {\n\t        // calculate extended elegibility traces in advance\n\n\t        var neuron = this.neighboors[id];\n\t        var influence = getVar(`influences[${neuron.ID}]`);\n\t        var neuron_old = getVar(neuron, 'old');\n\t        let initialized = false;\n\t        if (neuron.selfconnection.gater == this) {\n\t          buildSentence(influence, ' = ', neuron_old, store_trace);\n\t          initialized = true;\n\t        }\n\t        for (let incoming in this.trace.influences[neuron.ID]) {\n\t          const incoming_weight = getVar(this.trace.influences[neuron.ID]\n\t            [incoming], 'weight');\n\t          const incoming_activation = getVar(this.trace.influences[neuron.ID]\n\t            [incoming].from, 'activation');\n\n\t          if (initialized)\n\t            buildSentence(influence, ' += ', incoming_weight, ' * ', incoming_activation, store_trace);\n\t          else {\n\t            buildSentence(influence, ' = ', incoming_weight, ' * ', incoming_activation, store_trace);\n\t            initialized = true;\n\t          }\n\t        }\n\t      }\n\n\t      for (var i in this.connections.inputs) {\n\t        var input = this.connections.inputs[i];\n\t        if (input.gater)\n\t          var input_gain = getVar(input, 'gain');\n\t        var input_activation = getVar(input.from, 'activation');\n\t        var trace = getVar(this, 'trace', 'elegibility', input.ID, this.trace\n\t          .elegibility[input.ID]);\n\t        if (this.selfconnected()) {\n\t          if (this.selfconnection.gater) {\n\t            if (input.gater)\n\t              buildSentence(trace, ' = ', self_gain, ' * ', self_weight,\n\t                ' * ', trace, ' + ', input_gain, ' * ', input_activation,\n\t                store_trace);\n\t            else\n\t              buildSentence(trace, ' = ', self_gain, ' * ', self_weight,\n\t                ' * ', trace, ' + ', input_activation, store_trace);\n\t          } else {\n\t            if (input.gater)\n\t              buildSentence(trace, ' = ', self_weight, ' * ', trace, ' + ',\n\t                input_gain, ' * ', input_activation, store_trace);\n\t            else\n\t              buildSentence(trace, ' = ', self_weight, ' * ', trace, ' + ',\n\t                input_activation, store_trace);\n\t          }\n\t        } else {\n\t          if (input.gater)\n\t            buildSentence(trace, ' = ', input_gain, ' * ', input_activation,\n\t              store_trace);\n\t          else\n\t            buildSentence(trace, ' = ', input_activation, store_trace);\n\t        }\n\t        for (var id in this.trace.extended) {\n\t          // extended elegibility trace\n\t          var neuron = this.neighboors[id];\n\t          var influence = getVar(`influences[${neuron.ID}]`);\n\n\t          var trace = getVar(this, 'trace', 'elegibility', input.ID, this.trace\n\t            .elegibility[input.ID]);\n\t          var xtrace = getVar(this, 'trace', 'extended', neuron.ID, input.ID,\n\t            this.trace.extended[neuron.ID][input.ID]);\n\t          if (neuron.selfconnected())\n\t            var neuron_self_weight = getVar(neuron.selfconnection, 'weight');\n\t          if (neuron.selfconnection.gater)\n\t            var neuron_self_gain = getVar(neuron.selfconnection, 'gain');\n\t          if (neuron.selfconnected())\n\t            if (neuron.selfconnection.gater)\n\t              buildSentence(xtrace, ' = ', neuron_self_gain, ' * ',\n\t                neuron_self_weight, ' * ', xtrace, ' + ', derivative, ' * ',\n\t                trace, ' * ', influence, store_trace);\n\t            else\n\t              buildSentence(xtrace, ' = ', neuron_self_weight, ' * ',\n\t                xtrace, ' + ', derivative, ' * ', trace, ' * ',\n\t                influence, store_trace);\n\t          else\n\t            buildSentence(xtrace, ' = ', derivative, ' * ', trace, ' * ',\n\t              influence, store_trace);\n\t        }\n\t      }\n\t      for (var connection in this.connections.gated) {\n\t        const gated_gain = getVar(this.connections.gated[connection], 'gain');\n\t        buildSentence(gated_gain, ' = ', activation, store_activation);\n\t      }\n\t    }\n\t    if (!isInput) {\n\t      const responsibility = getVar(this, 'error', 'responsibility', this.error\n\t        .responsibility);\n\t      if (isOutput) {\n\t        const target = getVar('target');\n\t        buildSentence(responsibility, ' = ', target, ' - ', activation,\n\t          store_propagation);\n\t        for (var id in this.connections.inputs) {\n\t          var input = this.connections.inputs[id];\n\t          var trace = getVar(this, 'trace', 'elegibility', input.ID, this.trace\n\t            .elegibility[input.ID]);\n\t          var input_weight = getVar(input, 'weight');\n\t          buildSentence(input_weight, ' += ', rate, ' * (', responsibility,\n\t            ' * ', trace, ')', store_propagation);\n\t        }\n\t        outputs.push(activation.id);\n\t      } else {\n\t        if (!noProjections && !noGates) {\n\t          const error = getVar('aux');\n\t          for (var id in this.connections.projected) {\n\t            var connection = this.connections.projected[id];\n\t            var neuron = connection.to;\n\t            var connection_weight = getVar(connection, 'weight');\n\t            var neuron_responsibility = getVar(neuron, 'error',\n\t              'responsibility', neuron.error.responsibility);\n\t            if (connection.gater) {\n\t              var connection_gain = getVar(connection, 'gain');\n\t              buildSentence(error, ' += ', neuron_responsibility, ' * ',\n\t                connection_gain, ' * ', connection_weight,\n\t                store_propagation);\n\t            } else\n\t              buildSentence(error, ' += ', neuron_responsibility, ' * ',\n\t                connection_weight, store_propagation);\n\t          }\n\t          const projected = getVar(this, 'error', 'projected', this.error.projected);\n\t          buildSentence(projected, ' = ', derivative, ' * ', error,\n\t            store_propagation);\n\t          buildSentence(error, ' = 0', store_propagation);\n\t          for (var id in this.trace.extended) {\n\t            var neuron = this.neighboors[id];\n\t            var influence = getVar('aux_2');\n\t            var neuron_old = getVar(neuron, 'old');\n\t            if (neuron.selfconnection.gater == this)\n\t              buildSentence(influence, ' = ', neuron_old, store_propagation);\n\t            else\n\t              buildSentence(influence, ' = 0', store_propagation);\n\t            for (var input in this.trace.influences[neuron.ID]) {\n\t              var connection = this.trace.influences[neuron.ID][input];\n\t              var connection_weight = getVar(connection, 'weight');\n\t              var neuron_activation = getVar(connection.from, 'activation');\n\t              buildSentence(influence, ' += ', connection_weight, ' * ',\n\t                neuron_activation, store_propagation);\n\t            }\n\t            var neuron_responsibility = getVar(neuron, 'error',\n\t              'responsibility', neuron.error.responsibility);\n\t            buildSentence(error, ' += ', neuron_responsibility, ' * ',\n\t              influence, store_propagation);\n\t          }\n\t          const gated = getVar(this, 'error', 'gated', this.error.gated);\n\t          buildSentence(gated, ' = ', derivative, ' * ', error,\n\t            store_propagation);\n\t          buildSentence(responsibility, ' = ', projected, ' + ', gated,\n\t            store_propagation);\n\t          for (var id in this.connections.inputs) {\n\t            var input = this.connections.inputs[id];\n\t            var gradient = getVar('aux');\n\t            var trace = getVar(this, 'trace', 'elegibility', input.ID, this\n\t              .trace.elegibility[input.ID]);\n\t            buildSentence(gradient, ' = ', projected, ' * ', trace,\n\t              store_propagation);\n\t            for (var id in this.trace.extended) {\n\t              var neuron = this.neighboors[id];\n\t              var neuron_responsibility = getVar(neuron, 'error',\n\t                'responsibility', neuron.error.responsibility);\n\t              var xtrace = getVar(this, 'trace', 'extended', neuron.ID,\n\t                input.ID, this.trace.extended[neuron.ID][input.ID]);\n\t              buildSentence(gradient, ' += ', neuron_responsibility, ' * ',\n\t                xtrace, store_propagation);\n\t            }\n\t            var input_weight = getVar(input, 'weight');\n\t            buildSentence(input_weight, ' += ', rate, ' * ', gradient,\n\t              store_propagation);\n\t          }\n\n\t        } else if (noGates) {\n\t          buildSentence(responsibility, ' = 0', store_propagation);\n\t          for (var id in this.connections.projected) {\n\t            var connection = this.connections.projected[id];\n\t            var neuron = connection.to;\n\t            var connection_weight = getVar(connection, 'weight');\n\t            var neuron_responsibility = getVar(neuron, 'error',\n\t              'responsibility', neuron.error.responsibility);\n\t            if (connection.gater) {\n\t              var connection_gain = getVar(connection, 'gain');\n\t              buildSentence(responsibility, ' += ', neuron_responsibility,\n\t                ' * ', connection_gain, ' * ', connection_weight,\n\t                store_propagation);\n\t            } else\n\t              buildSentence(responsibility, ' += ', neuron_responsibility,\n\t                ' * ', connection_weight, store_propagation);\n\t          }\n\t          buildSentence(responsibility, ' *= ', derivative,\n\t            store_propagation);\n\t          for (var id in this.connections.inputs) {\n\t            var input = this.connections.inputs[id];\n\t            var trace = getVar(this, 'trace', 'elegibility', input.ID, this\n\t              .trace.elegibility[input.ID]);\n\t            var input_weight = getVar(input, 'weight');\n\t            buildSentence(input_weight, ' += ', rate, ' * (',\n\t              responsibility, ' * ', trace, ')', store_propagation);\n\t          }\n\t        } else if (noProjections) {\n\t          buildSentence(responsibility, ' = 0', store_propagation);\n\t          for (var id in this.trace.extended) {\n\t            var neuron = this.neighboors[id];\n\t            var influence = getVar('aux');\n\t            var neuron_old = getVar(neuron, 'old');\n\t            if (neuron.selfconnection.gater == this)\n\t              buildSentence(influence, ' = ', neuron_old, store_propagation);\n\t            else\n\t              buildSentence(influence, ' = 0', store_propagation);\n\t            for (var input in this.trace.influences[neuron.ID]) {\n\t              var connection = this.trace.influences[neuron.ID][input];\n\t              var connection_weight = getVar(connection, 'weight');\n\t              var neuron_activation = getVar(connection.from, 'activation');\n\t              buildSentence(influence, ' += ', connection_weight, ' * ',\n\t                neuron_activation, store_propagation);\n\t            }\n\t            var neuron_responsibility = getVar(neuron, 'error',\n\t              'responsibility', neuron.error.responsibility);\n\t            buildSentence(responsibility, ' += ', neuron_responsibility,\n\t              ' * ', influence, store_propagation);\n\t          }\n\t          buildSentence(responsibility, ' *= ', derivative,\n\t            store_propagation);\n\t          for (var id in this.connections.inputs) {\n\t            var input = this.connections.inputs[id];\n\t            var gradient = getVar('aux');\n\t            buildSentence(gradient, ' = 0', store_propagation);\n\t            for (var id in this.trace.extended) {\n\t              var neuron = this.neighboors[id];\n\t              var neuron_responsibility = getVar(neuron, 'error',\n\t                'responsibility', neuron.error.responsibility);\n\t              var xtrace = getVar(this, 'trace', 'extended', neuron.ID,\n\t                input.ID, this.trace.extended[neuron.ID][input.ID]);\n\t              buildSentence(gradient, ' += ', neuron_responsibility, ' * ',\n\t                xtrace, store_propagation);\n\t            }\n\t            var input_weight = getVar(input, 'weight');\n\t            buildSentence(input_weight, ' += ', rate, ' * ', gradient,\n\t              store_propagation);\n\t          }\n\t        }\n\t      }\n\t      buildSentence(bias, ' += ', rate, ' * ', responsibility,\n\t        store_propagation);\n\t    }\n\t    return {\n\t      memory: varID,\n\t      neurons: neurons + 1,\n\t      inputs,\n\t      outputs,\n\t      targets,\n\t      variables,\n\t      activation_sentences,\n\t      trace_sentences,\n\t      propagation_sentences,\n\t      layers\n\t    }\n\t  }\n\t}\n\t// represents a connection between two neurons\n\tNeuron.connection = class NeuronConnection {\n\t  constructor(from, to, weight) {\n\n\t    if (!from || !to)\n\t      throw new Error(\"Connection Error: Invalid neurons\");\n\n\t    this.ID = Neuron.connection.uid();\n\t    this.from = from;\n\t    this.to = to;\n\t    this.weight = typeof weight == 'undefined' ? Math.random() * .2 - .1 :\n\t      weight;\n\t    this.gain = 1;\n\t    this.gater = null;\n\t  }\n\t}\n\n\n\t// squashing functions\n\tNeuron.squash = {};\n\n\tfunction registerSquash(name, fn) {\n\t  Neuron.squash[name] = fn;\n\t  fn.squashType = [name];\n\t}\n\n\t// eq. 5 & 5'\n\tregisterSquash('LOGISTIC', (x, derivate) => {\n\t  if (!derivate)\n\t    return 1 / (1 + Math.exp(-x));\n\t  const fx = Neuron.squash.LOGISTIC(x);\n\t  return fx * (1 - fx);\n\t});\n\tregisterSquash('TANH', (x, derivate) => {\n\t  if (derivate)\n\t    return 1 - Math.pow(Neuron.squash.TANH(x), 2);\n\t  const eP = Math.exp(x);\n\t  const eN = 1 / eP;\n\t  return (eP - eN) / (eP + eN);\n\t});\n\tregisterSquash('IDENTITY', (x, derivate) => derivate ? 1 : x);\n\tregisterSquash('HLIM', (x, derivate) => derivate ? 1 : x > 0 ? 1 : 0);\n\tregisterSquash('RELU', (x, derivate) => {\n\t  if (derivate)\n\t    return x > 0 ? 1 : 0;\n\t  return x > 0 ? x : 0;\n\t});\n\n\t// unique ID's\n\t((() => {\n\t  let neurons = 0;\n\t  let connections = 0;\n\t  Neuron.uid = () => neurons++\n\t  Neuron.connection.uid = () => connections++\n\t  Neuron.quantity = () => ({\n\t    neurons,\n\t    connections\n\t  })\n\t}))();\n\n\tmodule.exports = Neuron;\n\n\n/***/ },\n/* 4 */\n/***/ function(module, exports) {\n\n\tmodule.exports.GET = '%get';\n\tmodule.exports.SET = '%set';\n\tmodule.exports.FROM_JSON = '%fromJSON';\n\n/***/ }\n/******/ ]);", __webpack_require__.p + "c275304e08386603d60b.worker.js");
+	};
+
+/***/ },
+/* 10 */
+/***/ function(module, exports) {
+
+	// http://stackoverflow.com/questions/10343913/how-to-create-a-web-worker-from-a-string
+
+	var URL = window.URL || window.webkitURL;
+	module.exports = function(content, url) {
+		try {
+			try {
+				var blob;
+				try { // BlobBuilder = Deprecated, but widely implemented
+					var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
+					blob = new BlobBuilder();
+					blob.append(content);
+					blob = blob.getBlob();
+				} catch(e) { // The proposed API
+					blob = new Blob([content]);
+				}
+				return new Worker(URL.createObjectURL(blob));
+			} catch(e) {
+				return new Worker('data:application/javascript,' + encodeURIComponent(content));
+			}
+		} catch(e) {
+			return new Worker(url);
+		}
+	}
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
 
 	/*******************************************************************************************
 	                                        TRAINER
 	*******************************************************************************************/
 
-	function Trainer(network, options) {
-	  options = options || {};
-	  this.network = network;
-	  this.rate = options.rate || .2;
-	  this.iterations = options.iterations || 100000;
-	  this.error = options.error || .005;
-	  this.cost = options.cost || null;
-	  this.crossValidate = options.crossValidate || null;
-	}
-
-	Trainer.prototype = {
+	class Trainer {
+	  constructor(network, options={}) {
+	    this.network = network;
+	    this.rate = options.rate || .2;
+	    this.iterations = options.iterations || 100000;
+	    this.error = options.error || .005;
+	    this.cost = options.cost || null;
+	    this.crossValidate = options.crossValidate || null;
+	  }
 
 	  // trains any given set to a network
-	  train: function(set, options) {
+	  train(set, options) {
 
-	    var error = 1;
-	    var iterations = bucketSize = 0;
-	    var abort = false;
-	    var currentRate;
-	    var cost = options && options.cost || this.cost || Trainer.cost.MSE;
-	    var crossValidate = false, testSet, trainSet;
+	    let error = 1;
+	    let iterations = bucketSize = 0;
+	    let abort = false;
+	    let currentRate;
+	    const cost = options && options.cost || this.cost || Trainer.cost.MSE;
+	    let crossValidate = false, testSet, trainSet;
 
-	    var start = Date.now();
+	    const start = Date.now();
 
 	    if (options) {
-	      if (options.shuffle) {
-	        //+ Jonas Raoni Soares Silva
-	        //@ http://jsfromhell.com/array/shuffle [v1.0]
-	        function shuffle(o) { //v1.0
-	          for (var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
-	          return o;
-	        };
-	      }
 	      if (options.iterations)
 	        this.iterations = options.iterations;
 	      if (options.error)
@@ -1963,7 +1979,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    if(crossValidate) {
-	      var numTrain = Math.ceil((1 - this.crossValidate.testSize) * set.length);
+	      const numTrain = Math.ceil((1 - this.crossValidate.testSize) * set.length);
 	      trainSet = set.slice(0, numTrain);
 	      testSet = set.slice(numTrain);
 	    }
@@ -1974,12 +1990,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        break;
 	      }
 
-	      var currentSetSize = set.length;
+	      let currentSetSize = set.length;
 	      error = 0;
 	      iterations++;
 
 	      if(bucketSize > 0) {
-	        var currentBucket = Math.floor(iterations / bucketSize);
+	        const currentBucket = Math.floor(iterations / bucketSize);
 	        currentRate = this.rate[currentBucket] || currentRate;
 	      }
 	      
@@ -2003,7 +2019,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (options) {
 	        if (this.schedule && this.schedule.every && iterations %
 	          this.schedule.every == 0)
-	          abort = this.schedule.do({ error: error, iterations: iterations, rate: currentRate });
+	          abort = this.schedule.do({ error, iterations, rate: currentRate });
 	        else if (options.log && iterations % options.log == 0) {
 	          console.log('iterations', iterations, 'error', error, 'rate', currentRate);
 	        };
@@ -2012,52 +2028,52 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    }
 
-	    var results = {
-	      error: error,
-	      iterations: iterations,
+	    const results = {
+	      error,
+	      iterations,
 	      time: Date.now() - start
 	    };
 
 	    return results;
-	  },
+	  }
 
 	  // trains any given set to a network, using a WebWorker (only for the browser). Returns a Promise of the results.
-	  trainAsync: function(set, options) {
-	    var train = this.workerTrain.bind(this);
-	    return new Promise(function(resolve, reject) {
+	  trainAsync(set, options) {
+	    const train = this.workerTrain.bind(this);
+	    return new Promise((resolve, reject) => {
 	      try {
 	        train(set, resolve, options, true)
 	      } catch(e) {
 	        reject(e)
 	      }
 	    })
-	  },
+	  }
 
 	  // preforms one training epoch and returns the error (private function used in this.train)
-	  _trainSet: function(set, currentRate, costFunction) {
-	    var errorSum = 0;
-	    for (var train in set) {
-	      var input = set[train].input;
-	      var target = set[train].output;
+	  _trainSet(set, currentRate, costFunction) {
+	    let errorSum = 0;
+	    for (let train in set) {
+	      const input = set[train].input;
+	      const target = set[train].output;
 
-	      var output = this.network.activate(input);
+	      const output = this.network.activate(input);
 	      this.network.propagate(currentRate, target);
 
 	      errorSum += costFunction(target, output);
 	    }
 	    return errorSum;
-	  },
+	  }
 
 	  // tests a set and returns the error and elapsed time
-	  test: function(set, options) {
+	  test(set, options) {
 
-	    var error = 0;
-	    var input, output, target;
-	    var cost = options && options.cost || this.cost || Trainer.cost.MSE;
+	    let error = 0;
+	    let input, output, target;
+	    const cost = options && options.cost || this.cost || Trainer.cost.MSE;
 
-	    var start = Date.now();
+	    const start = Date.now();
 
-	    for (var test in set) {
+	    for (let test in set) {
 	      input = set[test].input;
 	      target = set[test].output;
 	      output = this.network.activate(input);
@@ -2066,43 +2082,43 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    error /= set.length;
 
-	    var results = {
-	      error: error,
+	    const results = {
+	      error,
 	      time: Date.now() - start
 	    };
 
 	    return results;
-	  },
+	  }
 
 	  // trains any given set to a network using a WebWorker [deprecated: use trainAsync instead]
-	  workerTrain: function(set, callback, options, suppressWarning) {
+	  workerTrain(set, callback, options, suppressWarning) {
 
 	    if (!suppressWarning) {
 	      console.warn('Deprecated: do not use `workerTrain`, use `trainAsync` instead.')
 	    }
-	    var that = this;
+	    const that = this;
 
 	    if (!this.network.optimized)
 	      this.network.optimize();
 
 	    // Create a new worker
-	    var worker = this.network.worker(this.network.optimized.memory, set, options);
+	    const worker = this.network.worker(this.network.optimized.memory, set, options);
 
 	    // train the worker
-	    worker.onmessage = function(e) {
+	    worker.onmessage = e => {
 	      switch(e.data.action) {
 	          case 'done':
-	            var iterations = e.data.message.iterations;
-	            var error = e.data.message.error;
-	            var time = e.data.message.time;
+	            const iterations = e.data.message.iterations;
+	            const error = e.data.message.error;
+	            const time = e.data.message.time;
 
 	            that.network.optimized.ownership(e.data.memoryBuffer);
 
 	            // Done callback
 	            callback({
-	              error: error,
-	              iterations: iterations,
-	              time: time
+	              error,
+	              iterations,
+	              time
 	            });
 
 	            // Delete the worker and all its associated memory
@@ -2114,7 +2130,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	          case 'schedule':
 	            if (options && options.schedule && typeof options.schedule.do === 'function') {
-	              var scheduled = options.schedule.do
+	              const scheduled = options.schedule.do;
 	              scheduled(e.data.message)
 	            }
 	          break;
@@ -2123,15 +2139,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // Start the worker
 	    worker.postMessage({action: 'startTraining'});
-	  },
+	  }
 
 	  // trains an XOR to the network
-	  XOR: function(options) {
+	  XOR(options) {
 
 	    if (this.network.inputs() != 2 || this.network.outputs() != 1)
 	      throw new Error("Incompatible network (2 inputs, 1 output)");
 
-	    var defaults = {
+	    const defaults = {
 	      iterations: 100000,
 	      log: false,
 	      shuffle: true,
@@ -2139,7 +2155,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 
 	    if (options)
-	      for (var i in options)
+	      for (let i in options)
 	        defaults[i] = options[i];
 
 	    return this.train([{
@@ -2155,56 +2171,53 @@ return /******/ (function(modules) { // webpackBootstrap
 	      input: [1, 1],
 	      output: [0]
 	    }], defaults);
-	  },
+	  }
 
 	  // trains the network to pass a Distracted Sequence Recall test
-	  DSR: function(options) {
-	    options = options || {};
+	  DSR(options={}) {
+	    const targets = options.targets || [2, 4, 7, 8];
+	    const distractors = options.distractors || [3, 5, 6, 9];
+	    const prompts = options.prompts || [0, 1];
+	    const length = options.length || 24;
+	    const criterion = options.success || 0.95;
+	    const iterations = options.iterations || 100000;
+	    const rate = options.rate || .1;
+	    const log = options.log || 0;
+	    const schedule = options.schedule || {};
+	    const cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
 
-	    var targets = options.targets || [2, 4, 7, 8];
-	    var distractors = options.distractors || [3, 5, 6, 9];
-	    var prompts = options.prompts || [0, 1];
-	    var length = options.length || 24;
-	    var criterion = options.success || 0.95;
-	    var iterations = options.iterations || 100000;
-	    var rate = options.rate || .1;
-	    var log = options.log || 0;
-	    var schedule = options.schedule || {};
-	    var cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
-
-	    var trial, correct, i, j, success;
+	    let trial, correct, i, j, success;
 	    trial = correct = i = j = success = 0;
-	    var error = 1,
-	      symbols = targets.length + distractors.length + prompts.length;
+	    let error = 1;
+	    const symbols = targets.length + distractors.length + prompts.length;
 
-	    var noRepeat = function(range, avoid) {
-	      var number = Math.random() * range | 0;
-	      var used = false;
-	      for (var i in avoid)
+	    const noRepeat = (range, avoid) => {
+	      const number = Math.random() * range | 0;
+	      let used = false;
+	      for (let i in avoid)
 	        if (number == avoid[i])
 	          used = true;
 	      return used ? noRepeat(range, avoid) : number;
 	    };
 
-	    var equal = function(prediction, output) {
-	      for (var i in prediction)
+	    const equal = (prediction, output) => {
+	      for (let i in prediction)
 	        if (Math.round(prediction[i]) != output[i])
 	          return false;
 	      return true;
 	    };
 
-	    var start = Date.now();
+	    const start = Date.now();
 
 	    while (trial < iterations && (success < criterion || trial % 1000 != 0)) {
 	      // generate sequence
-	      var sequence = [],
-	        sequenceLength = length - prompts.length;
+	      const sequence = [], sequenceLength = length - prompts.length;
 	      for (i = 0; i < sequenceLength; i++) {
-	        var any = Math.random() * distractors.length | 0;
+	        const any = Math.random() * distractors.length | 0;
 	        sequence.push(distractors[any]);
 	      }
-	      var indexes = [],
-	        positions = [];
+	      const indexes = [];
+	      let positions = [];
 	      for (i = 0; i < prompts.length; i++) {
 	        indexes.push(Math.random() * targets.length | 0);
 	        positions.push(noRepeat(sequenceLength, positions));
@@ -2216,28 +2229,28 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 
 	      //train sequence
-	      var distractorsCorrect;
-	      var targetsCorrect = distractorsCorrect = 0;
+	      let distractorsCorrect;
+	      let targetsCorrect = distractorsCorrect = 0;
 	      error = 0;
 	      for (i = 0; i < length; i++) {
 	        // generate input from sequence
-	        var input = [];
+	        const input = [];
 	        for (j = 0; j < symbols; j++)
 	          input[j] = 0;
 	        input[sequence[i]] = 1;
 
 	        // generate target output
-	        var output = [];
+	        const output = [];
 	        for (j = 0; j < targets.length; j++)
 	          output[j] = 0;
 
 	        if (i >= sequenceLength) {
-	          var index = i - sequenceLength;
+	          const index = i - sequenceLength;
 	          output[indexes[index]] = 1;
 	        }
 
 	        // check result
-	        var prediction = this.network.activate(input);
+	        const prediction = this.network.activate(input);
 
 	        if (equal(prediction, output))
 	          if (i < sequenceLength)
@@ -2258,7 +2271,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (trial % 1000 == 0)
 	        correct = 0;
 	      trial++;
-	      var divideError = trial % 1000;
+	      let divideError = trial % 1000;
 	      divideError = divideError == 0 ? 1000 : divideError;
 	      success = correct / divideError;
 	      error /= length;
@@ -2270,103 +2283,104 @@ return /******/ (function(modules) { // webpackBootstrap
 	      if (schedule.do && schedule.every && trial % schedule.every == 0)
 	        schedule.do({
 	          iterations: trial,
-	          success: success,
-	          error: error,
+	          success,
+	          error,
 	          time: Date.now() - start,
-	          correct: correct
+	          correct
 	        });
 	    }
 
 	    return {
 	      iterations: trial,
-	      success: success,
-	      error: error,
+	      success,
+	      error,
 	      time: Date.now() - start
 	    }
-	  },
+	  }
 
 	  // train the network to learn an Embeded Reber Grammar
-	  ERG: function(options) {
-
-	    options = options || {};
-	    var iterations = options.iterations || 150000;
-	    var criterion = options.error || .05;
-	    var rate = options.rate || .1;
-	    var log = options.log || 500;
-	    var cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
+	  ERG(options={}) {
+	    const iterations = options.iterations || 150000;
+	    const criterion = options.error || .05;
+	    const rate = options.rate || .1;
+	    const log = options.log || 500;
+	    const cost = options.cost || this.cost || Trainer.cost.CROSS_ENTROPY;
 
 	    // gramar node
-	    var Node = function() {
-	      this.paths = [];
-	    };
-	    Node.prototype = {
-	      connect: function(node, value) {
+	    class Node {
+	      constructor() {
+	        this.paths = [];
+	      }
+
+	      connect(node, value) {
 	        this.paths.push({
-	          node: node,
-	          value: value
+	          node,
+	          value
 	        });
 	        return this;
-	      },
-	      any: function() {
+	      }
+
+	      any() {
 	        if (this.paths.length == 0)
 	          return false;
-	        var index = Math.random() * this.paths.length | 0;
+	        const index = Math.random() * this.paths.length | 0;
 	        return this.paths[index];
-	      },
-	      test: function(value) {
-	        for (var i in this.paths)
+	      }
+
+	      test(value) {
+	        for (let i in this.paths)
 	          if (this.paths[i].value == value)
 	            return this.paths[i];
 	        return false;
 	      }
-	    };
+	    }
 
-	    var reberGrammar = function() {
+	    const reberGrammar = () => {
 
 	      // build a reber grammar
-	      var output = new Node();
-	      var n1 = (new Node()).connect(output, "E");
-	      var n2 = (new Node()).connect(n1, "S");
-	      var n3 = (new Node()).connect(n1, "V").connect(n2, "P");
-	      var n4 = (new Node()).connect(n2, "X");
+	      const output = new Node();
+	      const n1 = (new Node()).connect(output, "E");
+	      const n2 = (new Node()).connect(n1, "S");
+	      const n3 = (new Node()).connect(n1, "V").connect(n2, "P");
+	      const n4 = (new Node()).connect(n2, "X");
 	      n4.connect(n4, "S");
-	      var n5 = (new Node()).connect(n3, "V");
+	      const n5 = (new Node()).connect(n3, "V");
 	      n5.connect(n5, "T");
 	      n2.connect(n5, "X");
-	      var n6 = (new Node()).connect(n4, "T").connect(n5, "P");
-	      var input = (new Node()).connect(n6, "B");
+	      const n6 = (new Node()).connect(n4, "T").connect(n5, "P");
+	      const input = (new Node()).connect(n6, "B");
 
 	      return {
-	        input: input,
-	        output: output
+	        input,
+	        output
 	      }
 	    };
 
 	    // build an embeded reber grammar
-	    var embededReberGrammar = function() {
-	      var reber1 = reberGrammar();
-	      var reber2 = reberGrammar();
+	    const embededReberGrammar = () => {
+	      const reber1 = reberGrammar();
+	      const reber2 = reberGrammar();
 
-	      var output = new Node();
-	      var n1 = (new Node).connect(output, "E");
+	      const output = new Node();
+	      const n1 = (new Node).connect(output, "E");
 	      reber1.output.connect(n1, "T");
 	      reber2.output.connect(n1, "P");
-	      var n2 = (new Node).connect(reber1.input, "P").connect(reber2.input,
+	      const n2 = (new Node).connect(reber1.input, "P").connect(reber2.input,
 	        "T");
-	      var input = (new Node).connect(n2, "B");
+	      const input = (new Node).connect(n2, "B");
 
 	      return {
-	        input: input,
-	        output: output
+	        input,
+	        output
 	      }
 
 	    };
 
 	    // generate an ERG sequence
-	    var generate = function() {
-	      var node = embededReberGrammar().input;
-	      var next = node.any();
-	      var str = "";
+	    const generate = () => {
+	      const node = embededReberGrammar().input;
+	      let next = node.any();
+	      let str = "";
 	      while (next) {
 	        str += next.value;
 	        next = next.node.any();
@@ -2375,12 +2389,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 
 	    // test if a string matches an embeded reber grammar
-	    var test = function(str) {
-	      var node = embededReberGrammar().input;
-	      var i = 0;
-	      var ch = str.charAt(i);
+	    const test = str => {
+	      let node = embededReberGrammar().input;
+	      let i = 0;
+	      let ch = str.charAt(i);
 	      while (i < str.length) {
-	        var next = node.test(ch);
+	        const next = node.test(ch);
 	        if (!next)
 	          return false;
 	        node = next.node;
@@ -2390,12 +2404,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 
 	    // helper to check if the output and the target vectors match
-	    var different = function(array1, array2) {
-	      var max1 = 0;
-	      var i1 = -1;
-	      var max2 = 0;
-	      var i2 = -1;
-	      for (var i in array1) {
+	    const different = (array1, array2) => {
+	      let max1 = 0;
+	      let i1 = -1;
+	      let max2 = 0;
+	      let i2 = -1;
+	      for (let i in array1) {
 	        if (array1[i] > max1) {
 	          max1 = array1[i];
 	          i1 = i;
@@ -2409,9 +2423,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return i1 != i2;
 	    };
 
-	    var iteration = 0;
-	    var error = 1;
-	    var table = {
+	    let iteration = 0;
+	    let error = 1;
+	    const table = {
 	      "B": 0,
 	      "P": 1,
 	      "T": 2,
@@ -2420,31 +2434,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	      "E": 5
 	    };
 
-	    var start = Date.now();
+	    const start = Date.now();
 	    while (iteration < iterations && error > criterion) {
-	      var i = 0;
+	      let i = 0;
 	      error = 0;
 
 	      // ERG sequence to learn
-	      var sequence = generate();
+	      const sequence = generate();
 
 	      // input
-	      var read = sequence.charAt(i);
+	      let read = sequence.charAt(i);
 	      // target
-	      var predict = sequence.charAt(i + 1);
+	      let predict = sequence.charAt(i + 1);
 
 	      // train
 	      while (i < sequence.length - 1) {
-	        var input = [];
-	        var target = [];
-	        for (var j = 0; j < 6; j++) {
+	        const input = [];
+	        const target = [];
+	        for (let j = 0; j < 6; j++) {
 	          input[j] = 0;
 	          target[j] = 0;
 	        }
 	        input[table[read]] = 1;
 	        target[table[predict]] = 1;
 
-	        var output = this.network.activate(input);
+	        const output = this.network.activate(input);
 
 	        if (different(output, target))
 	          this.network.propagate(rate, target);
@@ -2464,14 +2478,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    return {
 	      iterations: iteration,
-	      error: error,
+	      error,
 	      time: Date.now() - start,
-	      test: test,
-	      generate: generate
+	      test,
+	      generate
 	    }
-	  },
+	  }
 
-	  timingTask: function(options){
+	  timingTask(options) {
 
 	    if (this.network.inputs() != 2 || this.network.outputs() != 1)
 	      throw new Error("Invalid Network: must have 2 inputs and one output");
@@ -2483,31 +2497,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function getSamples (trainingSize, testSize){
 
 	      // sample size
-	      var size = trainingSize + testSize;
+	      const size = trainingSize + testSize;
 
 	      // generate samples
-	      var t = 0;
-	      var set = [];
-	      for (var i = 0; i < size; i++) {
+	      let t = 0;
+	      const set = [];
+	      for (let i = 0; i < size; i++) {
 	        set.push({ input: [0,0], output: [0] });
 	      }
 	      while(t < size - 20) {
-	          var n = Math.round(Math.random() * 20);
+	          let n = Math.round(Math.random() * 20);
 	          set[t].input[0] = 1;
-	          for (var j = t; j <= t + n; j++){
+	          for (let j = t; j <= t + n; j++){
 	              set[j].input[1] = n / 20;
 	              set[j].output[0] = 0.5;
 	          }
 	          t += n;
 	          n = Math.round(Math.random() * 20);
-	          for (var k = t+1; k <= (t + n) &&  k < size; k++)
+	          for (let k = t+1; k <= (t + n) &&  k < size; k++)
 	              set[k].input[1] = set[t].input[1];
 	          t += n;
 	      }
 
 	      // separate samples between train and test sets
-	      var trainingSet = []; var testSet = [];
-	      for (var l = 0; l < size; l++)
+	      const trainingSet = []; const testSet = [];
+	      for (let l = 0; l < size; l++)
 	          (l < trainingSize ? trainingSet : testSet).push(set[l]);
 
 	      // return samples
@@ -2517,24 +2531,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 	    }
 
-	    var iterations = options.iterations || 200;
-	    var error = options.error || .005;
-	    var rate = options.rate || [.03, .02];
-	    var log = options.log === false ? false : options.log || 10;
-	    var cost = options.cost || this.cost || Trainer.cost.MSE;
-	    var trainingSamples = options.trainSamples || 7000;
-	    var testSamples = options.trainSamples || 1000;
+	    const iterations = options.iterations || 200;
+	    const error = options.error || .005;
+	    const rate = options.rate || [.03, .02];
+	    const log = options.log === false ? false : options.log || 10;
+	    const cost = options.cost || this.cost || Trainer.cost.MSE;
+	    const trainingSamples = options.trainSamples || 7000;
+	    const testSamples = options.trainSamples || 1000;
 
 	    // samples for training and testing
-	    var samples = getSamples(trainingSamples, testSamples);
+	    const samples = getSamples(trainingSamples, testSamples);
 
 	    // train
-	    var result = this.train(samples.train, {
-	      rate: rate,
-	      log: log,
-	      iterations: iterations,
-	      error: error,
-	      cost: cost
+	    const result = this.train(samples.train, {
+	      rate,
+	      log,
+	      iterations,
+	      error,
+	      cost
 	    });
 
 	    return {
@@ -2542,98 +2556,117 @@ return /******/ (function(modules) { // webpackBootstrap
 	      test: this.test(samples.test)
 	    }
 	  }
-	};
+	}
 
 	// Built-in cost functions
 	Trainer.cost = {
 	  // Eq. 9
-	  CROSS_ENTROPY: function(target, output)
-	  {
-	    var crossentropy = 0;
-	    for (var i in output)
+	  CROSS_ENTROPY(target, output) {
+	    let crossentropy = 0;
+	    for (let i in output)
 	      crossentropy -= (target[i] * Math.log(output[i]+1e-15)) + ((1-target[i]) * Math.log((1+1e-15)-output[i])); // +1e-15 is a tiny push away to avoid Math.log(0)
 	    return crossentropy;
 	  },
-	  MSE: function(target, output)
-	  {
-	    var mse = 0;
-	    for (var i in output)
+	  MSE(target, output) {
+	    let mse = 0;
+	    for (let i in output)
 	      mse += Math.pow(target[i] - output[i], 2);
 	    return mse / output.length;
 	  },
-	  BINARY: function(target, output){
-	    var misses = 0;
-	    for (var i in output)
+	  BINARY(target, output) {
+	    let misses = 0;
+	    for (let i in output)
 	      misses += Math.round(target[i] * 2) != Math.round(output[i] * 2);
 	    return misses;
 	  }
-	}
+	};
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)(module)))
+	//+ Jonas Raoni Soares Silva
+	//@ http://jsfromhell.com/array/shuffle [v1.0]
+	function shuffle(o) { //v1.0
+	  for (let j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+	  return o;
+	};
+
+	module.exports = Trainer;
 
 /***/ },
-/* 7 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(module) {// import
-	var Layer   = __webpack_require__(4)
-	,   Network = __webpack_require__(5)
-	,   Trainer = __webpack_require__(6)
+	module.exports = {
+	  Hopfield: __webpack_require__(13),
+	  LSTM: __webpack_require__(14),
+	  Liquid: __webpack_require__(15),
+	  Perceptron: __webpack_require__(16)
+	};
 
-	/*******************************************************************************************
-	                                        ARCHITECT
-	*******************************************************************************************/
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
 
-	// Collection of useful built-in architectures
-	var Architect = {
+	const Network = __webpack_require__(4);
+	const Layer = __webpack_require__(3);
+	const Trainer = __webpack_require__(11);
 
-	  // Multilayer Perceptron
-	  Perceptron: function Perceptron() {
+	module.exports = class Hopfield extends Network {
+	  constructor(size) {
+	    const inputLayer = new Layer(size);
+	    const outputLayer = new Layer(size);
 
-	    var args = Array.prototype.slice.call(arguments); // convert arguments to Array
-	    if (args.length < 3)
-	      throw new Error("not enough layers (minimum 3) !!");
+	    inputLayer.project(outputLayer, Layer.connectionType.ALL_TO_ALL);
 
-	    var inputs = args.shift(); // first argument
-	    var outputs = args.pop(); // last argument
-	    var layers = args; // all the arguments in the middle
-
-	    var input = new Layer(inputs);
-	    var hidden = [];
-	    var output = new Layer(outputs);
-
-	    var previous = input;
-
-	    // generate hidden layers
-	    for (var level in layers) {
-	      var size = layers[level];
-	      var layer = new Layer(size);
-	      hidden.push(layer);
-	      previous.project(layer);
-	      previous = layer;
-	    }
-	    previous.project(output);
-
-	    // set layers of the neural network
-	    this.set({
-	      input: input,
-	      hidden: hidden,
-	      output: output
+	    super({
+	      input: inputLayer,
+	      hidden: [],
+	      output: outputLayer
 	    });
 
-	    // trainer for the network
 	    this.trainer = new Trainer(this);
-	  },
+	  }
 
-	  // Multilayer Long Short-Term Memory
-	  LSTM: function LSTM() {
+	  learn(patterns) {
+	    const set = [];
+	    for (let p in patterns)
+	      set.push({
+	        input: patterns[p],
+	        output: patterns[p]
+	      });
 
-	    var args = Array.prototype.slice.call(arguments); // convert arguments to array
+	    return this.trainer.train(set, {
+	      iterations: 500000,
+	      error: .00005,
+	      rate: 1
+	    });
+	  }
+
+	  feed(pattern) {
+	    const output = this.activate(pattern);
+
+	    pattern = [];
+	    for (let i in output)
+	      pattern[i] = output[i] > .5 ? 1 : 0;
+
+	    return pattern;
+	  }
+	}
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	// Multilayer Long Short-Term Memory
+	const Network = __webpack_require__(4);
+	const Layer = __webpack_require__(3);
+	const Trainer = __webpack_require__(11);
+
+	module.exports = class LSTM extends Network {
+	  constructor(...args) {
 	    if (args.length < 3)
 	      throw new Error("not enough layers (minimum 3) !!");
 
-	    var last = args.pop();
-	    var option = {
+	    const last = args.pop();
+	    const option = {
 	      peepholes: Layer.connectionType.ALL_TO_ALL,
 	      hiddenToHidden: false,
 	      outputToHidden: false,
@@ -2655,28 +2688,28 @@ return /******/ (function(modules) { // webpackBootstrap
 	    } else
 	      var outputs = last;
 
-	    var inputs = args.shift();
-	    var layers = args;
+	    const inputs = args.shift();
+	    const layers = args;
 
-	    var inputLayer = new Layer(inputs);
-	    var hiddenLayers = [];
-	    var outputLayer = new Layer(outputs);
+	    const inputLayer = new Layer(inputs);
+	    const hiddenLayers = [];
+	    const outputLayer = new Layer(outputs);
 
-	    var previous = null;
+	    let previous = null;
 
 	    // generate layers
-	    for (var layer in layers) {
+	    for (let layer in layers) {
 	      // generate memory blocks (memory cell and respective gates)
-	      var size = layers[layer];
+	      const size = layers[layer];
 
-	      var inputGate = new Layer(size).set({
+	      const inputGate = new Layer(size).set({
 	        bias: 1
 	      });
-	      var forgetGate = new Layer(size).set({
+	      const forgetGate = new Layer(size).set({
 	        bias: 1
 	      });
-	      var memoryCell = new Layer(size);
-	      var outputGate = new Layer(size).set({
+	      const memoryCell = new Layer(size);
+	      const outputGate = new Layer(size).set({
 	        bias: 1
 	      });
 
@@ -2686,7 +2719,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      hiddenLayers.push(outputGate);
 
 	      // connections from input layer
-	      var input = inputLayer.project(memoryCell);
+	      const input = inputLayer.project(memoryCell);
 	      inputLayer.project(inputGate);
 	      inputLayer.project(forgetGate);
 	      inputLayer.project(outputGate);
@@ -2700,10 +2733,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      }
 
 	      // connections from memory cell
-	      var output = memoryCell.project(outputLayer);
+	      const output = memoryCell.project(outputLayer);
 
 	      // self-connection
-	      var self = memoryCell.project(memoryCell);
+	      const self = memoryCell.project(memoryCell);
 
 	      // hidden to hidden recurrent connection
 	      if (option.hiddenToHidden)
@@ -2740,7 +2773,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      inputLayer.project(outputLayer);
 
 	    // set the layers of the neural network
-	    this.set({
+	    super({
 	      input: inputLayer,
 	      hidden: hiddenLayers,
 	      output: outputLayer
@@ -2748,31 +2781,40 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // trainer
 	    this.trainer = new Trainer(this);
-	  },
+	  }
+	}
 
-	  // Liquid State Machine
-	  Liquid: function Liquid(inputs, hidden, outputs, connections, gates) {
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
 
+	// Liquid State Machine
+	const Network = __webpack_require__(4);
+	const Layer = __webpack_require__(3);
+	const Trainer = __webpack_require__(11);
+
+	module.exports = class Liquid extends Network {
+	  constructor(inputs, hidden, outputs, connections, gates) {
 	    // create layers
-	    var inputLayer = new Layer(inputs);
-	    var hiddenLayer = new Layer(hidden);
-	    var outputLayer = new Layer(outputs);
+	    const inputLayer = new Layer(inputs);
+	    const hiddenLayer = new Layer(hidden);
+	    const outputLayer = new Layer(outputs);
 
 	    // make connections and gates randomly among the neurons
-	    var neurons = hiddenLayer.neurons();
-	    var connectionList = [];
+	    const neurons = hiddenLayer.neurons();
+	    const connectionList = [];
 
-	    for (var i = 0; i < connections; i++) {
+	    for (let i = 0; i < connections; i++) {
 	      // connect two random neurons
-	      var from = Math.random() * neurons.length | 0;
-	      var to = Math.random() * neurons.length | 0;
+	      const from = Math.random() * neurons.length | 0;
+	      const to = Math.random() * neurons.length | 0;
 	      var connection = neurons[from].project(neurons[to]);
 	      connectionList.push(connection);
 	    }
 
-	    for (var j = 0; j < gates; j++) {
+	    for (let j = 0; j < gates; j++) {
 	      // pick a random gater neuron
-	      var gater = Math.random() * neurons.length | 0;
+	      const gater = Math.random() * neurons.length | 0;
 	      // pick a random connection to gate
 	      var connection = Math.random() * connectionList.length | 0;
 	      // let the gater gate the connection
@@ -2784,7 +2826,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    hiddenLayer.project(outputLayer);
 
 	    // set the layers of the network
-	    this.set({
+	    super({
 	      input: inputLayer,
 	      hidden: [hiddenLayer],
 	      output: outputLayer
@@ -2792,63 +2834,54 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // trainer
 	    this.trainer = new Trainer(this);
-	  },
-
-	  Hopfield: function Hopfield(size) {
-
-	    var inputLayer = new Layer(size);
-	    var outputLayer = new Layer(size);
-
-	    inputLayer.project(outputLayer, Layer.connectionType.ALL_TO_ALL);
-
-	    this.set({
-	      input: inputLayer,
-	      hidden: [],
-	      output: outputLayer
-	    });
-
-	    var trainer = new Trainer(this);
-
-	    var proto = Architect.Hopfield.prototype;
-
-	    proto.learn = proto.learn || function(patterns)
-	    {
-	      var set = [];
-	      for (var p in patterns)
-	        set.push({
-	          input: patterns[p],
-	          output: patterns[p]
-	        });
-
-	      return trainer.train(set, {
-	        iterations: 500000,
-	        error: .00005,
-	        rate: 1
-	      });
-	    };
-
-	    proto.feed = proto.feed || function(pattern)
-	    {
-	      var output = this.activate(pattern);
-
-	      var pattern = [];
-	      for (var i in output)
-	        pattern[i] = output[i] > .5 ? 1 : 0;
-
-	      return pattern;
-	    }
 	  }
 	}
 
-	// Extend prototype chain (so every architectures is an instance of Network)
-	for (var architecture in Architect) {
-	  Architect[architecture].prototype = new Network();
-	  Architect[architecture].prototype.constructor = Architect[architecture];
-	}
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
 
-	// export
-	if (module) module.exports = Architect;
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(3)(module)))
+	// Multilayer Perceptron
+	const Network = __webpack_require__(4);
+	const Layer = __webpack_require__(3);
+	const Trainer = __webpack_require__(11);
+
+	module.exports = class Perceptron extends Network {
+	  constructor(...args) {
+	    if (args.length < 3)
+	      throw new Error("not enough layers (minimum 3) !!");
+
+	    const inputs = args.shift(); // first argument
+	    const outputs = args.pop(); // last argument
+	    const layers = args; // all the arguments in the middle
+
+	    const input = new Layer(inputs);
+	    const hidden = [];
+	    const output = new Layer(outputs);
+
+	    let previous = input;
+
+	    // generate hidden layers
+	    for (let level in layers) {
+	      const size = layers[level];
+	      const layer = new Layer(size);
+	      hidden.push(layer);
+	      previous.project(layer);
+	      previous = layer;
+	    }
+	    previous.project(output);
+
+	    // set layers of the neural network
+	    super({
+	      input,
+	      hidden,
+	      output
+	    });
+
+	    // trainer for the network
+	    this.trainer = new Trainer(this);
+	  }
+	};
 
 /***/ }
 /******/ ])

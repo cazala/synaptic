@@ -1,8 +1,7 @@
-const Network = require('../network');
+const AbstractArchitecture = require('./abstract-architecture');
 const Layer = require('../layer');
-const Trainer = require('../trainer');
 
-module.exports = class Hopfield extends Network {
+module.exports = class Hopfield extends AbstractArchitecture {
   constructor(size) {
     const inputLayer = new Layer(size);
     const outputLayer = new Layer(size);
@@ -14,8 +13,6 @@ module.exports = class Hopfield extends Network {
       hidden: [],
       output: outputLayer
     });
-
-    this.trainer = new Trainer(this);
   }
 
   learn(patterns) {

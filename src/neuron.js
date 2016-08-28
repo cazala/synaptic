@@ -743,27 +743,32 @@ Neuron.connection = class NeuronConnection {
 // squashing functions
 Neuron.squash = {};
 
+function registerSquash(name, fn) {
+  Neuron.squash[name] = fn;
+  fn.squashType = [name];
+}
+
 // eq. 5 & 5'
-Neuron.squash.LOGISTIC = (x, derivate) => {
+registerSquash('LOGISTIC', (x, derivate) => {
   if (!derivate)
     return 1 / (1 + Math.exp(-x));
   const fx = Neuron.squash.LOGISTIC(x);
   return fx * (1 - fx);
-};
-Neuron.squash.TANH = (x, derivate) => {
+});
+registerSquash('TANH', (x, derivate) => {
   if (derivate)
     return 1 - Math.pow(Neuron.squash.TANH(x), 2);
   const eP = Math.exp(x);
   const eN = 1 / eP;
   return (eP - eN) / (eP + eN);
-};
-Neuron.squash.IDENTITY = (x, derivate) => derivate ? 1 : x;
-Neuron.squash.HLIM = (x, derivate) => derivate ? 1 : x > 0 ? 1 : 0;
-Neuron.squash.RELU = (x, derivate) => {
+});
+registerSquash('IDENTITY', (x, derivate) => derivate ? 1 : x);
+registerSquash('HLIM', (x, derivate) => derivate ? 1 : x > 0 ? 1 : 0);
+registerSquash('RELU', (x, derivate) => {
   if (derivate)
     return x > 0 ? 1 : 0;
   return x > 0 ? x : 0;
-};
+});
 
 // unique ID's
 ((() => {

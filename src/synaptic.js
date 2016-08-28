@@ -1,22 +1,18 @@
-var Synaptic = {
-    Neuron: require('./neuron'),
-    Layer: require('./layer'),
-    Network: require('./network'),
-    Trainer: require('./trainer'),
-    Architect: require('./architect')
-};
+var Synaptic = {};
+
+Synaptic.Neuron = require('./neuron');
+Synaptic.Layer = require('./layer');
+Synaptic.Network = require('./network/index');
+Synaptic.Trainer = require('./trainer');
+Synaptic.Architect = require('./architect');
 
 module.exports = Synaptic;
 
 // Browser
 if (typeof window == 'object') {
-  (function(){
-    var oldSynaptic = window['synaptic'];
-    Synaptic.ninja = function(){
-      window['synaptic'] = oldSynaptic;
-      return Synaptic;
-    };
-  })();
+  //noinspection CommaExpressionJS
+  Synaptic.ninja = ((oldSynaptic = window['synaptic']) =>
+      () => (window['synaptic'] = oldSynaptic, Synaptic))();
 
   window['synaptic'] = Synaptic;
 }

@@ -1,26 +1,38 @@
-const WorkerNetwork = require('./worker-network');
+var WorkerNetwork = require('./network');
+var constants = require('./worker-communication-constants');
 
-const Class = WorkerNetwork;
-let singleton;
-
-onmessage = function(e) {
+onmessage = function (e) {
   const {method, args, callbackId} = e.data;
-  var response = callMethod(method, args);
-  postMessage({response, callbackId})
+  try {
+    var response = callMethod(method, args);
+    postMessage({response: [null, response], callbackId})
+  } catch (e) {
+    postMessage({response: [e.message], callbackId})
+  }
 };
 
-function callMethod(method, args) {
-  var target = singleton ? singleton : Class;
-  try {
-    var result = Class[method](...args);
-    if (result instanceof Class) {
-      singleton = result;
-      return undefined;
+const callMethod = (function() {
+  var instance;
+
+  return function callMethod(method, args) {
+    var result;
+    switch (method) {
+      case constants.GET:
+        result = instance[args[0]];
+        break;
+      case constants.SET:
+        instance[method][args[0]] = args[1];
+        break;
+      case constants.FROM_JSON:
+        instance = WorkerNetwork.fromJSON(args[0]);
+        break;
+      default:
+        result = instance[method](...args);
+        break;
     }
-    return [null, result];
-  } catch (e) {
-    console.error(e);
-    return [e.message]
+
+
+    return result;
   }
-}
+})();
 

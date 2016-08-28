@@ -1,12 +1,11 @@
 // Multilayer Long Short-Term Memory
-const Network = require('../network');
+const AbstractArchitecture = require('./abstract-architecture');
 const Layer = require('../layer');
-const Trainer = require('../trainer');
 
-module.exports = class LSTM extends Network {
+module.exports = class LSTM extends AbstractArchitecture {
   constructor(...args) {
     if (args.length < 3)
-      throw new Error("not enough layers (minimum 3) !!");
+      throw new Error(`Not enough layers. Minimum 3 expected, instead got ${args[0]}, ${args[1]}`);
 
     const last = args.pop();
     const option = {
@@ -121,8 +120,5 @@ module.exports = class LSTM extends Network {
       hidden: hiddenLayers,
       output: outputLayer
     });
-
-    // trainer
-    this.trainer = new Trainer(this);
   }
-}
+};
