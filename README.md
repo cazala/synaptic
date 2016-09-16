@@ -24,12 +24,12 @@ You may also want to take a look at [this article](http://blog.webkid.io/neural-
 
 ####Demos
 
-- [Solve an XOR](http://synaptic.juancazala.com/#/xor)
-- [Discrete Sequence Recall Task](http://synaptic.juancazala.com/#/dsr)
-- [Learn Image Filters](http://synaptic.juancazala.com/#/image-filters)
-- [Paint an Image](http://synaptic.juancazala.com/#/paint-an-image)
-- [Self Organizing Map](http://synaptic.juancazala.com/#/self-organizing-map)
-- [Read from Wikipedia](http://synaptic.juancazala.com/#/wikipedia)
+- [Solve an XOR](http://caza.la/synaptic/#/xor)
+- [Discrete Sequence Recall Task](http://caza.la/synaptic/#/dsr)
+- [Learn Image Filters](http://caza.la/synaptic/#/image-filters)
+- [Paint an Image](http://caza.la/synaptic/#/paint-an-image)
+- [Self Organizing Map](http://caza.la/synaptic/#/self-organizing-map)
+- [Read from Wikipedia](http://caza.la/synaptic/#/wikipedia)
 
 The source code of these demos can be found in [this branch](https://github.com/cazala/synaptic/tree/gh-pages/scripts).
 
