@@ -1774,7 +1774,7 @@
 
 	    var hardcode = "var inputs = " + this.optimized.data.inputs.length + ";\n";
 	    hardcode += "var outputs = " + this.optimized.data.outputs.length + ";\n";
-	    hardcode += "var F =  new Float64Array([" + this.optimized.memory.toString() + "]);\n";
+	    hardcode += "var F =  new Float64Array([" + this.optimized.memory.join(',') + "]);\n";
 	    hardcode += "var activate = " + this.optimized.activate.toString() + ";\n";
 	    hardcode += "var propagate = " + this.optimized.propagate.toString() + ";\n";
 	    hardcode +=
