@@ -181,6 +181,44 @@ describe('Basic Neural Network', function () {
     var test1 = Math.round(network.activate([1]));
     assert.equal(test1, 0, "1 did not output 0");
   });
+
+});
+
+describe('Train Async', function () {
+
+  it ('Train XOR', function (done) {
+    var perceptron = new Perceptron(2, 3, 1);
+
+    var trainingSet = [{
+      input: [0, 0],
+      output: [0]
+    }, {
+      input: [0, 1],
+      output: [1]
+    }, {
+      input: [1, 0],
+      output: [1]
+    }, {
+      input: [1, 1],
+      output: [0]
+    }];
+
+    var trainer = new Trainer(perceptron);
+
+    trainer.trainAsync(trainingSet, {
+      iterations: 2000,
+      error: .001
+    }).then(function(){
+      assert.isAtMost( perceptron.activate([0, 0]), .49, "[0,0] did not output 0");
+      assert.isAtLeast(perceptron.activate([0, 1]), .51, "[0,1] did not output 1");
+      assert.isAtLeast(perceptron.activate([1, 0]), .51, "[1,0] did not output 1");
+      assert.isAtMost( perceptron.activate([1, 1]), .49, "[1,1] did not output 0");
+      done();
+    }).catch(function(err){
+      done(err);
+    });
+  });
+
 });
 
 describe("Perceptron - XOR", function () {
