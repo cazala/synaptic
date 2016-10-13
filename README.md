@@ -85,7 +85,7 @@ var Neuron = synaptic.Neuron,
 	Architect = synaptic.Architect;
 ```
 
-Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synaptic#architect).
+Now you can start to create networks, train them, or use built-in networks from the [Architect](https://github.com/cazala/synaptic/wiki/Architect/).
 
 ###Examples
 
