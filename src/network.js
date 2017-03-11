@@ -354,6 +354,7 @@ Network.prototype = {
         neuron.squash == Neuron.squash.TANH ? "TANH" :
         neuron.squash == Neuron.squash.IDENTITY ? "IDENTITY" :
         neuron.squash == Neuron.squash.HLIM ? "HLIM" :
+        neuron.squash == Neuron.squash.RELU ? "RELU" :
         null;
 
       neurons.push(copy);
