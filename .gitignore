@@ -18,3 +18,5 @@ demo.js
 debug.html
 
 .settings
+
+npm-debug.log

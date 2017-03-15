@@ -1,7 +1,7 @@
 /*!
  * The MIT License (MIT)
  * 
- * Copyright (c) 2016 Juan Cazala - juancazala.com
+ * Copyright (c) 2017 Juan Cazala - juancazala.com
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
  * 
  * 
  * ********************************************************************************************
- *                                   SYNAPTIC (v1.0.8)
+ *                                   SYNAPTIC (v1.0.10)
  * ********************************************************************************************
  * 
  * Synaptic is a javascript neural network library for node.js and the browser, its generalized
@@ -1590,6 +1590,7 @@
 	        neuron.squash == Neuron.squash.TANH ? "TANH" :
 	        neuron.squash == Neuron.squash.IDENTITY ? "IDENTITY" :
 	        neuron.squash == Neuron.squash.HLIM ? "HLIM" :
+	        neuron.squash == Neuron.squash.RELU ? "RELU" :
 	        null;
 
 	      neurons.push(copy);
