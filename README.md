@@ -89,6 +89,10 @@ Now you can start to create networks, train them, or use built-in networks from 
 
 ###Examples
 
+#####Talk: [Machine Learning with Node.js](https://www.youtube.com/watch?v=M5glN6XjDv8)
+
+An introduction to neural networks on the basis of synaptic. Also covering how to check the performance of the algorithm and how to tackle the error rate.
+
 #####Perceptron
 
 This is how you can create a simple **perceptron**:
