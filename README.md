@@ -15,7 +15,7 @@ The algorithm implemented by this library has been taken from Derek D. Monner's 
 
 There are references to the equations in that paper commented through the source code.
 
-####Introduction
+#### Introduction
 
 If you have no prior knowledge about Neural Networks, you should start by [reading this guide](https://github.com/cazala/synaptic/wiki/Neural-Networks-101).
 
@@ -24,7 +24,7 @@ If you want a practical example on how to feed data to a neural network, then ta
 
 You may also want to take a look at [this article](http://blog.webkid.io/neural-networks-in-javascript/).
 
-####Demos
+#### Demos
 
 - [Solve an XOR](http://caza.la/synaptic/#/xor)
 - [Discrete Sequence Recall Task](http://caza.la/synaptic/#/dsr)
@@ -35,7 +35,7 @@ You may also want to take a look at [this article](http://blog.webkid.io/neural-
 
 The source code of these demos can be found in [this branch](https://github.com/cazala/synaptic/tree/gh-pages/scripts).
 
-####Getting started
+#### Getting started
 
 - [Neurons](https://github.com/cazala/synaptic/wiki/Neurons/)
 - [Layers](https://github.com/cazala/synaptic/wiki/Layers/)
@@ -48,11 +48,11 @@ To try out the examples, checkout the [gh-pages](https://github.com/cazala/synap
 `git checkout gh-pages`
 
 
-##Overview
+## Overview
 
-###Installation
+### Installation
 
-#####In node
+##### In node
 
 You can install synaptic with [npm](http://npmjs.org):
 
@@ -60,7 +60,7 @@ You can install synaptic with [npm](http://npmjs.org):
 npm install synaptic --save
 ```
 
-#####In the browser
+##### In the browser
 
 You can install synaptic with [bower](http://bower.io):
 
@@ -74,7 +74,7 @@ Or you can simply use the CDN link, kindly provided by [CDNjs](https://cdnjs.com
 <script src="https://cdnjs.cloudflare.com/ajax/libs/synaptic/1.0.10/synaptic.js"></script>
 ```
 
-###Usage
+### Usage
 
 ```javascript
 var synaptic = require('synaptic'); // this line is not needed in the browser
@@ -87,9 +87,9 @@ var Neuron = synaptic.Neuron,
 
 Now you can start to create networks, train them, or use built-in networks from the [Architect](http://github.com/cazala/synaptic#architect).
 
-###Examples
+### Examples
 
-#####Perceptron
+##### Perceptron
 
 This is how you can create a simple **perceptron**:
 
@@ -134,7 +134,7 @@ myPerceptron.activate([0,1]); // 0.9831714267395621
 myPerceptron.activate([1,1]); // 0.02128894618097928
 ```
 
-#####Long Short-Term Memory
+##### Long Short-Term Memory
 
 This is how you can create a simple **long short-term memory** network with input gate, forget gate, output gate, and peephole connections:
 
@@ -192,7 +192,7 @@ LSTM.prototype.constructor = LSTM;
 These are examples for explanatory purposes, the [Architect](https://github.com/cazala/synaptic/wiki/Architect/) already includes Multilayer Perceptrons and
 Multilayer LSTM network architectures.
 
-##Contribute
+## Contribute
 
 **Synaptic** is an Open Source project that started in Buenos Aires, Argentina. Anybody in the world is welcome to contribute to the development of the project.
 
