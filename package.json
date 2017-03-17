@@ -51,7 +51,7 @@
   "bugs": {
     "url": "https://github.com/cazala/synaptic/issues"
   },
-  "homepage": "http://synaptic.juancazala.com",
+  "homepage": "http://caza.la/synaptic",
   "engines": {
     "node": ">=4"
   }
