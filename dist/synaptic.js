@@ -24,7 +24,7 @@
  * 
  * 
  * ********************************************************************************************
- *                                   SYNAPTIC (v1.0.10)
+ *                                   SYNAPTIC (v1.0.11)
  * ********************************************************************************************
  * 
  * Synaptic is a javascript neural network library for node.js and the browser, its generalized
@@ -1894,6 +1894,13 @@
 	                                        TRAINER
 	*******************************************************************************************/
 
+	//+ Jonas Raoni Soares Silva
+	//@ http://jsfromhell.com/array/shuffle [v1.0]
+	function shuffleInplace(o) { //v1.0
+	  for (var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+	  return o;
+	};
+
 	function Trainer(network, options) {
 	  options = options || {};
 	  this.network = network;
@@ -1919,14 +1926,6 @@
 	    var start = Date.now();
 
 	    if (options) {
-	      if (options.shuffle) {
-	        //+ Jonas Raoni Soares Silva
-	        //@ http://jsfromhell.com/array/shuffle [v1.0]
-	        function shuffle(o) { //v1.0
-	          for (var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
-	          return o;
-	        };
-	      }
 	      if (options.iterations)
 	        this.iterations = options.iterations;
 	      if (options.error)
@@ -2003,7 +2002,7 @@
 	          console.log('iterations', iterations, 'error', error, 'rate', currentRate);
 	        };
 	        if (options.shuffle)
-	          shuffle(set);
+	          shuffleInplace(set);
 	      }
 	    }
 
