@@ -1,14 +1,13 @@
 {
   "name": "synaptic",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "description": "architecture-free neural network library",
   "main": "./src/synaptic",
   "scripts": {
-    "test": "npm run test:src",
-    "test:src": "mocha test --require src/synaptic.js ./test",
+    "test": "npm run test:mocha:src",
     "test:dist": "npm run build && npm run test:mocha:dist && npm run test:karma:browsers",
-    "test:mocha:src": "mocha test --require src/synaptic.js ./test",
-    "test:mocha:dist": "mocha test --require dist/synaptic.js ./test",
+    "test:mocha:src": "mocha test/_inject-src test",
+    "test:mocha:dist": "mocha test/_inject-dist test",
     "test:karma:browsers": "karma start --single-run --browsers Chrome,Firefox,SafariPrivate",
     "test:karma:phantomjs": "karma start --single-run --browsers PhantomJS",
     "test:travis": "npm run test:mocha:src && npm run build && npm run test:mocha:dist",

@@ -26,7 +26,6 @@ Trainer.prototype = {
 
   // trains any given set to a network
   train: function(set, options) {
-
     var error = 1;
     var iterations = bucketSize = 0;
     var abort = false;
@@ -87,7 +86,7 @@ Trainer.prototype = {
         var currentBucket = Math.floor(iterations / bucketSize);
         currentRate = this.rate[currentBucket] || currentRate;
       }
-      
+
       if(typeof this.rate === 'function') {
         currentRate = this.rate(iterations, lastError);
       }
@@ -141,9 +140,9 @@ Trainer.prototype = {
   // preforms one training epoch and returns the error (private function used in this.train)
   _trainSet: function(set, currentRate, costFunction) {
     var errorSum = 0;
-    for (var train in set) {
-      var input = set[train].input;
-      var target = set[train].output;
+    for (var i = 0; i < set.length; i++) {
+      var input = set[i].input;
+      var target = set[i].output;
 
       var output = this.network.activate(input);
       this.network.propagate(currentRate, target);
@@ -155,16 +154,15 @@ Trainer.prototype = {
 
   // tests a set and returns the error and elapsed time
   test: function(set, options) {
-
     var error = 0;
     var input, output, target;
     var cost = options && options.cost || this.cost || Trainer.cost.MSE;
 
     var start = Date.now();
 
-    for (var test in set) {
-      input = set[test].input;
-      target = set[test].output;
+    for (var i = 0; i < set.length; i++) {
+      input = set[i].input;
+      target = set[i].output;
       output = this.network.activate(input);
       error += cost(target, output);
     }
@@ -181,7 +179,6 @@ Trainer.prototype = {
 
   // trains any given set to a network using a WebWorker [deprecated: use trainAsync instead]
   workerTrain: function(set, callback, options, suppressWarning) {
-
     if (!suppressWarning) {
       console.warn('Deprecated: do not use `workerTrain`, use `trainAsync` instead.')
     }
@@ -232,7 +229,6 @@ Trainer.prototype = {
 
   // trains an XOR to the network
   XOR: function(options) {
-
     if (this.network.inputs() != 2 || this.network.outputs() != 1)
       throw new Error("Incompatible network (2 inputs, 1 output)");
 
@@ -662,13 +658,13 @@ Trainer.cost = {
   MSE: function(target, output)
   {
     var mse = 0;
-    for (var i in output)
+    for (var i = 0; i < output.length; i++)
       mse += Math.pow(target[i] - output[i], 2);
     return mse / output.length;
   },
   BINARY: function(target, output){
     var misses = 0;
-    for (var i in output)
+    for (var i = 0; i < output.length; i++)
       misses += Math.round(target[i] * 2) != Math.round(output[i] * 2);
     return misses;
   }

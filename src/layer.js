@@ -9,10 +9,10 @@ var Neuron  = require('./neuron')
                                             LAYER
 *******************************************************************************************/
 
-function Layer(size, label) {
+function Layer(size) {
   this.size = size | 0;
   this.list = [];
-  this.label = label || null;
+
   this.connectedTo = [];
 
   while (size--) {

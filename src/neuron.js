@@ -7,7 +7,7 @@ if (module) module.exports = Neuron;
 
 function Neuron() {
   this.ID = Neuron.uid();
-  this.label = null;
+
   this.connections = {
     inputs: {},
     projected: {},
@@ -276,13 +276,15 @@ Neuron.prototype = {
 
   // clears all the traces (the neuron forgets it's context, but the connections remain intact)
   clear: function() {
-
-    for (var trace in this.trace.elegibility)
+    for (var trace in this.trace.elegibility){
       this.trace.elegibility[trace] = 0;
+    }
 
-    for (var trace in this.trace.extended)
-      for (var extended in this.trace.extended[trace])
+    for (var trace in this.trace.extended){
+      for (var extended in this.trace.extended[trace]){
         this.trace.extended[trace][extended] = 0;
+      }
+    }
 
     this.error.responsibility = this.error.projected = this.error.gated = 0;
   },
@@ -291,11 +293,13 @@ Neuron.prototype = {
   reset: function() {
     this.clear();
 
-    for (var type in this.connections)
-      for (var connection in this.connections[type])
+    for (var type in this.connections){
+      for (var connection in this.connections[type]){
         this.connections[type][connection].weight = Math.random() * .2 - .1;
-    this.bias = Math.random() * .2 - .1;
+      }
+    }
 
+    this.bias = Math.random() * .2 - .1;
     this.old = this.state = this.activation = 0;
   },
 
@@ -359,8 +363,8 @@ Neuron.prototype = {
           var value = unit[prop];
 
         var id = prop + '_';
-        for (var property in args)
-          id += args[property] + '_';
+        for (var i = 0; i < args.length; i++)
+          id += args[i] + '_';
         id += unit.ID;
         if (id in variables)
           return variables[id];
@@ -377,7 +381,7 @@ Neuron.prototype = {
       var args = Array.prototype.slice.call(arguments);
       var store = args.pop();
       var sentence = "";
-      for (var i in args)
+      for (var i = 0; i < args.length; i++)
         if (typeof args[i] == 'string')
           sentence += args[i];
         else
@@ -471,7 +475,6 @@ Neuron.prototype = {
 
       for (var id in this.trace.extended) {
         // calculate extended elegibility traces in advance
-
         var neuron = this.neighboors[id];
         var influence = getVar('influences[' + neuron.ID + ']');
         var neuron_old = getVar(neuron, 'old');
@@ -731,39 +734,33 @@ Neuron.prototype = {
   }
 }
 
-
 // represents a connection between two neurons
 Neuron.connection = function Connection(from, to, weight) {
-
   if (!from || !to)
     throw new Error("Connection Error: Invalid neurons");
 
   this.ID = Neuron.connection.uid();
   this.from = from;
   this.to = to;
-  this.weight = typeof weight == 'undefined' ? Math.random() * .2 - .1 :
-    weight;
+  this.weight = typeof weight == 'undefined' ? Math.random() * .2 - .1 : weight;
   this.gain = 1;
   this.gater = null;
 }
-
 
 // squashing functions
 Neuron.squash = {};
 
 // eq. 5 & 5'
 Neuron.squash.LOGISTIC = function(x, derivate) {
+  var fx = 1 / (1 + Math.exp(-x));
   if (!derivate)
-    return 1 / (1 + Math.exp(-x));
-  var fx = Neuron.squash.LOGISTIC(x);
+    return fx;
   return fx * (1 - fx);
 };
 Neuron.squash.TANH = function(x, derivate) {
-  if (derivate)
-    return 1 - Math.pow(Neuron.squash.TANH(x), 2);
-  var eP = Math.exp(x);
-  var eN = 1 / eP;
-  return (eP - eN) / (eP + eN);
+  if(derivate)
+    return 1 - Math.pow(Math.tanh(x), 2);
+  return Math.tanh(x);
 };
 Neuron.squash.IDENTITY = function(x, derivate) {
   return derivate ? 1 : x;

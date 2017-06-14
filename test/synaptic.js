@@ -9,13 +9,9 @@ var Layer = synaptic.Layer;
 var Network = synaptic.Network;
 var Trainer = synaptic.Trainer;
 
-
-
 var learningRate = .5;
 
-
 // utils
-
 function noRepeat(range, avoid) {
   var number = Math.random() * range | 0;
   for (var i in avoid) {
@@ -186,7 +182,8 @@ describe('Basic Neural Network', function () {
 describe("Perceptron - XOR", function () {
 
   var perceptron = new Perceptron(2, 3, 1);
-  perceptron.trainer.XOR();
+  var trainer = new Trainer(perceptron);
+  trainer.XOR();
 
   it("should return near-0 value on [0,0]", function () {
     assert.isAtMost(perceptron.activate([0, 0]), .49, "[0,0] did not output 0");
@@ -211,6 +208,7 @@ describe("Perceptron - SIN", function () {
   };
 
   var sinNetwork = new Perceptron(1, 12, 1);
+  var trainer = new Trainer(sinNetwork);
   var trainingSet = [];
 
   while (trainingSet.length < 800) {
@@ -221,7 +219,7 @@ describe("Perceptron - SIN", function () {
     });
   }
 
-  var results = sinNetwork.trainer.train(trainingSet, {
+  var results = trainer.train(trainingSet, {
     iterations: 2000,
     log: false,
     error: 1e-6,
@@ -251,6 +249,7 @@ describe("Perceptron - SIN - CrossValidate", function () {
   };
 
   var sinNetwork = new Perceptron(1, 12, 1);
+  var trainer = new Trainer(sinNetwork);
 
   var trainingSet = Array.apply(null, Array(800)).map(function () {
     var inputValue = Math.random() * Math.PI * 2;
@@ -260,7 +259,7 @@ describe("Perceptron - SIN - CrossValidate", function () {
     };
   });
 
-  var results = sinNetwork.trainer.train(trainingSet, {
+  var results = trainer.train(trainingSet, {
     iterations: 2000,
     log: false,
     error: 1e-6,
@@ -298,14 +297,15 @@ describe("Perceptron - SIN - CrossValidate", function () {
 });
 
 describe("LSTM - Discrete Sequence Recall", function () {
-
   var targets = [2, 4];
   var distractors = [3, 5];
   var prompts = [0, 1];
   var length = 9;
 
   var lstm = new LSTM(5, 3, 2);
-  lstm.trainer.DSR({
+  var trainer = new Trainer(lstm);
+
+  trainer.DSR({
     targets: targets,
     distractors: distractors,
     prompts: prompts,
@@ -396,7 +396,8 @@ describe("LSTM - Discrete Sequence Recall", function () {
 
 describe("LSTM - Timing Task", function () {
   var network = new LSTM(2, 7, 1);
-  var result = network.trainer.timingTask({
+  var trainer = new Trainer(network);
+  var result = trainer.timingTask({
     log: false,
     trainSamples: 4000,
     testSamples: 500
@@ -493,9 +494,10 @@ describe("Cloned Networks Equivalency", function () {
 
 describe("Scheduled Tasks", function () {
   var perceptron = new Perceptron(2, 3, 1);
+  var trainer = new Trainer(perceptron);
 
   it('should stop training at 3000 iterations', function () {
-    var final_stats = perceptron.trainer.XOR({
+    var final_stats = trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
       error: 0.000001,
@@ -510,7 +512,7 @@ describe("Scheduled Tasks", function () {
   });
 
   it('should abort the training at 2000 iterations', function () {
-    var final_stats = perceptron.trainer.XOR({
+    var final_stats = trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
       error: 0.000001,
@@ -525,7 +527,7 @@ describe("Scheduled Tasks", function () {
   });
 
   it('should work even if schedule.do() returns no value', function () {
-    var final_stats = perceptron.trainer.XOR({
+    var final_stats = trainer.XOR({
       iterations: 3000,
       rate: 0.000001,
       error: 0.000001,
@@ -541,9 +543,10 @@ describe("Scheduled Tasks", function () {
 
 describe("Rate Callback Check", function () {
   var perceptron = new Perceptron(2, 3, 1);
+  var trainer = new Trainer(perceptron);
 
   it('should switch rate from 0.01 to 0.005 after 1000 iterations', function () {
-    var final_stats = perceptron.trainer.XOR({
+    var final_stats = trainer.XOR({
       iterations: 2000,
       rate: function (iterations, error) {
         return iterations < 1000 ? 0.01 : 0.005
@@ -573,9 +576,10 @@ describe("Rate Callback Check", function () {
 
 describe("Rate Array Check", function () {
   var perceptron = new Perceptron(2, 3, 1);
+  var trainer = new Trainer(perceptron);
 
   it('should switch rate from 0.01 to 0.005 after 1000 iterations', function () {
-    var final_stats = perceptron.trainer.XOR({
+    var final_stats = trainer.XOR({
       iterations: 2000,
       rate: [0.01, 0.005],
       error: 0.000001,

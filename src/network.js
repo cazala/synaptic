@@ -12,10 +12,10 @@ var Neuron  = require('./neuron')
 
 function Network(layers) {
   if (typeof layers != 'undefined') {
-    this.layers = layers || {
-      input: null,
-      hidden: {},
-      output: null
+    this.layers = {
+      input:  layers.input || null,
+      hidden: layers.hidden || [],
+      output: layers.output || null
     };
     this.optimized = null;
   }
@@ -24,12 +24,11 @@ Network.prototype = {
 
   // feed-forward activation of all the layers to produce an ouput
   activate: function(input) {
-
     if (this.optimized === false)
     {
       this.layers.input.activate(input);
-      for (var layer in this.layers.hidden)
-        this.layers.hidden[layer].activate();
+      for (var i = 0; i < this.layers.hidden.length; i++)
+        this.layers.hidden[i].activate();
       return this.layers.output.activate();
     }
     else
@@ -42,16 +41,11 @@ Network.prototype = {
 
   // back-propagate the error thru the network
   propagate: function(rate, target) {
-
     if (this.optimized === false)
     {
       this.layers.output.propagate(rate, target);
-      var reverse = [];
-      for (var layer in this.layers.hidden)
-        reverse.push(this.layers.hidden[layer]);
-      reverse.reverse();
-      for (var layer in reverse)
-        reverse[layer].propagate(rate);
+      for (var i = this.layers.hidden.length - 1; i >= 0; i--)
+        this.layers.hidden[i].propagate(rate);
     }
     else
     {
@@ -63,7 +57,6 @@ Network.prototype = {
 
   // project a connection to another unit (either a network or a layer)
   project: function(unit, type, weights) {
-
     if (this.optimized)
       this.optimized.reset();
 
@@ -85,16 +78,14 @@ Network.prototype = {
 
   // clear all elegibility traces and extended elegibility traces (the network forgets its context, but not what was trained)
   clear: function() {
-
     this.restore();
 
     var inputLayer = this.layers.input,
       outputLayer = this.layers.output;
 
     inputLayer.clear();
-    for (var layer in this.layers.hidden) {
-      var hiddenLayer = this.layers.hidden[layer];
-      hiddenLayer.clear();
+    for (var i = 0; i < this.layers.hidden.length; i++) {
+      this.layers.hidden[i].clear();
     }
     outputLayer.clear();
 
@@ -104,16 +95,14 @@ Network.prototype = {
 
   // reset all weights and clear all traces (ends up like a new network)
   reset: function() {
-
     this.restore();
 
     var inputLayer = this.layers.input,
       outputLayer = this.layers.output;
 
     inputLayer.reset();
-    for (var layer in this.layers.hidden) {
-      var hiddenLayer = this.layers.hidden[layer];
-      hiddenLayer.reset();
+    for (var i = 0; i < this.layers.hidden.length; i++) {
+      this.layers.hidden[i].reset();
     }
     outputLayer.reset();
 
@@ -123,19 +112,19 @@ Network.prototype = {
 
   // hardcodes the behaviour of the whole network into a single optimized function
   optimize: function() {
-
     var that = this;
     var optimized = {};
     var neurons = this.neurons();
 
-    for (var i in neurons) {
+    for (var i = 0; i < neurons.length; i++) {
       var neuron = neurons[i].neuron;
       var layer = neurons[i].layer;
       while (neuron.neuron)
         neuron = neuron.neuron;
       optimized = neuron.optimize(optimized, layer);
     }
-    for (var i in optimized.propagation_sentences)
+
+    for (var i = 0; i < optimized.propagation_sentences.length; i++)
       optimized.propagation_sentences[i].reverse();
     optimized.propagation_sentences.reverse();
 
@@ -146,27 +135,27 @@ Network.prototype = {
       hardcode += "F[" + optimized.variables[i].id + "] = " + (optimized.variables[
         i].value || 0) + "; ";
     hardcode += "var activate = function(input){\n";
-    for (var i in optimized.inputs)
+    for (var i = 0; i < optimized.inputs.length; i++)
       hardcode += "F[" + optimized.inputs[i] + "] = input[" + i + "]; ";
-    for (var currentLayer in optimized.activation_sentences) {
-      if (optimized.activation_sentences[currentLayer].length > 0) {
-        for (var currentNeuron in optimized.activation_sentences[currentLayer]) {
-          hardcode += optimized.activation_sentences[currentLayer][currentNeuron].join(" ");
-          hardcode += optimized.trace_sentences[currentLayer][currentNeuron].join(" ");
+    for (var i = 0; i < optimized.activation_sentences.length; i++) {
+      if (optimized.activation_sentences[i].length > 0) {
+        for (var j = 0; j < optimized.activation_sentences[i].length; j++) {
+          hardcode += optimized.activation_sentences[i][j].join(" ");
+          hardcode += optimized.trace_sentences[i][j].join(" ");
         }
       }
     }
     hardcode += " var output = []; "
-    for (var i in optimized.outputs)
+    for (var i = 0; i < optimized.outputs.length; i++)
       hardcode += "output[" + i + "] = F[" + optimized.outputs[i] + "]; ";
     hardcode += "return output; }; "
     hardcode += "var propagate = function(rate, target){\n";
     hardcode += "F[" + optimized.variables.rate.id + "] = rate; ";
-    for (var i in optimized.targets)
+    for (var i = 0; i < optimized.targets.length; i++)
       hardcode += "F[" + optimized.targets[i] + "] = target[" + i + "]; ";
-    for (var currentLayer in optimized.propagation_sentences)
-      for (var currentNeuron in optimized.propagation_sentences[currentLayer])
-        hardcode += optimized.propagation_sentences[currentLayer][currentNeuron].join(" ") + " ";
+    for (var i = 0; i < optimized.propagation_sentences.length; i++)
+      for (var j = 0; j < optimized.propagation_sentences[i].length; j++)
+        hardcode += optimized.propagation_sentences[i][j].join(" ") + " ";
     hardcode += " };\n";
     hardcode +=
       "var ownership = function(memoryBuffer){\nF = memoryBuffer;\nthis.memory = F;\n};\n";
@@ -230,8 +219,7 @@ Network.prototype = {
     var list = this.neurons();
 
     // link id's to positions in the array
-    var ids = {};
-    for (var i in list) {
+    for (var i = 0; i < list.length; i++) {
       var neuron = list[i].neuron;
       while (neuron.neuron)
         neuron = neuron.neuron;
@@ -249,14 +237,8 @@ Network.prototype = {
         for (var input in neuron.trace.extended[gated])
           neuron.trace.extended[gated][input] = getValue(neuron, 'trace',
             'extended', gated, input);
-    }
 
-    // get connections
-    for (var i in list) {
-      var neuron = list[i].neuron;
-      while (neuron.neuron)
-        neuron = neuron.neuron;
-
+      // get connections
       for (var j in neuron.connections.projected) {
         var connection = neuron.connections.projected[j];
         connection.weight = getValue(connection, 'weight');
@@ -267,31 +249,33 @@ Network.prototype = {
 
   // returns all the neurons in the network
   neurons: function() {
-
     var neurons = [];
 
     var inputLayer = this.layers.input.neurons(),
       outputLayer = this.layers.output.neurons();
 
-    for (var neuron in inputLayer)
+    for (var i = 0; i < inputLayer.length; i++) {
       neurons.push({
-        neuron: inputLayer[neuron],
+        neuron: inputLayer[i],
         layer: 'input'
       });
+    }
 
-    for (var layer in this.layers.hidden) {
-      var hiddenLayer = this.layers.hidden[layer].neurons();
-      for (var neuron in hiddenLayer)
+    for (var i = 0; i < this.layers.hidden.length; i++) {
+      var hiddenLayer = this.layers.hidden[i].neurons();
+      for (var j = 0; j < hiddenLayer.length; j++)
         neurons.push({
-          neuron: hiddenLayer[neuron],
-          layer: layer
+          neuron: hiddenLayer[j],
+          layer: i
         });
     }
-    for (var neuron in outputLayer)
+
+    for (var i = 0; i < outputLayer.length; i++) {
       neurons.push({
-        neuron: outputLayer[neuron],
+        neuron: outputLayer[i],
         layer: 'output'
       });
+    }
 
     return neurons;
   },
@@ -308,7 +292,6 @@ Network.prototype = {
 
   // sets the layers of the network
   set: function(layers) {
-
     this.layers = layers;
     if (this.optimized)
       this.optimized.reset();
@@ -323,7 +306,6 @@ Network.prototype = {
 
   // returns a json that represents all the neurons and connections of the network
   toJSON: function(ignoreTraces) {
-
     this.restore();
 
     var list = this.neurons();
@@ -332,7 +314,7 @@ Network.prototype = {
 
     // link id's to positions in the array
     var ids = {};
-    for (var i in list) {
+    for (var i = 0; i < list.length; i++) {
       var neuron = list[i].neuron;
       while (neuron.neuron)
         neuron = neuron.neuron;
@@ -360,8 +342,7 @@ Network.prototype = {
       neurons.push(copy);
     }
 
-    // get connections
-    for (var i in list) {
+    for(var i = 0; i < list.length; i++){
       var neuron = list[i].neuron;
       while (neuron.neuron)
         neuron = neuron.neuron;
@@ -375,13 +356,14 @@ Network.prototype = {
           gater: connection.gater ? ids[connection.gater.ID] : null,
         });
       }
-      if (neuron.selfconnected())
+      if (neuron.selfconnected()) {
         connections.push({
           from: ids[neuron.ID],
           to: ids[neuron.ID],
           weight: neuron.selfconnection.weight,
           gater: neuron.selfconnection.gater ? ids[neuron.selfconnection.gater.ID] : null,
         });
+      }
     }
 
     return {
@@ -400,12 +382,12 @@ Network.prototype = {
       edgeConnection = false;
     var code = "digraph nn {\n    rankdir = BT\n";
     var layers = [this.layers.input].concat(this.layers.hidden, this.layers.output);
-    for (var layer in layers) {
-      for (var to in layers[layer].connectedTo) { // projections
-        var connection = layers[layer].connectedTo[to];
+    for (var i = 0; i < layers.length; i++) {
+      for (var j = 0; j < layers[i].connectedTo.length; j++) { // projections
+        var connection = layers[i].connectedTo[j];
         var layerTo = connection.to;
         var size = connection.size;
-        var layerID = layers.indexOf(layers[layer]);
+        var layerID = layers.indexOf(layers[i]);
         var layerToID = layers.indexOf(layerTo);
         /* http://stackoverflow.com/questions/26845540/connect-edges-with-graph-dot
          * DOT does not support edge-to-edge connections
@@ -453,18 +435,18 @@ Network.prototype = {
     var activation = "function (input) {\n";
 
     // build inputs
-    for (var i in data.inputs)
+    for (var i = 0; i < data.inputs; i++)
       activation += "F[" + data.inputs[i] + "] = input[" + i + "];\n";
 
     // build network activation
-    for (var neuron in data.activate) { // shouldn't this be layer?
-      for (var sentence in data.activate[neuron])
-        activation += data.activate[neuron][sentence].join('') + "\n";
+    for (var i = 0; i < data.activate.length; i++) { // shouldn't this be layer?
+      for (var j = 0; j <  data.activate[i].length; j++)
+        activation += data.activate[i][j].join('') + "\n";
     }
 
     // build outputs
     activation += "var output = [];\n";
-    for (var i in data.outputs)
+    for (var i = 0; i < data.outputs.length; i++)
       activation += "output[" + i + "] = F[" + data.outputs[i] + "];\n";
     activation += "return output;\n}";
 
@@ -472,13 +454,15 @@ Network.prototype = {
     var memory = activation.match(/F\[(\d+)\]/g);
     var dimension = 0;
     var ids = {};
-    for (var address in memory) {
-      var tmp = memory[address].match(/\d+/)[0];
+
+    for (var i = 0; i < memory.length; i++) {
+      var tmp = memory[i].match(/\d+/)[0];
       if (!(tmp in ids)) {
         ids[tmp] = dimension++;
       }
     }
     var hardcode = "F = {\n";
+
     for (var i in ids)
       hardcode += ids[i] + ": " + this.optimized.memory[i] + ",\n";
     hardcode = hardcode.substring(0, hardcode.length - 2) + "\n};\n";
@@ -597,7 +581,6 @@ Network.getWorkerSharedFunctions = function() {
 
 // rebuild a network that has been stored in a json using the method toJSON()
 Network.fromJSON = function(json) {
-
   var neurons = [];
 
   var layers = {
@@ -606,7 +589,7 @@ Network.fromJSON = function(json) {
     output: new Layer()
   };
 
-  for (var i in json.neurons) {
+  for (var i = 0; i < json.neurons.length; i++) {
     var config = json.neurons[i];
 
     var neuron = new Neuron();
@@ -630,7 +613,7 @@ Network.fromJSON = function(json) {
     }
   }
 
-  for (var i in json.connections) {
+  for (var i = 0; i < json.connections.length; i++) {
     var config = json.connections[i];
     var from = neurons[config.from];
     var to = neurons[config.to];

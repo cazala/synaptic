@@ -12,7 +12,6 @@ var Architect = {
 
   // Multilayer Perceptron
   Perceptron: function Perceptron() {
-
     var args = Array.prototype.slice.call(arguments); // convert arguments to Array
     if (args.length < 3)
       throw new Error("not enough layers (minimum 3) !!");
@@ -28,8 +27,8 @@ var Architect = {
     var previous = input;
 
     // generate hidden layers
-    for (var level in layers) {
-      var size = layers[level];
+    for (var i = 0; i < layers.length; i++) {
+      var size = layers[i];
       var layer = new Layer(size);
       hidden.push(layer);
       previous.project(layer);
@@ -43,14 +42,10 @@ var Architect = {
       hidden: hidden,
       output: output
     });
-
-    // trainer for the network
-    this.trainer = new Trainer(this);
   },
 
   // Multilayer Long Short-Term Memory
   LSTM: function LSTM() {
-
     var args = Array.prototype.slice.call(arguments); // convert arguments to array
     if (args.length < 3)
       throw new Error("not enough layers (minimum 3) !!");
@@ -75,8 +70,9 @@ var Architect = {
         option.outputToGates = last.outputToGates;
       if (last.hasOwnProperty('inputToOutput'))
         option.inputToOutput = last.inputToOutput;
-    } else
+    } else {
       var outputs = last;
+    }
 
     var inputs = args.shift();
     var layers = args;
@@ -88,9 +84,9 @@ var Architect = {
     var previous = null;
 
     // generate layers
-    for (var layer in layers) {
+    for (var i = 0; i < layers.length; i++) {
       // generate memory blocks (memory cell and respective gates)
-      var size = layers[layer];
+      var size = layers[i];
 
       var inputGate = new Layer(size).set({
         bias: 1
@@ -168,14 +164,10 @@ var Architect = {
       hidden: hiddenLayers,
       output: outputLayer
     });
-
-    // trainer
-    this.trainer = new Trainer(this);
   },
 
   // Liquid State Machine
   Liquid: function Liquid(inputs, hidden, outputs, connections, gates) {
-
     // create layers
     var inputLayer = new Layer(inputs);
     var hiddenLayer = new Layer(hidden);
@@ -212,13 +204,9 @@ var Architect = {
       hidden: [hiddenLayer],
       output: outputLayer
     });
-
-    // trainer
-    this.trainer = new Trainer(this);
   },
 
   Hopfield: function Hopfield(size) {
-
     var inputLayer = new Layer(size);
     var outputLayer = new Layer(size);
 
