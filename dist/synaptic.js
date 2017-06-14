@@ -1535,7 +1535,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  // sets the layers of the network
 	  set: function(layers) {
-	    this.layers = layers;
+	    this.layers = {
+	      input:  layers.input || null,
+	      hidden: layers.hidden || [],
+	      output: layers.output || null
+	    };
 	    if (this.optimized)
 	      this.optimized.reset();
 	  },
