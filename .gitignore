@@ -14,8 +14,9 @@ node_modules
 # Demo.
 demo.js
 
-# Degub
+# Debug
 debug.html
+
 
 .settings
 
