@@ -15,10 +15,6 @@ module.exports = {
   },
   plugins: [
     new webpack.NoErrorsPlugin(),
-    new webpack.BannerPlugin(license()),
-    new webpack.optimize.UglifyJsPlugin({
-      include: /\.min\.js$/,
-      minimize: true
-    })
+    new webpack.BannerPlugin(license())
   ]
 }
