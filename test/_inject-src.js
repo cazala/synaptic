@@ -1,1 +1,3 @@
-global.synaptic = require('../src/synaptic');
+if(typeof global.synaptic == 'undefined'){
+  global.synaptic = require('../src/synaptic');
+}

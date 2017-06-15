@@ -24,7 +24,7 @@
  * 
  * 
  * ********************************************************************************************
- *                                   SYNAPTIC (v1.0.11)
+ *                                   SYNAPTIC (v1.0.12)
  * ********************************************************************************************
  * 
  * Synaptic is a javascript neural network library for node.js and the browser, its generalized
@@ -47,7 +47,17 @@
  * There are references to the equations in that paper commented through the source code.
  * 
  */
-/******/ (function(modules) { // webpackBootstrap
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory();
+	else if(typeof define === 'function' && define.amd)
+		define([], factory);
+	else if(typeof exports === 'object')
+		exports["synaptic"] = factory();
+	else
+		root["synaptic"] = factory();
+})(this, function() {
+return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 
@@ -91,7 +101,7 @@
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;var Synaptic = {
 	    Neuron: __webpack_require__(1),
@@ -128,9 +138,9 @@
 	}
 
 
-/***/ },
+/***/ }),
 /* 1 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(module) {// export
 	if (module) module.exports = Neuron;
@@ -141,7 +151,7 @@
 
 	function Neuron() {
 	  this.ID = Neuron.uid();
-	  this.label = null;
+
 	  this.connections = {
 	    inputs: {},
 	    projected: {},
@@ -410,13 +420,15 @@
 
 	  // clears all the traces (the neuron forgets it's context, but the connections remain intact)
 	  clear: function() {
-
-	    for (var trace in this.trace.elegibility)
+	    for (var trace in this.trace.elegibility){
 	      this.trace.elegibility[trace] = 0;
+	    }
 
-	    for (var trace in this.trace.extended)
-	      for (var extended in this.trace.extended[trace])
+	    for (var trace in this.trace.extended){
+	      for (var extended in this.trace.extended[trace]){
 	        this.trace.extended[trace][extended] = 0;
+	      }
+	    }
 
 	    this.error.responsibility = this.error.projected = this.error.gated = 0;
 	  },
@@ -425,11 +437,13 @@
 	  reset: function() {
 	    this.clear();
 
-	    for (var type in this.connections)
-	      for (var connection in this.connections[type])
+	    for (var type in this.connections){
+	      for (var connection in this.connections[type]){
 	        this.connections[type][connection].weight = Math.random() * .2 - .1;
-	    this.bias = Math.random() * .2 - .1;
+	      }
+	    }
 
+	    this.bias = Math.random() * .2 - .1;
 	    this.old = this.state = this.activation = 0;
 	  },
 
@@ -493,8 +507,8 @@
 	          var value = unit[prop];
 
 	        var id = prop + '_';
-	        for (var property in args)
-	          id += args[property] + '_';
+	        for (var i = 0; i < args.length; i++)
+	          id += args[i] + '_';
 	        id += unit.ID;
 	        if (id in variables)
 	          return variables[id];
@@ -511,7 +525,7 @@
 	      var args = Array.prototype.slice.call(arguments);
 	      var store = args.pop();
 	      var sentence = "";
-	      for (var i in args)
+	      for (var i = 0; i < args.length; i++)
 	        if (typeof args[i] == 'string')
 	          sentence += args[i];
 	        else
@@ -605,7 +619,6 @@
 
 	      for (var id in this.trace.extended) {
 	        // calculate extended elegibility traces in advance
-
 	        var neuron = this.neighboors[id];
 	        var influence = getVar('influences[' + neuron.ID + ']');
 	        var neuron_old = getVar(neuron, 'old');
@@ -865,39 +878,33 @@
 	  }
 	}
 
-
 	// represents a connection between two neurons
 	Neuron.connection = function Connection(from, to, weight) {
-
 	  if (!from || !to)
 	    throw new Error("Connection Error: Invalid neurons");
 
 	  this.ID = Neuron.connection.uid();
 	  this.from = from;
 	  this.to = to;
-	  this.weight = typeof weight == 'undefined' ? Math.random() * .2 - .1 :
-	    weight;
+	  this.weight = typeof weight == 'undefined' ? Math.random() * .2 - .1 : weight;
 	  this.gain = 1;
 	  this.gater = null;
 	}
-
 
 	// squashing functions
 	Neuron.squash = {};
 
 	// eq. 5 & 5'
 	Neuron.squash.LOGISTIC = function(x, derivate) {
+	  var fx = 1 / (1 + Math.exp(-x));
 	  if (!derivate)
-	    return 1 / (1 + Math.exp(-x));
-	  var fx = Neuron.squash.LOGISTIC(x);
+	    return fx;
 	  return fx * (1 - fx);
 	};
 	Neuron.squash.TANH = function(x, derivate) {
-	  if (derivate)
-	    return 1 - Math.pow(Neuron.squash.TANH(x), 2);
-	  var eP = Math.exp(x);
-	  var eN = 1 / eP;
-	  return (eP - eN) / (eP + eN);
+	  if(derivate)
+	    return 1 - Math.pow(Math.tanh(x), 2);
+	  return Math.tanh(x);
 	};
 	Neuron.squash.IDENTITY = function(x, derivate) {
 	  return derivate ? 1 : x;
@@ -931,9 +938,9 @@
 
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)(module)))
 
-/***/ },
+/***/ }),
 /* 2 */
-/***/ function(module, exports) {
+/***/ (function(module, exports) {
 
 	module.exports = function(module) {
 		if(!module.webpackPolyfill) {
@@ -947,9 +954,9 @@
 	}
 
 
-/***/ },
+/***/ }),
 /* 3 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(module) {// export
 	if (module) module.exports = Layer;
@@ -962,10 +969,10 @@
 	                                            LAYER
 	*******************************************************************************************/
 
-	function Layer(size, label) {
+	function Layer(size) {
 	  this.size = size | 0;
 	  this.list = [];
-	  this.label = label || null;
+
 	  this.connectedTo = [];
 
 	  while (size--) {
@@ -1230,9 +1237,9 @@
 
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)(module)))
 
-/***/ },
+/***/ }),
 /* 4 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(module) {// export
 	if (module) module.exports = Network;
@@ -1248,10 +1255,10 @@
 
 	function Network(layers) {
 	  if (typeof layers != 'undefined') {
-	    this.layers = layers || {
-	      input: null,
-	      hidden: {},
-	      output: null
+	    this.layers = {
+	      input:  layers.input || null,
+	      hidden: layers.hidden || [],
+	      output: layers.output || null
 	    };
 	    this.optimized = null;
 	  }
@@ -1260,12 +1267,11 @@
 
 	  // feed-forward activation of all the layers to produce an ouput
 	  activate: function(input) {
-
 	    if (this.optimized === false)
 	    {
 	      this.layers.input.activate(input);
-	      for (var layer in this.layers.hidden)
-	        this.layers.hidden[layer].activate();
+	      for (var i = 0; i < this.layers.hidden.length; i++)
+	        this.layers.hidden[i].activate();
 	      return this.layers.output.activate();
 	    }
 	    else
@@ -1278,16 +1284,11 @@
 
 	  // back-propagate the error thru the network
 	  propagate: function(rate, target) {
-
 	    if (this.optimized === false)
 	    {
 	      this.layers.output.propagate(rate, target);
-	      var reverse = [];
-	      for (var layer in this.layers.hidden)
-	        reverse.push(this.layers.hidden[layer]);
-	      reverse.reverse();
-	      for (var layer in reverse)
-	        reverse[layer].propagate(rate);
+	      for (var i = this.layers.hidden.length - 1; i >= 0; i--)
+	        this.layers.hidden[i].propagate(rate);
 	    }
 	    else
 	    {
@@ -1299,7 +1300,6 @@
 
 	  // project a connection to another unit (either a network or a layer)
 	  project: function(unit, type, weights) {
-
 	    if (this.optimized)
 	      this.optimized.reset();
 
@@ -1321,16 +1321,14 @@
 
 	  // clear all elegibility traces and extended elegibility traces (the network forgets its context, but not what was trained)
 	  clear: function() {
-
 	    this.restore();
 
 	    var inputLayer = this.layers.input,
 	      outputLayer = this.layers.output;
 
 	    inputLayer.clear();
-	    for (var layer in this.layers.hidden) {
-	      var hiddenLayer = this.layers.hidden[layer];
-	      hiddenLayer.clear();
+	    for (var i = 0; i < this.layers.hidden.length; i++) {
+	      this.layers.hidden[i].clear();
 	    }
 	    outputLayer.clear();
 
@@ -1340,16 +1338,14 @@
 
 	  // reset all weights and clear all traces (ends up like a new network)
 	  reset: function() {
-
 	    this.restore();
 
 	    var inputLayer = this.layers.input,
 	      outputLayer = this.layers.output;
 
 	    inputLayer.reset();
-	    for (var layer in this.layers.hidden) {
-	      var hiddenLayer = this.layers.hidden[layer];
-	      hiddenLayer.reset();
+	    for (var i = 0; i < this.layers.hidden.length; i++) {
+	      this.layers.hidden[i].reset();
 	    }
 	    outputLayer.reset();
 
@@ -1359,19 +1355,19 @@
 
 	  // hardcodes the behaviour of the whole network into a single optimized function
 	  optimize: function() {
-
 	    var that = this;
 	    var optimized = {};
 	    var neurons = this.neurons();
 
-	    for (var i in neurons) {
+	    for (var i = 0; i < neurons.length; i++) {
 	      var neuron = neurons[i].neuron;
 	      var layer = neurons[i].layer;
 	      while (neuron.neuron)
 	        neuron = neuron.neuron;
 	      optimized = neuron.optimize(optimized, layer);
 	    }
-	    for (var i in optimized.propagation_sentences)
+
+	    for (var i = 0; i < optimized.propagation_sentences.length; i++)
 	      optimized.propagation_sentences[i].reverse();
 	    optimized.propagation_sentences.reverse();
 
@@ -1382,27 +1378,27 @@
 	      hardcode += "F[" + optimized.variables[i].id + "] = " + (optimized.variables[
 	        i].value || 0) + "; ";
 	    hardcode += "var activate = function(input){\n";
-	    for (var i in optimized.inputs)
+	    for (var i = 0; i < optimized.inputs.length; i++)
 	      hardcode += "F[" + optimized.inputs[i] + "] = input[" + i + "]; ";
-	    for (var currentLayer in optimized.activation_sentences) {
-	      if (optimized.activation_sentences[currentLayer].length > 0) {
-	        for (var currentNeuron in optimized.activation_sentences[currentLayer]) {
-	          hardcode += optimized.activation_sentences[currentLayer][currentNeuron].join(" ");
-	          hardcode += optimized.trace_sentences[currentLayer][currentNeuron].join(" ");
+	    for (var i = 0; i < optimized.activation_sentences.length; i++) {
+	      if (optimized.activation_sentences[i].length > 0) {
+	        for (var j = 0; j < optimized.activation_sentences[i].length; j++) {
+	          hardcode += optimized.activation_sentences[i][j].join(" ");
+	          hardcode += optimized.trace_sentences[i][j].join(" ");
 	        }
 	      }
 	    }
 	    hardcode += " var output = []; "
-	    for (var i in optimized.outputs)
+	    for (var i = 0; i < optimized.outputs.length; i++)
 	      hardcode += "output[" + i + "] = F[" + optimized.outputs[i] + "]; ";
 	    hardcode += "return output; }; "
 	    hardcode += "var propagate = function(rate, target){\n";
 	    hardcode += "F[" + optimized.variables.rate.id + "] = rate; ";
-	    for (var i in optimized.targets)
+	    for (var i = 0; i < optimized.targets.length; i++)
 	      hardcode += "F[" + optimized.targets[i] + "] = target[" + i + "]; ";
-	    for (var currentLayer in optimized.propagation_sentences)
-	      for (var currentNeuron in optimized.propagation_sentences[currentLayer])
-	        hardcode += optimized.propagation_sentences[currentLayer][currentNeuron].join(" ") + " ";
+	    for (var i = 0; i < optimized.propagation_sentences.length; i++)
+	      for (var j = 0; j < optimized.propagation_sentences[i].length; j++)
+	        hardcode += optimized.propagation_sentences[i][j].join(" ") + " ";
 	    hardcode += " };\n";
 	    hardcode +=
 	      "var ownership = function(memoryBuffer){\nF = memoryBuffer;\nthis.memory = F;\n};\n";
@@ -1466,8 +1462,7 @@
 	    var list = this.neurons();
 
 	    // link id's to positions in the array
-	    var ids = {};
-	    for (var i in list) {
+	    for (var i = 0; i < list.length; i++) {
 	      var neuron = list[i].neuron;
 	      while (neuron.neuron)
 	        neuron = neuron.neuron;
@@ -1485,14 +1480,8 @@
 	        for (var input in neuron.trace.extended[gated])
 	          neuron.trace.extended[gated][input] = getValue(neuron, 'trace',
 	            'extended', gated, input);
-	    }
 
-	    // get connections
-	    for (var i in list) {
-	      var neuron = list[i].neuron;
-	      while (neuron.neuron)
-	        neuron = neuron.neuron;
-
+	      // get connections
 	      for (var j in neuron.connections.projected) {
 	        var connection = neuron.connections.projected[j];
 	        connection.weight = getValue(connection, 'weight');
@@ -1503,31 +1492,33 @@
 
 	  // returns all the neurons in the network
 	  neurons: function() {
-
 	    var neurons = [];
 
 	    var inputLayer = this.layers.input.neurons(),
 	      outputLayer = this.layers.output.neurons();
 
-	    for (var neuron in inputLayer)
+	    for (var i = 0; i < inputLayer.length; i++) {
 	      neurons.push({
-	        neuron: inputLayer[neuron],
+	        neuron: inputLayer[i],
 	        layer: 'input'
 	      });
+	    }
 
-	    for (var layer in this.layers.hidden) {
-	      var hiddenLayer = this.layers.hidden[layer].neurons();
-	      for (var neuron in hiddenLayer)
+	    for (var i = 0; i < this.layers.hidden.length; i++) {
+	      var hiddenLayer = this.layers.hidden[i].neurons();
+	      for (var j = 0; j < hiddenLayer.length; j++)
 	        neurons.push({
-	          neuron: hiddenLayer[neuron],
-	          layer: layer
+	          neuron: hiddenLayer[j],
+	          layer: i
 	        });
 	    }
-	    for (var neuron in outputLayer)
+
+	    for (var i = 0; i < outputLayer.length; i++) {
 	      neurons.push({
-	        neuron: outputLayer[neuron],
+	        neuron: outputLayer[i],
 	        layer: 'output'
 	      });
+	    }
 
 	    return neurons;
 	  },
@@ -1544,8 +1535,11 @@
 
 	  // sets the layers of the network
 	  set: function(layers) {
-
-	    this.layers = layers;
+	    this.layers = {
+	      input:  layers.input || null,
+	      hidden: layers.hidden || [],
+	      output: layers.output || null
+	    };
 	    if (this.optimized)
 	      this.optimized.reset();
 	  },
@@ -1559,7 +1553,6 @@
 
 	  // returns a json that represents all the neurons and connections of the network
 	  toJSON: function(ignoreTraces) {
-
 	    this.restore();
 
 	    var list = this.neurons();
@@ -1568,7 +1561,7 @@
 
 	    // link id's to positions in the array
 	    var ids = {};
-	    for (var i in list) {
+	    for (var i = 0; i < list.length; i++) {
 	      var neuron = list[i].neuron;
 	      while (neuron.neuron)
 	        neuron = neuron.neuron;
@@ -1596,8 +1589,7 @@
 	      neurons.push(copy);
 	    }
 
-	    // get connections
-	    for (var i in list) {
+	    for(var i = 0; i < list.length; i++){
 	      var neuron = list[i].neuron;
 	      while (neuron.neuron)
 	        neuron = neuron.neuron;
@@ -1611,13 +1603,14 @@
 	          gater: connection.gater ? ids[connection.gater.ID] : null,
 	        });
 	      }
-	      if (neuron.selfconnected())
+	      if (neuron.selfconnected()) {
 	        connections.push({
 	          from: ids[neuron.ID],
 	          to: ids[neuron.ID],
 	          weight: neuron.selfconnection.weight,
 	          gater: neuron.selfconnection.gater ? ids[neuron.selfconnection.gater.ID] : null,
 	        });
+	      }
 	    }
 
 	    return {
@@ -1636,12 +1629,12 @@
 	      edgeConnection = false;
 	    var code = "digraph nn {\n    rankdir = BT\n";
 	    var layers = [this.layers.input].concat(this.layers.hidden, this.layers.output);
-	    for (var layer in layers) {
-	      for (var to in layers[layer].connectedTo) { // projections
-	        var connection = layers[layer].connectedTo[to];
+	    for (var i = 0; i < layers.length; i++) {
+	      for (var j = 0; j < layers[i].connectedTo.length; j++) { // projections
+	        var connection = layers[i].connectedTo[j];
 	        var layerTo = connection.to;
 	        var size = connection.size;
-	        var layerID = layers.indexOf(layers[layer]);
+	        var layerID = layers.indexOf(layers[i]);
 	        var layerToID = layers.indexOf(layerTo);
 	        /* http://stackoverflow.com/questions/26845540/connect-edges-with-graph-dot
 	         * DOT does not support edge-to-edge connections
@@ -1689,18 +1682,18 @@
 	    var activation = "function (input) {\n";
 
 	    // build inputs
-	    for (var i in data.inputs)
+	    for (var i = 0; i < data.inputs; i++)
 	      activation += "F[" + data.inputs[i] + "] = input[" + i + "];\n";
 
 	    // build network activation
-	    for (var neuron in data.activate) { // shouldn't this be layer?
-	      for (var sentence in data.activate[neuron])
-	        activation += data.activate[neuron][sentence].join('') + "\n";
+	    for (var i = 0; i < data.activate.length; i++) { // shouldn't this be layer?
+	      for (var j = 0; j <  data.activate[i].length; j++)
+	        activation += data.activate[i][j].join('') + "\n";
 	    }
 
 	    // build outputs
 	    activation += "var output = [];\n";
-	    for (var i in data.outputs)
+	    for (var i = 0; i < data.outputs.length; i++)
 	      activation += "output[" + i + "] = F[" + data.outputs[i] + "];\n";
 	    activation += "return output;\n}";
 
@@ -1708,13 +1701,15 @@
 	    var memory = activation.match(/F\[(\d+)\]/g);
 	    var dimension = 0;
 	    var ids = {};
-	    for (var address in memory) {
-	      var tmp = memory[address].match(/\d+/)[0];
+
+	    for (var i = 0; i < memory.length; i++) {
+	      var tmp = memory[i].match(/\d+/)[0];
 	      if (!(tmp in ids)) {
 	        ids[tmp] = dimension++;
 	      }
 	    }
 	    var hardcode = "F = {\n";
+
 	    for (var i in ids)
 	      hardcode += ids[i] + ": " + this.optimized.memory[i] + ",\n";
 	    hardcode = hardcode.substring(0, hardcode.length - 2) + "\n};\n";
@@ -1833,7 +1828,6 @@
 
 	// rebuild a network that has been stored in a json using the method toJSON()
 	Network.fromJSON = function(json) {
-
 	  var neurons = [];
 
 	  var layers = {
@@ -1842,7 +1836,7 @@
 	    output: new Layer()
 	  };
 
-	  for (var i in json.neurons) {
+	  for (var i = 0; i < json.neurons.length; i++) {
 	    var config = json.neurons[i];
 
 	    var neuron = new Neuron();
@@ -1866,7 +1860,7 @@
 	    }
 	  }
 
-	  for (var i in json.connections) {
+	  for (var i = 0; i < json.connections.length; i++) {
 	    var config = json.connections[i];
 	    var from = neurons[config.from];
 	    var to = neurons[config.to];
@@ -1883,9 +1877,9 @@
 
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)(module)))
 
-/***/ },
+/***/ }),
 /* 5 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(module) {// export
 	if (module) module.exports = Trainer;
@@ -1915,7 +1909,6 @@
 
 	  // trains any given set to a network
 	  train: function(set, options) {
-
 	    var error = 1;
 	    var iterations = bucketSize = 0;
 	    var abort = false;
@@ -1976,7 +1969,7 @@
 	        var currentBucket = Math.floor(iterations / bucketSize);
 	        currentRate = this.rate[currentBucket] || currentRate;
 	      }
-	      
+
 	      if(typeof this.rate === 'function') {
 	        currentRate = this.rate(iterations, lastError);
 	      }
@@ -2030,9 +2023,9 @@
 	  // preforms one training epoch and returns the error (private function used in this.train)
 	  _trainSet: function(set, currentRate, costFunction) {
 	    var errorSum = 0;
-	    for (var train in set) {
-	      var input = set[train].input;
-	      var target = set[train].output;
+	    for (var i = 0; i < set.length; i++) {
+	      var input = set[i].input;
+	      var target = set[i].output;
 
 	      var output = this.network.activate(input);
 	      this.network.propagate(currentRate, target);
@@ -2044,16 +2037,15 @@
 
 	  // tests a set and returns the error and elapsed time
 	  test: function(set, options) {
-
 	    var error = 0;
 	    var input, output, target;
 	    var cost = options && options.cost || this.cost || Trainer.cost.MSE;
 
 	    var start = Date.now();
 
-	    for (var test in set) {
-	      input = set[test].input;
-	      target = set[test].output;
+	    for (var i = 0; i < set.length; i++) {
+	      input = set[i].input;
+	      target = set[i].output;
 	      output = this.network.activate(input);
 	      error += cost(target, output);
 	    }
@@ -2070,7 +2062,6 @@
 
 	  // trains any given set to a network using a WebWorker [deprecated: use trainAsync instead]
 	  workerTrain: function(set, callback, options, suppressWarning) {
-
 	    if (!suppressWarning) {
 	      console.warn('Deprecated: do not use `workerTrain`, use `trainAsync` instead.')
 	    }
@@ -2121,7 +2112,6 @@
 
 	  // trains an XOR to the network
 	  XOR: function(options) {
-
 	    if (this.network.inputs() != 2 || this.network.outputs() != 1)
 	      throw new Error("Incompatible network (2 inputs, 1 output)");
 
@@ -2551,13 +2541,13 @@
 	  MSE: function(target, output)
 	  {
 	    var mse = 0;
-	    for (var i in output)
+	    for (var i = 0; i < output.length; i++)
 	      mse += Math.pow(target[i] - output[i], 2);
 	    return mse / output.length;
 	  },
 	  BINARY: function(target, output){
 	    var misses = 0;
-	    for (var i in output)
+	    for (var i = 0; i < output.length; i++)
 	      misses += Math.round(target[i] * 2) != Math.round(output[i] * 2);
 	    return misses;
 	  }
@@ -2565,9 +2555,9 @@
 
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)(module)))
 
-/***/ },
+/***/ }),
 /* 6 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ (function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(module) {// import
 	var Layer   = __webpack_require__(3)
@@ -2583,7 +2573,6 @@
 
 	  // Multilayer Perceptron
 	  Perceptron: function Perceptron() {
-
 	    var args = Array.prototype.slice.call(arguments); // convert arguments to Array
 	    if (args.length < 3)
 	      throw new Error("not enough layers (minimum 3) !!");
@@ -2599,8 +2588,8 @@
 	    var previous = input;
 
 	    // generate hidden layers
-	    for (var level in layers) {
-	      var size = layers[level];
+	    for (var i = 0; i < layers.length; i++) {
+	      var size = layers[i];
 	      var layer = new Layer(size);
 	      hidden.push(layer);
 	      previous.project(layer);
@@ -2614,14 +2603,10 @@
 	      hidden: hidden,
 	      output: output
 	    });
-
-	    // trainer for the network
-	    this.trainer = new Trainer(this);
 	  },
 
 	  // Multilayer Long Short-Term Memory
 	  LSTM: function LSTM() {
-
 	    var args = Array.prototype.slice.call(arguments); // convert arguments to array
 	    if (args.length < 3)
 	      throw new Error("not enough layers (minimum 3) !!");
@@ -2646,8 +2631,9 @@
 	        option.outputToGates = last.outputToGates;
 	      if (last.hasOwnProperty('inputToOutput'))
 	        option.inputToOutput = last.inputToOutput;
-	    } else
+	    } else {
 	      var outputs = last;
+	    }
 
 	    var inputs = args.shift();
 	    var layers = args;
@@ -2659,9 +2645,9 @@
 	    var previous = null;
 
 	    // generate layers
-	    for (var layer in layers) {
+	    for (var i = 0; i < layers.length; i++) {
 	      // generate memory blocks (memory cell and respective gates)
-	      var size = layers[layer];
+	      var size = layers[i];
 
 	      var inputGate = new Layer(size).set({
 	        bias: 1
@@ -2739,14 +2725,10 @@
 	      hidden: hiddenLayers,
 	      output: outputLayer
 	    });
-
-	    // trainer
-	    this.trainer = new Trainer(this);
 	  },
 
 	  // Liquid State Machine
 	  Liquid: function Liquid(inputs, hidden, outputs, connections, gates) {
-
 	    // create layers
 	    var inputLayer = new Layer(inputs);
 	    var hiddenLayer = new Layer(hidden);
@@ -2783,13 +2765,9 @@
 	      hidden: [hiddenLayer],
 	      output: outputLayer
 	    });
-
-	    // trainer
-	    this.trainer = new Trainer(this);
 	  },
 
 	  Hopfield: function Hopfield(size) {
-
 	    var inputLayer = new Layer(size);
 	    var outputLayer = new Layer(size);
 
@@ -2842,7 +2820,10 @@
 
 	// export
 	if (module) module.exports = Architect;
+
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(2)(module)))
 
-/***/ }
-/******/ ]);
+/***/ })
+/******/ ])
+});
+;
