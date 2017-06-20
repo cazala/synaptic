@@ -32,6 +32,7 @@ You may also want to take a look at [this article](http://blog.webkid.io/neural-
 - [Paint an Image](http://caza.la/synaptic/#/paint-an-image)
 - [Self Organizing Map](http://caza.la/synaptic/#/self-organizing-map)
 - [Read from Wikipedia](http://caza.la/synaptic/#/wikipedia)
+- [Creating a Simple Neural Network (Video)](https://scrimba.com/casts/cast-1980)
 
 The source code of these demos can be found in [this branch](https://github.com/cazala/synaptic/tree/gh-pages/scripts).
 
