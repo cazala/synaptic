@@ -172,7 +172,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  this.activation = 0;
 	  this.selfconnection = new Neuron.connection(this, this, 0); // weight = 0 -> not connected
 	  this.squash = Neuron.squash.LOGISTIC;
-	  this.neighboors = {};
+	  this.neighbors = {};
 	  this.bias = Math.random() * .2 - .1;
 	}
 
@@ -210,7 +210,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var influences = [];
 	    for (var id in this.trace.extended) {
 	      // extended elegibility trace
-	      var neuron = this.neighboors[id];
+	      var neuron = this.neighbors[id];
 
 	      // if gated neuron's selfconnection is gated by this unit, the influence keeps track of the neuron's old state
 	      var influence = neuron.selfconnection.gater == this ? neuron.old : 0;
@@ -234,7 +234,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      for (var id in this.trace.extended) {
 	        // extended elegibility trace
 	        var xtrace = this.trace.extended[id];
-	        var neuron = this.neighboors[id];
+	        var neuron = this.neighbors[id];
 	        var influence = influences[neuron.ID];
 
 	        // eq. 18
@@ -280,7 +280,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      error = 0;
 	      // error responsibilities from all the connections gated by this neuron
 	      for (var id in this.trace.extended) {
-	        var neuron = this.neighboors[id]; // gated neuron
+	        var neuron = this.neighbors[id]; // gated neuron
 	        var influence = neuron.selfconnection.gater == this ? neuron.old : 0; // if gated neuron's selfconnection is gated by this neuron
 
 	        // index runs over all the connections to the gated neuron that are gated by this neuron
@@ -309,7 +309,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      // Eq. 24
 	      var gradient = this.error.projected * this.trace.elegibility[input.ID];
 	      for (var id in this.trace.extended) {
-	        var neuron = this.neighboors[id];
+	        var neuron = this.neighbors[id];
 	        gradient += neuron.error.responsibility * this.trace.extended[
 	          neuron.ID][input.ID];
 	      }
@@ -342,7 +342,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    // reference all the connections and traces
 	    this.connections.projected[connection.ID] = connection;
-	    this.neighboors[neuron.ID] = neuron;
+	    this.neighbors[neuron.ID] = neuron;
 	    neuron.connections.inputs[connection.ID] = connection;
 	    neuron.trace.elegibility[connection.ID] = 0;
 
@@ -361,7 +361,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var neuron = connection.to;
 	    if (!(neuron.ID in this.trace.extended)) {
 	      // extended trace
-	      this.neighboors[neuron.ID] = neuron;
+	      this.neighbors[neuron.ID] = neuron;
 	      var xtrace = this.trace.extended[neuron.ID] = {};
 	      for (var id in this.connections.inputs) {
 	        var input = this.connections.inputs[id];
@@ -619,7 +619,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	      for (var id in this.trace.extended) {
 	        // calculate extended elegibility traces in advance
-	        var neuron = this.neighboors[id];
+	        var neuron = this.neighbors[id];
 	        var influence = getVar('influences[' + neuron.ID + ']');
 	        var neuron_old = getVar(neuron, 'old');
 	        var initialized = false;
@@ -676,7 +676,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        for (var id in this.trace.extended) {
 	          // extended elegibility trace
-	          var neuron = this.neighboors[id];
+	          var neuron = this.neighbors[id];
 	          var influence = getVar('influences[' + neuron.ID + ']');
 
 	          var trace = getVar(this, 'trace', 'elegibility', input.ID, this.trace
@@ -745,7 +745,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            store_propagation);
 	          buildSentence(error, ' = 0', store_propagation);
 	          for (var id in this.trace.extended) {
-	            var neuron = this.neighboors[id];
+	            var neuron = this.neighbors[id];
 	            var influence = getVar('aux_2');
 	            var neuron_old = getVar(neuron, 'old');
 	            if (neuron.selfconnection.gater == this)
@@ -777,7 +777,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            buildSentence(gradient, ' = ', projected, ' * ', trace,
 	              store_propagation);
 	            for (var id in this.trace.extended) {
-	              var neuron = this.neighboors[id];
+	              var neuron = this.neighbors[id];
 	              var neuron_responsibility = getVar(neuron, 'error',
 	                'responsibility', neuron.error.responsibility);
 	              var xtrace = getVar(this, 'trace', 'extended', neuron.ID,
@@ -820,7 +820,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        } else if (noProjections) {
 	          buildSentence(responsibility, ' = 0', store_propagation);
 	          for (var id in this.trace.extended) {
-	            var neuron = this.neighboors[id];
+	            var neuron = this.neighbors[id];
 	            var influence = getVar('aux');
 	            var neuron_old = getVar(neuron, 'old');
 	            if (neuron.selfconnection.gater == this)
@@ -846,7 +846,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var gradient = getVar('aux');
 	            buildSentence(gradient, ' = 0', store_propagation);
 	            for (var id in this.trace.extended) {
-	              var neuron = this.neighboors[id];
+	              var neuron = this.neighbors[id];
 	              var neuron_responsibility = getVar(neuron, 'error',
 	                'responsibility', neuron.error.responsibility);
 	              var xtrace = getVar(this, 'trace', 'extended', neuron.ID,
