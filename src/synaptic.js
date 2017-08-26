@@ -2,12 +2,14 @@ import Neuron from './neuron';
 import Layer from './layer';
 import Trainer from './trainer'
 import Network from './network';
+import * as Architect from './architect';
+
 var Synaptic = {
     Neuron,
     Layer,
     Network,
     Trainer,
-    Architect: require('./architect')
+    Architect
 };
 
 // CommonJS & AMD
