@@ -1,10 +1,11 @@
 import Neuron from './neuron';
 import Layer from './layer';
 import Trainer from './trainer'
+import Network from './network';
 var Synaptic = {
     Neuron,
     Layer,
-    Network: require('./network'),
+    Network,
     Trainer,
     Architect: require('./architect')
 };

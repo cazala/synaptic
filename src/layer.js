@@ -3,7 +3,7 @@ import LayerConnection from './layerConnection';
 
 // import
 import Neuron from './neuron';
-var   Network = require('./network')
+import Network from './network';
 
 /*******************************************************************************************
  LAYER
