@@ -1,11 +1,15 @@
 // Karma configuration
+const webpack = require('webpack');
+const webpackConfig = require('./webpack.config');
+
+const ignoreLibCovStatsModule = new webpack.IgnorePlugin(/lib-cov\/stats/);
+webpackConfig.plugins = [ignoreLibCovStatsModule];
 
 module.exports = function(config) {
   config.set({
     basePath: '',
     frameworks: ['mocha'],
     files: [
-      'dist/synaptic.js',
       'test/[^_]*.js'
     ],
     exclude: [
@@ -21,5 +25,6 @@ module.exports = function(config) {
     singleRun: false,
     concurrency: Infinity,
     browserNoActivityTimeout: 60000,
+    webpack: webpackConfig
   })
 }
