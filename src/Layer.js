@@ -1,13 +1,6 @@
-// export
 import LayerConnection from './LayerConnection';
-
-// import
 import Neuron from './Neuron';
 import Network from './Network';
-
-/*******************************************************************************************
- LAYER
- *******************************************************************************************/
 
 
 // types of connections

@@ -2,9 +2,6 @@ import Neuron from './Neuron';
 import Layer from './Layer';
 import Trainer from './Trainer';
 
-/*******************************************************************************************
- NETWORK
- *******************************************************************************************/
 export default class Network {
   constructor(layers) {
     if (typeof layers != 'undefined') {
