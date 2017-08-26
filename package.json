@@ -25,6 +25,7 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.6.0",
     "babel-preset-es2015": "^6.24.1",
+    "babel-register": "^6.26.0",
     "chai": "^3.5.0",
     "chai-stats": "^0.3.0",
     "karma": "^1.1.2",
