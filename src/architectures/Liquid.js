@@ -1,5 +1,5 @@
-import Network from '../network';
-import Layer from '../layer';
+import Network from '../Network';
+import Layer from '../Layer';
 
 export default class Liquid extends Network {
   constructor(inputs, hidden, outputs, connections, gates) {

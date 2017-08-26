@@ -1,4 +1,4 @@
-import Layer from './layer';
+import Layer from './Layer';
 // represents a connection from one layer to another, and keeps track of its weight and gain
 export let connections = 0;
 

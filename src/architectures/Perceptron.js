@@ -1,5 +1,5 @@
-import Network from '../network';
-import Layer from '../layer';
+import Network from '../Network';
+import Layer from '../Layer';
 
 export default class Perceptron extends Network {
   constructor() {

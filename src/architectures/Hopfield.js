@@ -1,6 +1,6 @@
-import Network from '../network';
-import Trainer from '../trainer';
-import Layer from '../layer';
+import Network from '../Network';
+import Trainer from '../Trainer';
+import Layer from '../Layer';
 
 export default class Hopfield extends Network {
   constructor(size) {

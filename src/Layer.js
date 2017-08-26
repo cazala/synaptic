@@ -1,9 +1,9 @@
 // export
-import LayerConnection from './layerConnection';
+import LayerConnection from './LayerConnection';
 
 // import
-import Neuron from './neuron';
-import Network from './network';
+import Neuron from './Neuron';
+import Network from './Network';
 
 /*******************************************************************************************
  LAYER

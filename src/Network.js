@@ -1,6 +1,6 @@
-import Neuron from './neuron';
-import Layer from './layer';
-import Trainer from './trainer';
+import Neuron from './Neuron';
+import Layer from './Layer';
+import Trainer from './Trainer';
 
 /*******************************************************************************************
  NETWORK

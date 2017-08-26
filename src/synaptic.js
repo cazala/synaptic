@@ -1,7 +1,7 @@
-import Neuron from './neuron';
-import Layer from './layer';
-import Trainer from './trainer'
-import Network from './network';
+import Neuron from './Neuron';
+import Layer from './Layer';
+import Trainer from './Trainer'
+import Network from './Network';
 import * as Architect from './architect';
 
 var Synaptic = {
