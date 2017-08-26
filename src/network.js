@@ -4,7 +4,7 @@ if (module) module.exports = Network;
 // import
 import Neuron from './neuron';
 import Layer from './layer';
-var Trainer = require('./trainer')
+import Trainer from './trainer';
 
 /*******************************************************************************************
                                          NETWORK

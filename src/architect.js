@@ -1,7 +1,7 @@
 // import
 import  Layer from './layer';
+import Trainer from './trainer';
 var Network = require('./network')
-,   Trainer = require('./trainer')
 
 /*******************************************************************************************
                                         ARCHITECT
