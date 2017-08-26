@@ -2,8 +2,8 @@
 if (module) module.exports = Network;
 
 // import
-var Neuron  = require('./neuron')
-,   Layer   = require('./layer')
+import Neuron from './neuron';
+var   Layer   = require('./layer')
 ,   Trainer = require('./trainer')
 
 /*******************************************************************************************

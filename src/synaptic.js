@@ -1,5 +1,6 @@
+import Neuron from './neuron';
 var Synaptic = {
-    Neuron: require('./neuron'),
+    Neuron: Neuron,
     Layer: require('./layer'),
     Network: require('./network'),
     Trainer: require('./trainer'),
