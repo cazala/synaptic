@@ -1,6 +1,6 @@
 // import
-var Layer   = require('./layer')
-,   Network = require('./network')
+import  Layer from './layer';
+var Network = require('./network')
 ,   Trainer = require('./trainer')
 
 /*******************************************************************************************

@@ -3,8 +3,8 @@ if (module) module.exports = Network;
 
 // import
 import Neuron from './neuron';
-var   Layer   = require('./layer')
-,   Trainer = require('./trainer')
+import Layer from './layer';
+var Trainer = require('./trainer')
 
 /*******************************************************************************************
                                          NETWORK

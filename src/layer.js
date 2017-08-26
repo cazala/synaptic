@@ -1,36 +1,54 @@
 // export
-if (module) module.exports = Layer;
+import LayerConnection from './layerConnection';
 
 // import
 import Neuron from './neuron';
 var   Network = require('./network')
 
 /*******************************************************************************************
-                                            LAYER
-*******************************************************************************************/
+ LAYER
+ *******************************************************************************************/
 
-function Layer(size) {
-  this.size = size | 0;
-  this.list = [];
 
-  this.connectedTo = [];
+// types of connections
+const connectionType = {
+  ALL_TO_ALL: "ALL TO ALL",
+  ONE_TO_ONE: "ONE TO ONE",
+  ALL_TO_ELSE: "ALL TO ELSE"
+};
 
-  while (size--) {
-    var neuron = new Neuron();
-    this.list.push(neuron);
+// types of gates
+const gateType = {
+  INPUT: "INPUT",
+  OUTPUT: "OUTPUT",
+  ONE_TO_ONE: "ONE TO ONE"
+};
+
+
+export default class Layer {
+  static connectionType = connectionType;
+  static gateType = gateType;
+
+  constructor(size) {
+    this.size = size | 0;
+    this.list = [];
+
+    this.connectedTo = [];
+
+    while (size--) {
+      var neuron = new Neuron();
+      this.list.push(neuron);
+    }
   }
-}
-
-Layer.prototype = {
 
   // activates all the neurons in the layer
-  activate: function(input) {
+  activate(input) {
 
     var activations = [];
 
     if (typeof input != 'undefined') {
       if (input.length != this.size)
-        throw new Error("INPUT size and LAYER size must be the same to activate!");
+        throw new Error('INPUT size and LAYER size must be the same to activate!');
 
       for (var id in this.list) {
         var neuron = this.list[id];
@@ -45,14 +63,14 @@ Layer.prototype = {
       }
     }
     return activations;
-  },
+  }
 
-  // propagates the error on all the neurons of the layer
-  propagate: function(rate, target) {
+// propagates the error on all the neurons of the layer
+  propagate(rate, target) {
 
     if (typeof target != 'undefined') {
       if (target.length != this.size)
-        throw new Error("TARGET size and LAYER size must be the same to propagate!");
+        throw new Error('TARGET size and LAYER size must be the same to propagate!');
 
       for (var id = this.list.length - 1; id >= 0; id--) {
         var neuron = this.list[id];
@@ -64,29 +82,29 @@ Layer.prototype = {
         neuron.propagate(rate);
       }
     }
-  },
+  }
 
-  // projects a connection from this layer to another one
-  project: function(layer, type, weights) {
+// projects a connection from this layer to another one
+  project(layer, type, weights) {
 
     if (layer instanceof Network)
       layer = layer.layers.input;
 
     if (layer instanceof Layer) {
       if (!this.connected(layer))
-        return new Layer.connection(this, layer, type, weights);
+        return new LayerConnection(this, layer, type, weights);
     } else
-      throw new Error("Invalid argument, you can only project connections to LAYERS and NETWORKS!");
+      throw new Error('Invalid argument, you can only project connections to LAYERS and NETWORKS!');
 
 
-  },
+  }
 
-  // gates a connection betwenn two layers
-  gate: function(connection, type) {
+// gates a connection betwenn two layers
+  gate(connection, type) {
 
     if (type == Layer.gateType.INPUT) {
       if (connection.to.size != this.size)
-        throw new Error("GATER layer and CONNECTION.TO layer must be the same size in order to gate!");
+        throw new Error('GATER layer and CONNECTION.TO layer must be the same size in order to gate!');
 
       for (var id in connection.to.list) {
         var neuron = connection.to.list[id];
@@ -99,7 +117,7 @@ Layer.prototype = {
       }
     } else if (type == Layer.gateType.OUTPUT) {
       if (connection.from.size != this.size)
-        throw new Error("GATER layer and CONNECTION.FROM layer must be the same size in order to gate!");
+        throw new Error('GATER layer and CONNECTION.FROM layer must be the same size in order to gate!');
 
       for (var id in connection.from.list) {
         var neuron = connection.from.list[id];
@@ -112,7 +130,7 @@ Layer.prototype = {
       }
     } else if (type == Layer.gateType.ONE_TO_ONE) {
       if (connection.size != this.size)
-        throw new Error("The number of GATER UNITS must be the same as the number of CONNECTIONS to gate!");
+        throw new Error('The number of GATER UNITS must be the same as the number of CONNECTIONS to gate!');
 
       for (var id in connection.list) {
         var gater = this.list[id];
@@ -121,10 +139,10 @@ Layer.prototype = {
       }
     }
     connection.gatedfrom.push({layer: this, type: type});
-  },
+  }
 
-  // true or false whether the whole layer is self-connected or not
-  selfconnected: function() {
+// true or false whether the whole layer is self-connected or not
+  selfconnected() {
 
     for (var id in this.list) {
       var neuron = this.list[id];
@@ -132,10 +150,10 @@ Layer.prototype = {
         return false;
     }
     return true;
-  },
+  }
 
-  // true of false whether the layer is connected to another layer (parameter) or not
-  connected: function(layer) {
+// true of false whether the layer is connected to another layer (parameter) or not
+  connected(layer) {
     // Check if ALL to ALL connection
     var connections = 0;
     for (var here in this.list) {
@@ -161,37 +179,37 @@ Layer.prototype = {
     }
     if (connections == this.size)
       return Layer.connectionType.ONE_TO_ONE;
-  },
+  }
 
-  // clears all the neuorns in the layer
-  clear: function() {
+// clears all the neuorns in the layer
+  clear() {
     for (var id in this.list) {
       var neuron = this.list[id];
       neuron.clear();
     }
-  },
+  }
 
-  // resets all the neurons in the layer
-  reset: function() {
+// resets all the neurons in the layer
+  reset() {
     for (var id in this.list) {
       var neuron = this.list[id];
       neuron.reset();
     }
-  },
+  }
 
-  // returns all the neurons in the layer (array)
-  neurons: function() {
+// returns all the neurons in the layer (array)
+  neurons() {
     return this.list;
-  },
+  }
 
-  // adds a neuron to the layer
-  add: function(neuron) {
+// adds a neuron to the layer
+  add(neuron) {
     this.neurons[neuron.ID] = neuron || new Neuron();
     this.list.push(neuron);
     this.size++;
-  },
+  }
 
-  set: function(options) {
+  set(options) {
     options = options || {};
 
     for (var i in this.list) {
@@ -206,71 +224,3 @@ Layer.prototype = {
     return this;
   }
 }
-
-// represents a connection from one layer to another, and keeps track of its weight and gain
-Layer.connection = function LayerConnection(fromLayer, toLayer, type, weights) {
-  this.ID = Layer.connection.uid();
-  this.from = fromLayer;
-  this.to = toLayer;
-  this.selfconnection = toLayer == fromLayer;
-  this.type = type;
-  this.connections = {};
-  this.list = [];
-  this.size = 0;
-  this.gatedfrom = [];
-
-  if (typeof this.type == 'undefined')
-  {
-    if (fromLayer == toLayer)
-      this.type = Layer.connectionType.ONE_TO_ONE;
-    else
-      this.type = Layer.connectionType.ALL_TO_ALL;
-  }
-
-  if (this.type == Layer.connectionType.ALL_TO_ALL ||
-      this.type == Layer.connectionType.ALL_TO_ELSE) {
-    for (var here in this.from.list) {
-      for (var there in this.to.list) {
-        var from = this.from.list[here];
-        var to = this.to.list[there];
-        if(this.type == Layer.connectionType.ALL_TO_ELSE && from == to)
-          continue;
-        var connection = from.project(to, weights);
-
-        this.connections[connection.ID] = connection;
-        this.size = this.list.push(connection);
-      }
-    }
-  } else if (this.type == Layer.connectionType.ONE_TO_ONE) {
-
-    for (var neuron in this.from.list) {
-      var from = this.from.list[neuron];
-      var to = this.to.list[neuron];
-      var connection = from.project(to, weights);
-
-      this.connections[connection.ID] = connection;
-      this.size = this.list.push(connection);
-    }
-  }
-
-  fromLayer.connectedTo.push(this);
-}
-
-// types of connections
-Layer.connectionType = {};
-Layer.connectionType.ALL_TO_ALL = "ALL TO ALL";
-Layer.connectionType.ONE_TO_ONE = "ONE TO ONE";
-Layer.connectionType.ALL_TO_ELSE = "ALL TO ELSE";
-
-// types of gates
-Layer.gateType = {};
-Layer.gateType.INPUT = "INPUT";
-Layer.gateType.OUTPUT = "OUTPUT";
-Layer.gateType.ONE_TO_ONE = "ONE TO ONE";
-
-(function() {
-  var connections = 0;
-  Layer.connection.uid = function() {
-    return connections++;
-  }
-})();
