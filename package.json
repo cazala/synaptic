@@ -9,6 +9,7 @@
     "test:mocha:src": "mocha test/_inject-src test",
     "test:mocha:dist": "mocha test/_inject-dist test",
     "test:karma:browsers": "karma start --single-run --browsers Chrome,Firefox,SafariPrivate",
+    "test:karma:chrome": "karma start --single-run --browsers Chrome",
     "test:karma:phantomjs": "karma start --single-run --browsers PhantomJS",
     "test:travis": "npm run test:mocha:src && npm run build && npm run test:mocha:dist",
     "build": "webpack --config webpack.config.js"
@@ -18,6 +19,13 @@
     "build"
   ],
   "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-plugin-transform-object-rest-spread": "^6.26.0",
+    "babel-preset-env": "^1.6.0",
+    "babel-preset-es2015": "^6.24.1",
+    "babel-register": "^6.26.0",
     "chai": "^3.5.0",
     "chai-stats": "^0.3.0",
     "karma": "^1.1.2",
@@ -26,10 +34,10 @@
     "karma-mocha": "^1.1.1",
     "karma-phantomjs-launcher": "^1.0.1",
     "karma-safari-launcher": "^1.0.0",
-    "karma-webpack": "^1.7.0",
+    "karma-webpack": "^2.0.4",
     "mocha": "^2.2.4",
     "pre-push": "^0.1.1",
-    "webpack": "^1.13.1"
+    "webpack": "^3.5.5"
   },
   "repository": {
     "type": "git",

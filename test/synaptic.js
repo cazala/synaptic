@@ -3,6 +3,8 @@ var chai = require('chai');
 chai.use(require('chai-stats'));
 var assert = chai.assert;
 
+import * as synaptic from '../src/synaptic';
+
 var Perceptron = synaptic.Architect.Perceptron;
 var LSTM = synaptic.Architect.LSTM;
 var Layer = synaptic.Layer;
@@ -338,13 +340,13 @@ describe("LSTM - Discrete Sequence Recall", function () {
   var check = function (which) {
     // generate input from sequence
     var input = [];
-    for (j = 0; j < symbols; j++)
+    for (let j = 0; j < symbols; j++)
       input[j] = 0;
     input[sequence[which]] = 1;
 
     // generate target output
     var output = [];
-    for (j = 0; j < targets.length; j++)
+    for (let j = 0; j < targets.length; j++)
       output[j] = 0;
 
     if (which >= sequenceLength) {
