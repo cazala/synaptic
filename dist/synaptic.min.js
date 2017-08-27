@@ -1,7 +1,7 @@
 /*!
  * The MIT License (MIT)
  * 
- * Copyright (c) 2017 Juan Cazala - juancazala.com
+ * Copyright (c) 2017 Juan Cazala - https://caza.la
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@
  * 
  * 
  * ********************************************************************************************
- *                                   SYNAPTIC (v1.0.12)
+ *                                   SYNAPTIC (v1.1.0)
  * ********************************************************************************************
  * 
  * Synaptic is a javascript neural network library for node.js and the browser, its generalized

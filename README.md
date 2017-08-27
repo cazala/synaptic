@@ -72,7 +72,7 @@ bower install synaptic
 Or you can simply use the CDN link, kindly provided by [CDNjs](https://cdnjs.com/)
 
 ```html
-<script src="https://cdnjs.cloudflare.com/ajax/libs/synaptic/1.0.12/synaptic.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/synaptic/1.1.0/synaptic.js"></script>
 ```
 
 ### Usage
