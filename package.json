@@ -1,8 +1,8 @@
 {
   "name": "synaptic",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "architecture-free neural network library",
-  "main": "./src/synaptic",
+  "main": "./dist/synaptic",
   "scripts": {
     "test": "npm run test:mocha:src",
     "test:dist": "npm run build && npm run test:mocha:dist && npm run test:karma:browsers",
