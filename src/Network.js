@@ -29,7 +29,7 @@ export default class Network {
     }
   }
 
-// back-propagate the error thru the network
+  // back-propagate the error thru the network
   propagate(rate, target) {
     if (this.optimized === false) {
       this.layers.output.propagate(rate, target);
@@ -43,7 +43,7 @@ export default class Network {
     }
   }
 
-// project a connection to another unit (either a network or a layer)
+  // project a connection to another unit (either a network or a layer)
   project(unit, type, weights) {
     if (this.optimized)
       this.optimized.reset();
@@ -57,14 +57,14 @@ export default class Network {
     throw new Error('Invalid argument, you can only project connections to LAYERS and NETWORKS!');
   }
 
-// let this network gate a connection
+  // let this network gate a connection
   gate(connection, type) {
     if (this.optimized)
       this.optimized.reset();
     this.layers.output.gate(connection, type);
   }
 
-// clear all elegibility traces and extended elegibility traces (the network forgets its context, but not what was trained)
+  // clear all elegibility traces and extended elegibility traces (the network forgets its context, but not what was trained)
   clear() {
     this.restore();
 
@@ -81,7 +81,7 @@ export default class Network {
       this.optimized.reset();
   }
 
-// reset all weights and clear all traces (ends up like a new network)
+  // reset all weights and clear all traces (ends up like a new network)
   reset() {
     this.restore();
 
@@ -98,7 +98,7 @@ export default class Network {
       this.optimized.reset();
   }
 
-// hardcodes the behaviour of the whole network into a single optimized function
+  // hardcodes the behaviour of the whole network into a single optimized function
   optimize() {
     var that = this;
     var optimized = {};
@@ -178,7 +178,7 @@ export default class Network {
     this.propagate = network.propagate;
   }
 
-// restores all the values from the optimized network the their respective objects in order to manipulate the network
+  // restores all the values from the optimized network the their respective objects in order to manipulate the network
   restore() {
     if (!this.optimized)
       return;
@@ -235,7 +235,7 @@ export default class Network {
     }
   }
 
-// returns all the neurons in the network
+  // returns all the neurons in the network
   neurons() {
     var neurons = [];
 
@@ -268,17 +268,17 @@ export default class Network {
     return neurons;
   }
 
-// returns number of inputs of the network
+  // returns number of inputs of the network
   inputs() {
     return this.layers.input.size;
   }
 
-// returns number of outputs of hte network
+  // returns number of outputs of hte network
   outputs() {
     return this.layers.output.size;
   }
 
-// sets the layers of the network
+  // sets the layers of the network
   set(layers) {
     this.layers = {
       input: layers.input || null,
@@ -296,7 +296,7 @@ export default class Network {
     this.optimized = bool ? null : false;
   }
 
-// returns a json that represents all the neurons and connections of the network
+  // returns a json that represents all the neurons and connections of the network
   toJSON(ignoreTraces) {
     this.restore();
 
@@ -364,7 +364,7 @@ export default class Network {
     }
   }
 
-// export the topology into dot language which can be visualized as graphs using dot
+  // export the topology into dot language which can be visualized as graphs using dot
   /* example: ... console.log(net.toDotLang());
               $ node example.js > example.dot
               $ dot example.dot -Tpng > out.png
@@ -416,7 +416,7 @@ export default class Network {
     }
   }
 
-// returns a function that works as the activation of the network and can be used without depending on the library
+  // returns a function that works as the activation of the network and can be used without depending on the library
   standalone() {
     if (!this.optimized)
       this.optimize();
@@ -468,11 +468,10 @@ export default class Network {
   }
 
 
-// Return a HTML5 WebWorker specialized on training the network stored in `memory`.
-// Train based on the given dataSet and options.
-// The worker returns the updated `memory` when done.
+  // Return a HTML5 WebWorker specialized on training the network stored in `memory`.
+  // Train based on the given dataSet and options.
+  // The worker returns the updated `memory` when done.
   worker(memory, set, options) {
-
     // Copy the options and set defaults (options might be different for each worker)
     var workerOptions = {};
     if (options) workerOptions = options;
@@ -531,7 +530,7 @@ export default class Network {
     return new Worker(blobURL);
   }
 
-// returns a copy of the network
+  // returns a copy of the network
   clone() {
     return Network.fromJSON(this.toJSON());
   }
@@ -545,7 +544,7 @@ export default class Network {
    */
   static getWorkerSharedFunctions() {
     // If we already computed the source code for the shared functions
-    if(typeof Network._SHARED_WORKER_FUNCTIONS !== 'undefined')
+    if (typeof Network._SHARED_WORKER_FUNCTIONS !== 'undefined')
       return Network._SHARED_WORKER_FUNCTIONS;
 
     // Otherwise compute and return the source code
