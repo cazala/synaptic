@@ -51,10 +51,7 @@
     "architecture free"
   ],
   "author": "Juan Cazala <juancazala@gmail.com> (http://juancazala.com/)",
-  "license": {
-    "type": "MIT",
-    "url": "https://github.com/cazala/synaptic/blob/master/LICENSE"
-  },
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/cazala/synaptic/issues"
   },
