@@ -26,7 +26,7 @@ module.exports = {
     libraryTarget: 'umd'
   },
   plugins: [
-    new webpack.NoErrorsPlugin(),
+    new webpack.NoEmitOnErrorsPlugin(),
     new webpack.BannerPlugin(license())
   ]
 }
