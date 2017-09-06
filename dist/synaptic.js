@@ -910,18 +910,17 @@ var Network = function () {
   }, {
     key: 'worker',
     value: function worker(memory, set, options) {
-
       // Copy the options and set defaults (options might be different for each worker)
       var workerOptions = {};
       if (options) workerOptions = options;
-      workerOptions.rate = options.rate || .2;
-      workerOptions.iterations = options.iterations || 100000;
-      workerOptions.error = options.error || .005;
-      workerOptions.cost = options.cost || null;
-      workerOptions.crossValidate = options.crossValidate || null;
+      workerOptions.rate = workerOptions.rate || .2;
+      workerOptions.iterations = workerOptions.iterations || 100000;
+      workerOptions.error = workerOptions.error || .005;
+      workerOptions.cost = workerOptions.cost || null;
+      workerOptions.crossValidate = workerOptions.crossValidate || null;
 
       // Cost function might be different for each worker
-      costFunction = 'var cost = ' + (options && options.cost || this.cost || _Trainer2.default.cost.MSE) + ';\n';
+      var costFunction = '// REPLACED BY WORKER\nvar cost = ' + (options && options.cost || this.cost || _Trainer2.default.cost.MSE) + ';\n';
       var workerFunction = Network.getWorkerSharedFunctions();
       workerFunction = workerFunction.replace(/var cost = options && options\.cost \|\| this\.cost \|\| Trainer\.cost\.MSE;/g, costFunction);
 
@@ -978,19 +977,18 @@ var Network = function () {
 
       // Load and name the train function
       var train_f = _Trainer2.default.prototype.train.toString();
-      train_f = train_f.replace('function (set', 'function train(set') + '\n';
+      train_f = train_f.replace(/this._trainSet/g, '_trainSet');
+      train_f = train_f.replace(/this.test/g, 'test');
+      train_f = train_f.replace(/this.crossValidate/g, 'crossValidate');
+      train_f = train_f.replace('crossValidate = true', '// REMOVED BY WORKER');
 
       // Load and name the _trainSet function
       var _trainSet_f = _Trainer2.default.prototype._trainSet.toString().replace(/this.network./g, '');
-      _trainSet_f = _trainSet_f.replace('function (set', 'function _trainSet(set') + '\n';
-      _trainSet_f = _trainSet_f.replace('this.crossValidate', 'crossValidate');
-      _trainSet_f = _trainSet_f.replace('crossValidate = true', 'crossValidate = { }');
 
       // Load and name the test function
       var test_f = _Trainer2.default.prototype.test.toString().replace(/this.network./g, '');
-      test_f = test_f.replace('function (set', 'function test(set') + '\n';
 
-      return Network._SHARED_WORKER_FUNCTIONS = train_f + _trainSet_f + test_f;
+      return Network._SHARED_WORKER_FUNCTIONS = train_f + '\n' + _trainSet_f + '\n' + test_f;
     }
   }, {
     key: 'fromJSON',
