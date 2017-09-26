@@ -427,7 +427,7 @@ export default class Network {
     var activation = 'function (input) {\n';
 
     // build inputs
-    for (var i = 0; i < data.inputs; i++)
+    for (var i = 0; i < data.inputs.length; i++)
       activation += 'F[' + data.inputs[i] + '] = input[' + i + '];\n';
 
     // build network activation
