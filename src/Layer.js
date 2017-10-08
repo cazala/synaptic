@@ -197,7 +197,7 @@ export default class Layer {
 
 // adds a neuron to the layer
   add(neuron) {
-    this.neurons[neuron.ID] = neuron || new Neuron();
+    neuron = neuron || new Neuron();
     this.list.push(neuron);
     this.size++;
   }
