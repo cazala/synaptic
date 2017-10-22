@@ -1533,6 +1533,7 @@ var Neuron = function () {
           case Neuron.squash.HLIM:
             buildSentence(activation, ' = +(', state, ' > 0)', store_activation);
             buildSentence(derivative, ' = 1', store_activation);
+            break;
           case Neuron.squash.RELU:
             buildSentence(activation, ' = ', state, ' > 0 ? ', state, ' : 0', store_activation);
             buildSentence(derivative, ' = ', state, ' > 0 ? 1 : 0', store_activation);
