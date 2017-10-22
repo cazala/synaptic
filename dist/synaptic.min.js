@@ -24,7 +24,7 @@
  * 
  * 
  * ********************************************************************************************
- *                                   SYNAPTIC (v1.1.3)
+ *                                   SYNAPTIC (v1.1.4)
  * ********************************************************************************************
  * 
  * Synaptic is a javascript neural network library for node.js and the browser, its generalized
@@ -357,7 +357,7 @@ var Layer = function () {
   }, {
     key: 'add',
     value: function add(neuron) {
-      this.neurons[neuron.ID] = neuron || new _Neuron2.default();
+      neuron = neuron || new _Neuron2.default();
       this.list.push(neuron);
       this.size++;
     }
