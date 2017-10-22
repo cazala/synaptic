@@ -13,7 +13,7 @@ const squash = {
   },
   TANH: function (x, derivate) {
     if (derivate)
-      return 1 - Math.pow(Math.tanh(x), 2);
+      return 1 - Math.pow(Math.cosh(x), 2);
     return Math.tanh(x);
   },
   IDENTITY: function (x, derivate) {
