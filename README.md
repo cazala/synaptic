@@ -199,4 +199,14 @@ Multilayer LSTM network architectures.
 
 If you want to contribute feel free to send PR's, just make sure to run **npm run test** and **npm run build** before submitting it. This way you'll run all the test specs and build the web distribution files.
 
+## Support
+
+If you like this project and you want to show your support, you can buy me a beer with [magic internet money](https://i.imgur.com/mScSiOo.jpg):
+
+```
+BTC: 16ePagGBbHfm2d6esjMXcUBTNgqpnLWNeK
+ETH: 0xa423bfe9db2dc125dd3b56f215e09658491cc556
+XMR: 46WNbmwXpYxiBpkbHjAgjC65cyzAxtaaBQjcGpAZquhBKw2r8NtPQniEgMJcwFMCZzSBrEJtmPsTR54MoGBDbjTi2W1XmgM
+```
+
 <3
