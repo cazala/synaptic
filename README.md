@@ -210,6 +210,7 @@ If you like this project and you want to show your support, you can buy me a bee
 ```
 BTC: 16ePagGBbHfm2d6esjMXcUBTNgqpnLWNeK
 ETH: 0xa423bfe9db2dc125dd3b56f215e09658491cc556
+LTC: LeeemeZj6YL6pkTTtEGHFD6idDxHBF2HXa
 XMR: 46WNbmwXpYxiBpkbHjAgjC65cyzAxtaaBQjcGpAZquhBKw2r8NtPQniEgMJcwFMCZzSBrEJtmPsTR54MoGBDbjTi2W1XmgM
 ```
 
