@@ -48,6 +48,10 @@ To try out the examples, checkout the [gh-pages](https://github.com/cazala/synap
 
 `git checkout gh-pages`
 
+#### Other languages
+
+This README is also available in [Chinese](https://github.com/cazala/synaptic/blob/master/README_Zh-CN.md), thanks to [@noraincode](https://github.com/noraincode).
+
 
 ## Overview
 
