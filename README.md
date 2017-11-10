@@ -50,7 +50,7 @@ To try out the examples, checkout the [gh-pages](https://github.com/cazala/synap
 
 #### Other languages
 
-This README is also available in [Chinese](https://github.com/cazala/synaptic/blob/master/README_Zh-CN.md), thanks to [@noraincode](https://github.com/noraincode).
+This README is also available in [Chinese | 中文文档](https://github.com/cazala/synaptic/blob/master/README_Zh-CN.md), thanks to [@noraincode](https://github.com/noraincode).
 
 
 ## Overview

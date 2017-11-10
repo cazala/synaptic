@@ -1,16 +1,18 @@
 ## 介绍
 
-欢迎来到 Synaptic 的 WIKI 文档！这里有大量关于如何创建（和理解）的神经网络的资料。该个库中包括一些预建的像 Perceptrons和hopfields 网络架构，这些都在[架构页面(Architect)](https://github.com/cazala/synaptic/wiki/Architect) 上讨论过。如果你想简单了解的话，可以在[这里](https://github.com/cazala/synaptic/wiki/Networks)查看创建和修改网络的基本知识。如果你想深入学习的话，可以阅读关于[层(layer)](https://github.com/cazala/synaptic/wiki/Layers) 和 [神经元(neuron)](https://github.com/cazala/synaptic/wiki/Neurons)的介绍。最后，关于如何创建一个神经网络的训练模型(trainer)的介绍，请查看[这里](https://github.com/cazala/synaptic/wiki/Trainer)。
+欢迎来到 Synaptic 的 WIKI 文档！这里有大量关于如何创建（和理解）的神经网络的资料。该个库中包括一些预建的像 Perceptrons和hopfields 网络架构，这些都在[架构页面(Architect)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/architect.md) 上讨论过。如果你想简单了解的话，可以在[这里](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/networks.md)查看创建和修改网络的基本知识。如果你想深入学习的话，可以阅读关于[层(layer)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/layers.md) 和 [神经元(neuron)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/neurons.md)的介绍。最后，关于如何创建一个神经网络的训练模型(trainer)的介绍，请查看[这里](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/trainer.md)。
 
 ### 相关链接
 
-* 如果你对神经网络没有先验知识，从[这里](https://github.com/cazala/synaptic/wiki/Neural-Networks-101)开始
+* 如果你对神经网络没有先验知识，从[这里](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/neural-networks-101.md)开始
 
-* 如果您想知道如何将自定义数据输入到神经网络中，请点击查看[这里](https://github.com/cazala/synaptic/wiki/Normalization-101)
+* 如果您想知道如何将自定义数据输入到神经网络中，请点击查看[这里](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/normalization-101.md)
 
 * 如果你想用常规的 JS 直接开始上手神经网络，请点击查看[这里](http://blog.webkid.io/neural-networks-in-javascript/)
 
 * 如果你想在神经网络上应用遗传算法，请点击查看[这里](https://github.com/wagenaartje/gynaptic)
+
+* Synaptic 2.x 的 [设计草案](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/design-draft-2.x.md)
 
 ### 简单的例子
 
