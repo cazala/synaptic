@@ -2,7 +2,7 @@ export let connections = 0;
 
 export default class Connection {
   constructor(from, to, weight) {
-    if (!from || !to)
+    if (!from || !to || !weight)
       throw new Error("Connection Error: Invalid neurons");
 
     this.ID = Connection.uid();
