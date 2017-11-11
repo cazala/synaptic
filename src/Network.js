@@ -23,7 +23,7 @@ export default class Network {
       return this.layers.output.activate();
     }
     else {
-      if (this.optimized == null)
+      if (this.optimized == null || this.optimized == 'undefined')
         this.optimize();
       return this.optimized.activate(input);
     }
@@ -37,7 +37,7 @@ export default class Network {
         this.layers.hidden[i].propagate(rate);
     }
     else {
-      if (this.optimized == null)
+      if (this.optimized == null || this.optimized == 'undefined')
         this.optimize();
       this.optimized.propagate(rate, target);
     }
