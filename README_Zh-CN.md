@@ -18,10 +18,12 @@ Synaptics 是一个为 **node.js** 和 **浏览器** 环境打造的 javascript 
 
 #### 介绍
 
-如果你对神经网络没有任何了解，你应该首先 [阅读本指南](https://github.com/cazala/synaptic/wiki/Neural-Networks-101)。
+> 这里是 WIKI 的 [中文文档](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/home.md)
+
+如果你对神经网络没有任何了解，你应该首先 [阅读本指南](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/neural-networks-101.md)。
 
 
-如果你想要一个关于如何将数据提供给神经网络的实例，那么看看 [这篇文章](https://github.com/cazala/synaptic/wiki/Normalization-101).
+如果你想要一个关于如何将数据提供给神经网络的实例，那么看看 [这篇文章](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/normalization-101.md).
 
 你可能还想看看 [这篇文章](http://blog.webkid.io/neural-networks-in-javascript/).
 
@@ -40,11 +42,11 @@ Synaptics 是一个为 **node.js** 和 **浏览器** 环境打造的 javascript 
 
 #### 起步
 
-- [神经元(Neurons)](https://github.com/cazala/synaptic/wiki/Neurons/)
-- [层(Layers)](https://github.com/cazala/synaptic/wiki/Layers/)
-- [神经网络(Networks)](https://github.com/cazala/synaptic/wiki/Networks/)
-- [训练器(Trainer)](https://github.com/cazala/synaptic/wiki/Trainer/)
-- [构造器(Architect)](https://github.com/cazala/synaptic/wiki/Architect/)
+- [神经元(Neurons)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/neurons.md)
+- [层(Layers)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/layers.md)
+- [神经网络(Networks)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/networks.md)
+- [训练器(Trainer)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/trainer.md)
+- [构造器(Architect)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/architect.md)
 
 要尝试这些示例, 请切换到 [gh-pages](https://github.com/cazala/synaptic/tree/gh-pages) 分支.
 
@@ -57,7 +59,7 @@ Synaptics 是一个为 **node.js** 和 **浏览器** 环境打造的 javascript 
 
 ##### 在 node 环境中
 
-你可以使用 [npm](http://npmjs.org) 安装 synaptic:
+你可以使用 [npm](http://npmjs.org) 安装 synaptic:
 
 ```cmd
 npm install synaptic --save
@@ -65,7 +67,7 @@ npm install synaptic --save
 
 ##### 在浏览器环境中
 
-你可以使用 [bower](http://bower.io) 安装 synaptic:
+你可以使用 [bower](http://bower.io) 安装 synaptic:
 
 ```cmd
 bower install synaptic
@@ -88,7 +90,7 @@ var Neuron = synaptic.Neuron,
 	Architect = synaptic.Architect;
 ```
 
-现在你可以开始创建神经网络，并训练它们，或者使用 [构造器](https://github.com/cazala/synaptic/wiki/Architect/) 中内置的神经网络.
+现在你可以开始创建神经网络，并训练它们，或者使用 [构造器](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/architect.md) 中内置的神经网络.
 
 ### 例子
 
@@ -123,7 +125,7 @@ Perceptron.prototype = new Network();
 Perceptron.prototype.constructor = Perceptron;
 ```
 
-现在你可以通过创建一个训练器并教它如何解决异或问题来训练你的神经网络
+现在你可以通过创建一个训练器并教它如何解决异或问题来训练你的神经网络
 
 ```javascript
 var myPerceptron = new Perceptron(2,3,1);
@@ -192,7 +194,7 @@ LSTM.prototype = new Network();
 LSTM.prototype.constructor = LSTM;
 ```
 
-这些是用于说明目的的示例，[构造器](https://github.com/cazala/synaptic/wiki/Architect/) 中已经内置了多层感知器和多层LSTM网络架构.
+这些是用于说明目的的示例，[构造器](https://github.com/cazala/synaptic/blob/master/wiki/Zh-CN/architect.md) 中已经内置了多层感知器和多层LSTM网络架构.
 
 ## 贡献
 
