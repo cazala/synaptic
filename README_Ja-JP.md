@@ -1,4 +1,4 @@
-Synaptic [![Build Status](https://travis-ci.org/cazala/synaptic.svg?branch=master)](https://travis-ci.org/cazala/synaptic) [![チャットにご参加下さい!](https://synaptic-slack-ugiqacqvmd.now.sh/badge.svg)](https://synaptic-slack-ugiqacqvmd.now.sh/)
+Synaptic [![Build Status](https://travis-ci.org/cazala/synaptic.svg?branch=master)](https://travis-ci.org/cazala/synaptic) [![チャットにご参加下さい!](https://synaptic-slack.now.sh/badge.svg)](https://synaptic-slack.now.sh/)
 ========
 
 Synapticとは、node.jsとブラウザのためのjavascriptニューラルネットワークライブラリです。一般化されたアーキテクチャフリーなアルゴリズムを利用しているので、あらゆるタイプのfirst order(1次)または[second order(2次)](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network)ニューラルネットワークアーキテクチャをビルドしてトレーニングすることができます。
