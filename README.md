@@ -33,6 +33,7 @@ You may also want to take a look at [this article](http://blog.webkid.io/neural-
 - [Self Organizing Map](http://caza.la/synaptic/#/self-organizing-map)
 - [Read from Wikipedia](http://caza.la/synaptic/#/wikipedia)
 - [Creating a Simple Neural Network (Video)](https://scrimba.com/casts/cast-1980)
+- [Simple usage of Hopfield Network to auto-correct words](https://xsolve.software/blog/how-to-start-a-neural-network-with-javascript-in-5-minutes/)
 
 The source code of these demos can be found in [this branch](https://github.com/cazala/synaptic/tree/gh-pages/scripts).
 
