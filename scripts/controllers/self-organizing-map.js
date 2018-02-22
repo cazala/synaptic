@@ -18,7 +18,7 @@ angular.module('gitHubApp')
 
     var first = true;
     var hopfield = new Architect.Hopfield(80);
-    var trainer = new Trainer(hopfield);
+    var trainer = new Trainer(hopfield, {cost: Trainer.cost.CROSS_ENTROPY});
 
     $scope.valid = function(){
     	var valid = typeof $scope.word == 'string';
