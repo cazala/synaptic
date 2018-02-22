@@ -7,6 +7,7 @@ import * as synaptic from '../src/synaptic';
 
 var Perceptron = synaptic.Architect.Perceptron;
 var LSTM = synaptic.Architect.LSTM;
+var Hopfield = synaptic.Architect.Hopfield;
 var Layer = synaptic.Layer;
 var Network = synaptic.Network;
 var Trainer = synaptic.Trainer;
@@ -605,4 +606,78 @@ describe("Rate Array Check", function () {
       }
     });
   });
+});
+
+describe('Hopfield Network - Self Organizing Map', function () {
+
+  it("should recognize similar words", function () {
+    this.timeout(30000);
+  
+    var hopfield = new Hopfield(80);
+    var trainer = new Trainer(hopfield, {cost: Trainer.cost.CROSS_ENTROPY});
+    var map = {};
+  
+    var ascii2bin = function(ascii) {
+      var bin = "00000000000000000000000000000000000000000000000000000000000000000000000000000000";
+      for (var i = 0; i < ascii.length; i++) {
+        var code = ascii.charCodeAt(i);
+        bin += ('00000000' + code.toString(2)).slice(-8);
+      }
+      return bin.slice(-10 * 8).split('').reverse();
+    }
+  
+    var feed = function(word) {
+      var input = ascii2bin(word);
+      var output = hopfield.feed(input);
+      var key = output.join('');
+  
+      if (key in map) {
+        map[key].push(word);
+      } else {
+        var learn = [];
+        map[key] = [word];
+  
+        for (var i in map) {
+          learn.push(i.split(''));
+        }
+        var set = [];
+        for (var p in learn) {
+          set.push({
+            input: learn[p],
+            output: learn[p]
+          });
+        }
+  
+        doTrain(set);
+      }
+    }
+  
+    var doTrain = function(set){
+      trainer.train(set, {
+        iterations: 100,
+        error: .5,
+        rate: .05
+      });
+    }
+  
+    map[ascii2bin("cat").join('')] = ["cat"];
+    map[ascii2bin("dog").join('')] = ["dog"];
+    map[ascii2bin("john").join('')] = ["john"];
+    var learn = [ascii2bin("john"), ascii2bin("dog"), ascii2bin("cat")];
+    var set = [];
+    for (var p in learn) {
+      set.push({
+        input: learn[p],
+        output: learn[p]
+      });
+    }
+  
+    doTrain(set);
+    assert.equal(Object.keys(map).length, 3, "Map not properly initialized");
+    feed("sat");
+    assert.equal(Object.keys(map).length, 3, "Patterns in similar words not recognized");
+    feed("browser");
+    assert.equal(Object.keys(map).length, 4, "Different words not recognized");
+  });
+
 });
