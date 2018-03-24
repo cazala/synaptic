@@ -18,7 +18,7 @@
 
 ![](http://latex.codecogs.com/gif.latex?s_j%20%3D%20%5Csum_%7Bi%7D%20w_%7Bij%7D.y_%7Bi%7D)
 
-*其中y<sub>i</sub>是所有的輸入（包括偏差）*
+*其中 y<sub>i</sub> 是所有的輸入（包括偏差）*
 
 在計算出它的狀態之後，神經元通過它的啟動函數來傳遞它，這個函數對結果進行正規化（通常在 0~1 之間）
 
@@ -114,4 +114,4 @@ LSTM 還增加了從存儲單元到所有門的窺視孔連接，這提高了它
 
 ## 就是這樣
 
-現在，您已經準備好開始成為神經網路大師的旅程，您可以先查看 Synaptic 的 [範例](https://github.com/NoobTW/synaptic/blob/master/README_Zh-TW.md#%E7%A4%BA%E7%AF%84%E7%94%A8%E4%BE%8B)和 [文件](https://github.com/cazala/synaptic/wiki#documentation)，查看 [原始碼](https://github.com/cazala/synaptic/tree/master/src)或閱讀 [這篇文章](http://www.overcomplete.net/papers/nn2012.pdf)。
+現在，您已經準備好開始成為神經網路大師的旅程，您可以先查看 Synaptic 的 [範例](https://github.com/NoobTW/synaptic/blob/master/README_Zh-TW.md#%E7%A4%BA%E7%AF%84%E7%94%A8%E4%BE%8B) 和 [文件](https://github.com/cazala/synaptic/wiki#documentation)，查看 [原始碼](https://github.com/cazala/synaptic/tree/master/src) 或閱讀 [這篇文章](http://www.overcomplete.net/papers/nn2012.pdf)。

@@ -28,23 +28,23 @@ Synaptics 是一個為 **node.js** 和 **瀏覽器** 環境打造的 javascript 
 
 #### 示範用例
 
-- [解決 XOR 運算(Solve an XOR)](http://caza.la/synaptic/#/xor)
-- [離散序列記憶任務(Discrete Sequence Recall Task)](http://caza.la/synaptic/#/dsr)
-- [學習圖像濾波器(Learn Image Filters)](http://caza.la/synaptic/#/image-filters)
-- [畫一幅畫(Paint an Image)](http://caza.la/synaptic/#/paint-an-image)
-- [自我組織映射圖(Self Organizing Map)](http://caza.la/synaptic/#/self-organizing-map)
-- [閱讀維基百科(Read from Wikipedia)](http://caza.la/synaptic/#/wikipedia)
+- [解決 XOR 運算（Solve an XOR）](http://caza.la/synaptic/#/xor)
+- [離散序列記憶任務（Discrete Sequence Recall Task）](http://caza.la/synaptic/#/dsr)
+- [學習圖像濾波器（Learn Image Filters）](http://caza.la/synaptic/#/image-filters)
+- [畫一幅畫（Paint an Image）](http://caza.la/synaptic/#/paint-an-image)
+- [自我組織映射圖（Self Organizing Map）](http://caza.la/synaptic/#/self-organizing-map)
+- [閱讀維基百科（Read from Wikipedia）](http://caza.la/synaptic/#/wikipedia)
 - [建立簡單的神經網路（影片）Creating a Simple Neural Network (Video)](https://scrimba.com/casts/cast-1980)
 
 這些示範的原始碼可以在 [這個分支](https://github.com/cazala/synaptic/tree/gh-pages/scripts) 中找到.
 
 #### 開始
 
-- [神經元(Neurons)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/neurons.md)
-- [層(Layers)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/layers.md)
-- [神經網路(Networks)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/networks.md)
-- [訓練器(Trainer)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/trainer.md)
-- [構造器(Architect)](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/architect.md)
+- [神經元（Neurons）](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/neurons.md)
+- [層（Layers）](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/layers.md)
+- [神經網路（Networks）](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/networks.md)
+- [訓練器（Trainer）](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/trainer.md)
+- [構造器（Architect）](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/architect.md)
 
 要嘗試這些範例，請切換到 [gh-pages](https://github.com/cazala/synaptic/tree/gh-pages) 分支.
 
@@ -88,13 +88,13 @@ var Neuron = synaptic.Neuron,
 	Architect = synaptic.Architect;
 ```
 
-現在你可以開始創建神經網路，並訓練它們，或者使用 [構造器](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/architect.md) 中內建的神經網路。
+現在你可以開始建立神經網路，並訓練它們，或者使用 [構造器](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/architect.md) 中內建的神經網路。
 
 ### 例子
 
 ##### 感知器
 
-如何創建一個簡單的**感知器**:
+如何建立一個簡單的**感知器**:
 
 ![perceptron](http://www.codeproject.com/KB/dotnet/predictor/network.jpg).
 
@@ -192,13 +192,13 @@ LSTM.prototype = new Network();
 LSTM.prototype.constructor = LSTM;
 ```
 
-這些是用於說明目的的範例，[構造器](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/architect.md) 中已經內建了多層感知器和多層 LSTM 網路架構.
+這些是用於說明目的的範例，[構造器](https://github.com/cazala/synaptic/blob/master/wiki/Zh-TW/architect.md) 中已經內建了多層感知器和多層 LSTM 網路架構。
 
 ## 貢獻
 
 **Synaptic** 是一個開放原始碼專案，始於阿根廷的布宜諾斯艾利斯。歡迎世界上任何人為此項目的發展作出貢獻.
 
-如果你想發 PR 到本專案，請務必在提交前執行 **npm run test** 和 **npm run build**。這樣將會執行所有測試範例並構建 Web 發佈文件.
+如果你想發 PR 到本專案，請務必在提交前執行 **npm run test** 和 **npm run build**。這樣將會執行所有測試範例並構建 Web 發佈文件。
 
 ## 支持
 

@@ -1,4 +1,4 @@
-## Layers (層)
+## Layers（層）
 
 通常你不會使用單個神經元，而是使用層代替。一層基本上是一組神經元，它們可以做幾乎和神經元一樣的工作，但它使寫程式過程更快。
 
@@ -46,7 +46,7 @@ var C = new Layer(4);
 C.gate(connection, Layer.gateType.INPUT_GATE); // now C gates the connection between A and B (input gate)
 ```
 
-這裡有三種門類型（`gateType's`）:
+這裡有三種門類型（`gateType`）:
 
 - `Layer.gateType.INPUT_GATE`: 如果 C 層是 A 層和 B 層之間的門控連接，那麼 C 門的所有神經元都是B的輸入連接。
 - `Layer.gateType.OUTPUT_GATE`: 如果 C 層是 A 層和 B 層之間的門控連接，那麼 C 門的所有神經元都來自A的輸出連接。
@@ -65,7 +65,7 @@ A.activate([1,0,1,0,1]); // [1,0,1,0,1]
 B.activate(); // [0.3280457, 0.83243247, 0.5320423]
 ```
 
-### propagate(傳播)
+### propagate（傳播）
 
 在啟動後，你可以教給這個層正確的輸出應該是什麼（又名：訓練），這是由反向傳播誤差完成的。要使用傳播方法，必須提供學習率和目標值（浮動數組在 0 到 1 之間）。
 
@@ -104,6 +104,6 @@ myLayer.set({
 })
 ```
 
-### neurons （神經元）
+### neurons（神經元）
 
 使用 `neurons()` 方法以啟動順序返回層中所有神經元的數組。

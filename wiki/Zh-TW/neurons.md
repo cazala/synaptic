@@ -20,7 +20,7 @@ A.project(B); // A now projects a connection to B
 
 ## gate
 
-神經元可以關閉兩個神經元之間的連接，或者神經元的自我連接。這使您可以建立 [二階神經網路](https://en.wikipedia.org/wiki/Recurrent_neural_network#Second_order_RNN)體系結構。
+神經元可以關閉兩個神經元之間的連接，或者神經元的自我連接。這使您可以建立 [二階神經網路](https://en.wikipedia.org/wiki/Recurrent_neural_network#Second_order_RNN) 體系結構。
 
 ```javascript
 var A = new Neuron();
@@ -33,7 +33,7 @@ C.gate(connection); // now C gates the connection between A and B
 
 ## activate
 
-當一個神經元啟動時，它從它的所有輸入連接計算出它的狀態，並用它的啟動函數壓縮它，並返回輸出（啟動）。您可以將啟動作為參數提供（對於輸入圖層中的神經元很有用，它必須是介於 0 和 1 之間的浮點數）。例如：
+當一個神經元啟動時，它從它的所有輸入連接計算出它的狀態，並用它的啟動函式壓縮它，並返回輸出（啟動）。您可以將啟動作為參數提供（對於輸入圖層中的神經元很有用，它必須是介於 0 和 1 之間的浮點數）。例如：
 
 ```javascript
 var A = new Neuron();
@@ -81,7 +81,7 @@ A.squash = Neuron.squash.TANH;
 A.bias = 1;
 ```
 
-有5個內建的壓縮功能，但你也可以建立自己的：
+有5個內建的壓縮功能（當然你也可以建立自己的）：
 
 - [Neuron.squash.LOGISTIC](http://commons.wikimedia.org/wiki/File:SigmoidFunction.png)
 - [Neuron.squash.TANH](http://commons.wikimedia.org/wiki/File:TanhFunction.jpg)

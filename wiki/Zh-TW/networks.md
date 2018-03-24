@@ -1,4 +1,4 @@
-## Networks (神經網路)
+## Networks（神經網路）
 
 網路基本上是一系列的層。它們有一個輸入層、若干個隱藏層和一個輸出層。網路可以像層一樣投射和連接連接，啟動和傳播。還可以對網路進行最佳化、擴展、導出到JSON、轉換為工作單元或獨立函數，並複製。
 
@@ -28,7 +28,7 @@ myNetwork.project(otherNetwork, Layer.connectionType.ALL_TO_ALL);
 */
 ```
 
-有三個連接類型（`connectionTypes`）:
+有三個連接類型（`connectionType`）:
 
 - `Layer.connectionType.ALL_TO_ALL`: 它將 A 層的每個神經元連接到 B 層的每個神經元
 - `Layer.connectionType.ONE_TO_ONE`: 它將來自 A 層的每個神經元連接到 B 層的一個神經元。兩個層必須是相同的大小才能工作。
@@ -49,7 +49,7 @@ var connection = A.project(B);
 C.gate(connection, Layer.gateType.INPUT_GATE); // now C's output layer gates the connection between A's output layer and B's input layer (input gate)
 ```
 
-有三種門類型（gateType）：
+有三種門類型（`gateType`）：
 - `Layer.gateType.INPUT_GATE`: 如果網路 C 是網路 A 和 B 之間的門連接，那麼 C 輸出層的所有神經元都將輸入連接到 B 的輸入層。
 - `Layer.gateType.OUTPUT_GATE`：如果網路 C 是網路 A 和 B 之間的門控連接，那麼 C 輸出層的所有神經元都來自輸出層的輸出連接。
 - `Layer.gateType.ONE_TO_ONE`: 如果網路 C 是網路 A 和 B 之間的門控連接，那麼 C 輸出層的每個神經元都從輸出層到 B 輸入層連接一個連接。使用這種 gateType、一個輸出層，B 的輸入層和輸出層 C 的大小必須相同。
@@ -264,7 +264,7 @@ activateWorker(trainingSet[index].input);
 
 ### standalone
 
-網路可以導出到一個單一的 JavaScript 函式。這在你的網路已經被訓練並且你只需要使用它的時候很有用，因為獨立函數只是一個帶有數組和操作的 JavaScript 函數，並不依賴於 Synaptic 或者任何其他的庫。
+網路可以導出到一個單一的 JavaScript 函式。這在你的網路已經被訓練並且你只需要使用它的時候很有用，因為獨立函式只是一個帶有數組和操作的 JavaScript 函式，並不依賴於 Synaptic 或者任何其他的庫。
 
 ```javascript
 var inputLayer = new Layer(4);

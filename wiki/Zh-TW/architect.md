@@ -1,6 +1,6 @@
 ## Architect
 
-### Perceptron(感知器)
+### Perceptron（感知器）
 
 ---
 
@@ -20,7 +20,7 @@ var myPerceptron = new Architect.Perceptron(2,3,1);
 var myPerceptron = new Architect.Perceptron(2, 10, 10, 10, 10, 1);
 ```
 
-### LSTM(長短期記憶網路)
+### LSTM（長短期記憶網路）
 
 ---
 
