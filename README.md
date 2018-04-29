@@ -1,4 +1,4 @@
-Synaptic [![Build Status](https://travis-ci.org/cazala/synaptic.svg?branch=master)](https://travis-ci.org/cazala/synaptic) [![Join the chat at https://synapticjs.slack.com](https://synaptic-slack.now.sh/badge.svg)](https://synaptic-slack.now.sh/)
+Synaptic [![Build Status](https://travis-ci.org/cazala/synaptic.svg?branch=master)](https://travis-ci.org/cazala/synaptic) [![Join the chat at https://synapticjs.slack.com](https://synaptic-slack.now.sh/badge.svg)](https://synaptic-slack.now.sh/) [![Slack](https://slack.bri.im/badge.svg)](https://slack.bri.im)
 ========
 
 ## Important: [Synaptic 2.x](https://github.com/cazala/synaptic/issues/140) is in stage of discussion now! Feel free to participate
