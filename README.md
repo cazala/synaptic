@@ -33,6 +33,8 @@ You may also want to take a look at [this article](http://blog.webkid.io/neural-
 - [Self Organizing Map](http://caza.la/synaptic/#/self-organizing-map)
 - [Read from Wikipedia](http://caza.la/synaptic/#/wikipedia)
 - [Creating a Simple Neural Network (Video)](https://scrimba.com/casts/cast-1980)
+- [Learn how to shoot](https://sta-ger.bitbucket.io/apps/bot/index.html)
+- [Beer glass classifier](https://sta-ger.bitbucket.io/apps/beer/index.html)
 
 The source code of these demos can be found in [this branch](https://github.com/cazala/synaptic/tree/gh-pages/scripts).
 
