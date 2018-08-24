@@ -174,7 +174,7 @@ export default class Layer {
       return Layer.connectionType.ONE_TO_ONE;
   }
 
-// clears all the neuorns in the layer
+// clears all the neurons in the layer
   clear() {
     for (var id in this.list) {
       var neuron = this.list[id];
