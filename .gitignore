@@ -1,6 +1,9 @@
 # Mac.
 .DS_STORE
 
+# vim
+*.swp
+
 # Node.
 node_modules
 
