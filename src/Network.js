@@ -516,6 +516,7 @@ export default class Network {
     hardcode += 'var F =  new Float64Array([' + this.optimized.memory.toString() + ']);\n';
     hardcode += 'var activate = ' + this.optimized.activate.toString() + ';\n';
     hardcode += 'var propagate = ' + this.optimized.propagate.toString() + ';\n';
+    hardcode += 'var shuffleInplace = ' + shuffleInplace.toString() + ";\n";
     hardcode +=
       'onmessage = function(e) {\n' +
       'if (e.data.action == \'startTraining\') {\n' +
