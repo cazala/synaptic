@@ -1123,7 +1123,7 @@ var Neuron = function () {
   _createClass(Neuron, [{
     key: 'activate',
     value: function activate(input) {
-      // activation from enviroment (for input neurons)
+      // activation from environment (for input neurons)
       if (typeof input != 'undefined') {
         this.activation = input;
         this.derivative = 0;
@@ -1201,7 +1201,7 @@ var Neuron = function () {
       // whether or not this neuron is in the output layer
       var isOutput = typeof target != 'undefined';
 
-      // output neurons get their error from the enviroment
+      // output neurons get their error from the environment
       if (isOutput) this.error.responsibility = this.error.projected = target - this.activation; // Eq. 10
 
       else // the rest of the neuron compute their error responsibilities by backpropagation

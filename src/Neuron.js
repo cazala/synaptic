@@ -62,7 +62,7 @@ export default class Neuron {
 
   // activate the neuron
   activate(input) {
-    // activation from enviroment (for input neurons)
+    // activation from environment (for input neurons)
     if (typeof input != 'undefined') {
       this.activation = input;
       this.derivative = 0;
@@ -142,7 +142,7 @@ export default class Neuron {
     // whether or not this neuron is in the output layer
     var isOutput = typeof target != 'undefined';
 
-    // output neurons get their error from the enviroment
+    // output neurons get their error from the environment
     if (isOutput)
       this.error.responsibility = this.error.projected = target - this.activation; // Eq. 10
 
