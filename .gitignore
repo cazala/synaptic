@@ -3,6 +3,9 @@
 
 # Node.
 node_modules
+coverage
+packages/*/dist
+*.tsbuildinfo
 
 # Tmp files.
 *~

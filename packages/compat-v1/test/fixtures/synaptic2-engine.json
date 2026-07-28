@@ -1,0 +1,36 @@
+{
+  "activationFunction": [
+    5,
+    0
+  ],
+  "biasUnit": null,
+  "connections": [
+    {
+      "from": 0,
+      "to": 1
+    }
+  ],
+  "gates": [],
+  "layers": [
+    [
+      0
+    ],
+    [
+      1
+    ]
+  ],
+  "size": 2,
+  "state": [
+    0,
+    0
+  ],
+  "weight": [
+    [
+      0
+    ],
+    [
+      0.5,
+      0
+    ]
+  ]
+}
