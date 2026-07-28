@@ -14,6 +14,9 @@
       "path": "./packages/backend-wasm"
     },
     {
+      "path": "./packages/backend-webgpu"
+    },
+    {
       "path": "./packages/layers"
     },
     {

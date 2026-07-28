@@ -1,0 +1,57 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Synaptic WebGPU forward smoke test</title>
+<script type="importmap">
+{
+  "imports": {
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js"
+  }
+}
+</script>
+<pre id="result">running</pre>
+<script type="module">
+  import {
+    GraphBuilder,
+    compilePlan,
+    createSnapshot,
+  } from "@synaptic/core";
+  import { WebGpuBackend } from "../dist/index.js";
+
+  const result = document.querySelector("#result");
+  try {
+    const graph = new GraphBuilder();
+    const input = graph.input(1);
+    graph.stage(1);
+    const output = graph.units(1, { activation: "identity" });
+    graph.connect(input.units, output, "one-to-one", {
+      initializer: { kind: "constant", value: 0.5 },
+    });
+    graph.connect(output, output, "one-to-one", {
+      delay: 1,
+      trainable: false,
+      initializer: { kind: "constant", value: 1 },
+    });
+    const definition = graph.build({ inputs: input, outputs: output });
+    const session = await new WebGpuBackend({
+      fallbackBackends: [],
+    }).compile(compilePlan(definition), createSnapshot(definition));
+    const firstPrediction = await session.forward([2]);
+    const prediction = await session.forward([0]);
+    const checkpoint = await session.checkpoint();
+    result.textContent = JSON.stringify({
+      backend: session.backend,
+      firstOutput: [...firstPrediction.data],
+      output: [...prediction.data],
+      state: [...checkpoint.runtime.state],
+      activation: [...checkpoint.runtime.activation],
+      previousActivation: [...checkpoint.runtime.previousActivation],
+    });
+    session.dispose();
+  } catch (error) {
+    result.textContent = JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+</script>

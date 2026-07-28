@@ -9,9 +9,7 @@
   "references": [
     { "path": "../core" },
     { "path": "../layers" },
-    { "path": "../backend-paper" },
     { "path": "../backend-cpu" },
-    { "path": "../backend-wasm" },
-    { "path": "../backend-webgpu" }
+    { "path": "../backend-wasm" }
   ]
 }

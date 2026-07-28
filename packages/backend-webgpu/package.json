@@ -1,7 +1,6 @@
 {
-  "name": "@synaptic/conformance",
+  "name": "@synaptic/backend-webgpu",
   "version": "2.0.0-alpha.0",
-  "private": true,
   "type": "module",
   "exports": {
     ".": {
@@ -11,10 +10,9 @@
   },
   "dependencies": {
     "@synaptic/backend-cpu": "2.0.0-alpha.0",
-    "@synaptic/backend-paper": "2.0.0-alpha.0",
     "@synaptic/backend-wasm": "2.0.0-alpha.0",
-    "@synaptic/backend-webgpu": "2.0.0-alpha.0",
     "@synaptic/core": "2.0.0-alpha.0",
-    "@synaptic/layers": "2.0.0-alpha.0"
+    "@synaptic/layers": "2.0.0-alpha.0",
+    "@webgpu/types": "0.1.71"
   }
 }

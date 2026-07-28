@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Synaptic WebGPU shader smoke test</title>
+<pre id="result">running</pre>
+<script type="module">
+  import { FORWARD_WGSL } from "../dist/forward-shader.js";
+
+  const result = document.querySelector("#result");
+  try {
+    if (!navigator.gpu) {
+      result.textContent = JSON.stringify({ supported: false, messages: [] });
+    } else {
+      const adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) {
+        result.textContent = JSON.stringify({
+          supported: false,
+          messages: ["No WebGPU adapter"],
+        });
+      } else {
+        const device = await adapter.requestDevice();
+        const module = device.createShaderModule({ code: FORWARD_WGSL });
+        const info = await module.getCompilationInfo();
+        result.textContent = JSON.stringify({
+          supported: true,
+          messages: info.messages.map((message) => ({
+            type: message.type,
+            line: message.lineNum,
+            column: message.linePos,
+            message: message.message,
+          })),
+        });
+        device.destroy();
+      }
+    }
+  } catch (error) {
+    result.textContent = JSON.stringify({
+      supported: true,
+      messages: [error instanceof Error ? error.message : String(error)],
+    });
+  }
+</script>
