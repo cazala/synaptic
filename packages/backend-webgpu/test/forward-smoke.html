@@ -36,17 +36,27 @@
     const definition = graph.build({ inputs: input, outputs: output });
     const session = await new WebGpuBackend({
       fallbackBackends: [],
-    }).compile(compilePlan(definition), createSnapshot(definition));
-    const firstPrediction = await session.forward([2]);
+    }).compile(
+      compilePlan(definition),
+      createSnapshot(definition),
+      { training: true },
+    );
+    const metrics = await session.trainStep(
+      { input: [2], target: [3] },
+      { learningRate: 0.1 },
+    );
+    const snapshot = await session.snapshot();
     const prediction = await session.forward([0]);
     const checkpoint = await session.checkpoint();
     result.textContent = JSON.stringify({
       backend: session.backend,
-      firstOutput: [...firstPrediction.data],
+      loss: metrics.loss,
       output: [...prediction.data],
+      parameters: [...snapshot.parameters],
       state: [...checkpoint.runtime.state],
       activation: [...checkpoint.runtime.activation],
       previousActivation: [...checkpoint.runtime.previousActivation],
+      eligibilityTrace: [...checkpoint.runtime.eligibilityTrace],
     });
     session.dispose();
   } catch (error) {

@@ -59,5 +59,7 @@ describe("WebGPU heap lowering", () => {
     expect(FORWARD_WGSL).toContain("if (unit >= config.unitCount)");
     expect(FORWARD_WGSL).toContain("if (localIndex >= stageLength)");
     expect(FORWARD_WGSL).toContain("if (slot >= config.outputCount)");
+    expect(FORWARD_WGSL).toContain("if (index < config.connectionCount)");
+    expect(FORWARD_WGSL).toContain("if (parameter >= config.parameterCount)");
   });
 });

@@ -11,18 +11,36 @@ export type HeapSectionName =
   | "unitConstantMask"
   | "inputSlot"
   | "connectionFrom"
+  | "connectionTo"
   | "connectionParameter"
   | "connectionDelay"
   | "connectionGater"
   | "gateDelay"
   | "incomingOffsets"
   | "incomingConnections"
+  | "outgoingOffsets"
+  | "outgoingConnections"
+  | "gatedTargetOffsets"
+  | "gatedTargets"
+  | "extendedTraceTarget"
+  | "extendedTraceOffsets"
   | "outputs"
+  | "outputSlot"
+  | "parameterTrainable"
   | "parameters"
   | "state"
   | "activation"
   | "previousActivation"
+  | "derivative"
+  | "eligibilityTrace"
+  | "extendedEligibilityTrace"
+  | "projectedError"
+  | "gatedError"
+  | "error"
+  | "connectionGradient"
   | "input"
+  | "target"
+  | "learningRate"
   | "output";
 
 export interface HeapSection {
@@ -56,18 +74,36 @@ export function buildHeapLayout(plan: ExecutionPlan): WebGpuHeapLayout {
     unitConstantMask: plan.unitCount,
     inputSlot: plan.unitCount,
     connectionFrom: plan.connectionFrom.length,
+    connectionTo: plan.connectionTo.length,
     connectionParameter: plan.connectionParameter.length,
     connectionDelay: plan.connectionDelay.length,
     connectionGater: plan.connectionGater.length,
     gateDelay: plan.gateDelay.length,
     incomingOffsets: plan.incomingOffsets.length,
     incomingConnections: plan.incomingConnections.length,
+    outgoingOffsets: plan.outgoingOffsets.length,
+    outgoingConnections: plan.outgoingConnections.length,
+    gatedTargetOffsets: plan.gatedTargetOffsets.length,
+    gatedTargets: plan.gatedTargets.length,
+    extendedTraceTarget: plan.extendedTraceTarget.length,
+    extendedTraceOffsets: plan.extendedTraceOffsets.length,
     outputs: plan.outputs.length,
+    outputSlot: plan.unitCount,
+    parameterTrainable: plan.parameterCount,
     parameters: plan.parameterCount,
     state: plan.unitCount,
     activation: plan.unitCount,
     previousActivation: plan.unitCount,
+    derivative: plan.unitCount,
+    eligibilityTrace: plan.connectionCount,
+    extendedEligibilityTrace: plan.extendedTraceTarget.length,
+    projectedError: plan.unitCount,
+    gatedError: plan.unitCount,
+    error: plan.unitCount,
+    connectionGradient: plan.connectionCount,
     input: plan.inputs.length,
+    target: plan.outputs.length,
+    learningRate: 1,
     output: plan.outputs.length,
   };
   const sections = {} as Record<HeapSectionName, HeapSection>;
@@ -114,14 +150,23 @@ export function buildWebGpuHeap(
   };
 
   const inputSlot = new Int32Array(plan.unitCount);
+  const outputSlot = new Int32Array(plan.unitCount);
   const unitConstantMask = Uint32Array.from(
     plan.definition.topology.units,
     (unit) => Number(unit.constant !== undefined),
   );
   inputSlot.fill(-1);
+  outputSlot.fill(-1);
   plan.inputs.forEach((unit, slot) => {
     inputSlot[unit] = slot;
   });
+  plan.outputs.forEach((unit, slot) => {
+    outputSlot[unit] = slot;
+  });
+  const parameterTrainable = Uint32Array.from(
+    plan.definition.topology.parameters,
+    (parameter) => Number(parameter.trainable),
+  );
 
   writeU32("stageUnits", plan.stageUnits);
   writeU32("unitActivation", plan.unitActivation);
@@ -129,20 +174,29 @@ export function buildWebGpuHeap(
   writeU32("unitConstantMask", unitConstantMask);
   writeI32("inputSlot", inputSlot);
   writeU32("connectionFrom", plan.connectionFrom);
+  writeU32("connectionTo", plan.connectionTo);
   writeU32("connectionParameter", plan.connectionParameter);
   writeU32("connectionDelay", plan.connectionDelay);
   writeI32("connectionGater", plan.connectionGater);
   writeU32("gateDelay", plan.gateDelay);
   writeU32("incomingOffsets", plan.incomingOffsets);
   writeU32("incomingConnections", plan.incomingConnections);
+  writeU32("outgoingOffsets", plan.outgoingOffsets);
+  writeU32("outgoingConnections", plan.outgoingConnections);
+  writeU32("gatedTargetOffsets", plan.gatedTargetOffsets);
+  writeU32("gatedTargets", plan.gatedTargets);
+  writeU32("extendedTraceTarget", plan.extendedTraceTarget);
+  writeU32("extendedTraceOffsets", plan.extendedTraceOffsets);
   writeU32("outputs", plan.outputs);
+  writeI32("outputSlot", outputSlot);
+  writeU32("parameterTrainable", parameterTrainable);
   writeF32("parameters", snapshot.parameters);
 
   return { layout, bytes: new Uint8Array(buffer) };
 }
 
 export const WEBGPU_UNIFORM_STRIDE = 256;
-export const WEBGPU_UNIFORM_WORDS = 28;
+export const WEBGPU_UNIFORM_WORDS = 44;
 
 export function buildUniformRecords(
   plan: ExecutionPlan,
@@ -180,10 +234,26 @@ export function buildUniformRecords(
       layout.sections.outputs.wordOffset,
       layout.sections.output.wordOffset,
       plan.outputs.length,
-      0,
-      0,
-      0,
-      0,
+      layout.sections.connectionTo.wordOffset,
+      layout.sections.outgoingOffsets.wordOffset,
+      layout.sections.outgoingConnections.wordOffset,
+      layout.sections.gatedTargetOffsets.wordOffset,
+      layout.sections.gatedTargets.wordOffset,
+      layout.sections.extendedTraceTarget.wordOffset,
+      layout.sections.extendedTraceOffsets.wordOffset,
+      layout.sections.parameterTrainable.wordOffset,
+      layout.sections.outputSlot.wordOffset,
+      layout.sections.derivative.wordOffset,
+      layout.sections.eligibilityTrace.wordOffset,
+      layout.sections.extendedEligibilityTrace.wordOffset,
+      layout.sections.projectedError.wordOffset,
+      layout.sections.gatedError.wordOffset,
+      layout.sections.error.wordOffset,
+      layout.sections.connectionGradient.wordOffset,
+      layout.sections.target.wordOffset,
+      layout.sections.learningRate.wordOffset,
+      plan.connectionCount,
+      plan.parameterCount,
       0,
     ]);
   }

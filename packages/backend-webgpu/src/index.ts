@@ -25,6 +25,7 @@ import {
   WEBGPU_UNIFORM_WORDS,
   buildUniformRecords,
   buildWebGpuHeap,
+  type HeapSectionName,
   type WebGpuHeap,
 } from "./layout.js";
 import { FORWARD_WGSL } from "./forward-shader.js";
@@ -85,10 +86,18 @@ export class WebGpuBackend implements Backend {
       });
     }
     if (options.training) {
-      issues.push({
-        code: "WEBGPU_TRAINING_UNAVAILABLE",
-        message: "This WebGPU milestone implements forward execution only",
-      });
+      for (let connection = 0; connection < plan.connectionCount; connection += 1) {
+        if (
+          plan.connectionFrom[connection] === plan.connectionTo[connection]
+          && plan.definition.topology.parameters[plan.connectionParameter[connection] ?? -1]?.trainable
+        ) {
+          issues.push({
+            code: "TRAINABLE_SELF_CONNECTION",
+            message: "LSTM-g treats recurrent self-connections as fixed memory coefficients",
+          });
+          break;
+        }
+      }
     }
     return { supported: issues.length === 0, issues };
   }
@@ -161,13 +170,15 @@ interface WebGpuPipelines {
   readonly prepare: GPUComputePipeline;
   readonly forward: GPUComputePipeline;
   readonly gather: GPUComputePipeline;
+  readonly clearTraining: GPUComputePipeline;
+  readonly backward: GPUComputePipeline;
+  readonly updateParameters: GPUComputePipeline;
 }
 
 export class WebGpuSession implements Session {
   readonly backend = "webgpu";
   readonly #plan: ExecutionPlan;
   readonly #definition: ModelSnapshot["definition"];
-  readonly #parameters: Float32Array;
   readonly #device: GPUDevice;
   readonly #heap: WebGpuHeap;
   readonly #heapBuffer: GPUBuffer;
@@ -194,7 +205,6 @@ export class WebGpuSession implements Session {
   ) {
     this.#plan = plan;
     this.#definition = snapshot.definition;
-    this.#parameters = snapshot.parameters.slice();
     this.#device = device;
     this.#heap = heap;
     this.#heapBuffer = heapBuffer;
@@ -304,7 +314,14 @@ export class WebGpuSession implements Session {
         label: "synaptic forward pipeline layout",
         bindGroupLayouts: [bindGroupLayout],
       });
-      const [prepare, forward, gather] = await Promise.all([
+      const [
+        prepare,
+        forward,
+        gather,
+        clearTraining,
+        backward,
+        updateParameters,
+      ] = await Promise.all([
         device.createComputePipelineAsync({
           label: "synaptic prepare",
           layout: pipelineLayout,
@@ -319,6 +336,21 @@ export class WebGpuSession implements Session {
           label: "synaptic gather output",
           layout: pipelineLayout,
           compute: { module: shader, entryPoint: "gather" },
+        }),
+        device.createComputePipelineAsync({
+          label: "synaptic clear training state",
+          layout: pipelineLayout,
+          compute: { module: shader, entryPoint: "clearTraining" },
+        }),
+        device.createComputePipelineAsync({
+          label: "synaptic backward stage",
+          layout: pipelineLayout,
+          compute: { module: shader, entryPoint: "backwardStage" },
+        }),
+        device.createComputePipelineAsync({
+          label: "synaptic update parameters",
+          layout: pipelineLayout,
+          compute: { module: shader, entryPoint: "updateParameters" },
         }),
       ]);
       const bindGroup = device.createBindGroup({
@@ -341,7 +373,14 @@ export class WebGpuSession implements Session {
         uniformBuffer,
         readbackBuffer,
         bindGroup,
-        pipelines: { prepare, forward, gather },
+        pipelines: {
+          prepare,
+          forward,
+          gather,
+          clearTraining,
+          backward,
+          updateParameters,
+        },
       };
     } catch (error) {
       for (const buffer of allocatedBuffers) {
@@ -389,47 +428,10 @@ export class WebGpuSession implements Session {
       const encoder = this.#device.createCommandEncoder({
         label: `synaptic forward ${this.#step + 1}`,
       });
-
-      this.#encodePass(
-        encoder,
-        this.#pipelines.prepare,
-        0,
-        dispatchCount(this.#plan.unitCount),
-        "prepare recurrent context",
-      );
-      const stageCount = this.#plan.stageOffsets.length - 1;
-      for (let stage = 0; stage < stageCount; stage += 1) {
-        const length = (this.#plan.stageOffsets[stage + 1] ?? 0)
-          - (this.#plan.stageOffsets[stage] ?? 0);
-        this.#encodePass(
-          encoder,
-          this.#pipelines.forward,
-          stage * WEBGPU_UNIFORM_STRIDE,
-          dispatchCount(length),
-          `forward stage ${stage}`,
-        );
-      }
-      this.#encodePass(
-        encoder,
-        this.#pipelines.gather,
-        0,
-        dispatchCount(this.#plan.outputs.length),
-        "gather output",
-      );
-      const outputSection = this.#heap.layout.sections.output;
-      encoder.copyBufferToBuffer(
-        this.#heapBuffer,
-        outputSection.offset,
-        this.#readbackBuffer,
-        0,
-        outputSection.byteLength,
-      );
+      this.#encodeForward(encoder);
+      this.#encodeOutputCopy(encoder);
       this.#device.queue.submit([encoder.finish()]);
-      await this.#readbackBuffer.mapAsync(MAP_READ, 0, outputSection.byteLength);
-      const output = new Float32Array(
-        this.#readbackBuffer.getMappedRange(0, outputSection.byteLength).slice(0),
-      );
-      this.#readbackBuffer.unmap();
+      const output = await this.#readOutput();
       this.#step += 1;
       return { data: output, shape: [output.length] };
     } finally {
@@ -438,25 +440,105 @@ export class WebGpuSession implements Session {
   }
 
   async trainStep(
-    _batch: TrainingBatch,
-    _options?: TrainStepOptions,
+    batch: TrainingBatch,
+    options: TrainStepOptions = {},
   ): Promise<Metrics> {
     this.#assertAvailable();
-    throw new SynapticError(
-      "WebGPU training is not available in the forward-only milestone",
-      "WEBGPU_TRAINING_UNAVAILABLE",
-    );
+    invariant(!this.#busy, "WebGPU session operations must be awaited", "SESSION_BUSY");
+    this.#busy = true;
+    try {
+      const input = readTensor(batch.input, this.#plan.inputs.length, "Input");
+      const target = readTensor(batch.target, this.#plan.outputs.length, "Target");
+      const learningRate = options.learningRate ?? 0.1;
+      invariant(
+        Number.isFinite(learningRate) && learningRate >= 0,
+        "Learning rate must be a finite non-negative number",
+        "INVALID_LEARNING_RATE",
+      );
+      this.#device.queue.writeBuffer(
+        this.#heapBuffer,
+        this.#heap.layout.sections.input.offset,
+        input,
+      );
+      this.#device.queue.writeBuffer(
+        this.#heapBuffer,
+        this.#heap.layout.sections.target.offset,
+        target,
+      );
+      this.#device.queue.writeBuffer(
+        this.#heapBuffer,
+        this.#heap.layout.sections.learningRate.offset,
+        Float32Array.of(learningRate),
+      );
+
+      const encoder = this.#device.createCommandEncoder({
+        label: `synaptic train ${this.#step + 1}`,
+      });
+      this.#encodeForward(encoder);
+      this.#encodePass(
+        encoder,
+        this.#pipelines.clearTraining,
+        0,
+        dispatchCount(Math.max(this.#plan.unitCount, this.#plan.connectionCount)),
+        "clear training state",
+      );
+      const stageCount = this.#plan.stageOffsets.length - 1;
+      for (let stage = stageCount - 1; stage > 0; stage -= 1) {
+        const length = (this.#plan.stageOffsets[stage + 1] ?? 0)
+          - (this.#plan.stageOffsets[stage] ?? 0);
+        this.#encodePass(
+          encoder,
+          this.#pipelines.backward,
+          stage * WEBGPU_UNIFORM_STRIDE,
+          dispatchCount(length),
+          `backward stage ${stage}`,
+        );
+      }
+      this.#encodePass(
+        encoder,
+        this.#pipelines.updateParameters,
+        0,
+        dispatchCount(this.#plan.parameterCount),
+        "update parameters",
+      );
+      this.#encodeOutputCopy(encoder);
+      this.#device.queue.submit([encoder.finish()]);
+      const output = await this.#readOutput();
+      let loss = 0;
+      for (let index = 0; index < target.length; index += 1) {
+        const difference = (target[index] ?? 0) - (output[index] ?? 0);
+        loss += difference * difference;
+      }
+      this.#step += 1;
+      return { loss: loss / target.length, step: this.#step };
+    } finally {
+      this.#busy = false;
+    }
   }
 
   async resetState(): Promise<void> {
     this.#assertAvailable();
     invariant(!this.#busy, "WebGPU session operations must be awaited", "SESSION_BUSY");
-    const zeroes = new Float32Array(this.#plan.unitCount);
-    for (const name of ["state", "activation", "previousActivation"] as const) {
+    for (const name of [
+      "state",
+      "activation",
+      "previousActivation",
+      "derivative",
+      "eligibilityTrace",
+      "extendedEligibilityTrace",
+      "projectedError",
+      "gatedError",
+      "error",
+      "connectionGradient",
+    ] as const) {
+      const section = this.#heap.layout.sections[name];
+      if (section.byteLength === 0) {
+        continue;
+      }
       this.#device.queue.writeBuffer(
         this.#heapBuffer,
-        this.#heap.layout.sections[name].offset,
-        zeroes,
+        section.offset,
+        new Float32Array(section.length),
       );
     }
     this.#step = 0;
@@ -464,10 +546,16 @@ export class WebGpuSession implements Session {
 
   async snapshot(): Promise<ModelSnapshot> {
     this.#assertAvailable();
-    return {
-      definition: this.#definition,
-      parameters: this.#parameters.slice(),
-    };
+    invariant(!this.#busy, "WebGPU session operations must be awaited", "SESSION_BUSY");
+    this.#busy = true;
+    try {
+      return {
+        definition: this.#definition,
+        parameters: await this.#readHeapSection("parameters"),
+      };
+    } finally {
+      this.#busy = false;
+    }
   }
 
   async checkpoint(): Promise<ModelCheckpoint> {
@@ -492,29 +580,45 @@ export class WebGpuSession implements Session {
       );
       this.#device.queue.submit([encoder.finish()]);
       await readback.mapAsync(MAP_READ, 0, this.#heap.layout.byteLength);
-      const bytes = readback.getMappedRange(0, this.#heap.layout.byteLength);
-      const copySection = (name: "state" | "activation" | "previousActivation"): Float32Array => {
+      const bytes = new Uint8Array(
+        readback.getMappedRange(0, this.#heap.layout.byteLength),
+      ).slice();
+      readback.unmap();
+      const copySection = (
+        name:
+          | "parameters"
+          | "state"
+          | "activation"
+          | "previousActivation"
+          | "derivative"
+          | "eligibilityTrace"
+          | "extendedEligibilityTrace"
+          | "projectedError"
+          | "gatedError"
+          | "error",
+      ): Float32Array => {
         const section = this.#heap.layout.sections[name];
-        return new Float32Array(bytes.slice(section.offset, section.offset + section.byteLength));
+        return new Float32Array(
+          bytes.buffer.slice(section.offset, section.offset + section.byteLength),
+        );
       };
       const runtime: RuntimeState = {
         state: copySection("state"),
         activation: copySection("activation"),
         previousActivation: copySection("previousActivation"),
-        derivative: new Float32Array(this.#plan.unitCount),
-        eligibilityTrace: new Float32Array(this.#plan.connectionCount),
-        extendedEligibilityTrace: new Float32Array(this.#plan.extendedTraceTarget.length),
-        projectedError: new Float32Array(this.#plan.unitCount),
-        gatedError: new Float32Array(this.#plan.unitCount),
-        error: new Float32Array(this.#plan.unitCount),
+        derivative: copySection("derivative"),
+        eligibilityTrace: copySection("eligibilityTrace"),
+        extendedEligibilityTrace: copySection("extendedEligibilityTrace"),
+        projectedError: copySection("projectedError"),
+        gatedError: copySection("gatedError"),
+        error: copySection("error"),
         step: this.#step,
         randomSeed: 0,
         randomCounter: 0,
       };
-      readback.unmap();
       return {
         definition: this.#definition,
-        parameters: this.#parameters.slice(),
+        parameters: copySection("parameters"),
         runtime,
       };
     } finally {
@@ -533,6 +637,89 @@ export class WebGpuSession implements Session {
     this.#uniformBuffer.destroy();
     this.#readbackBuffer.destroy();
     this.#device.destroy();
+  }
+
+  #encodeForward(encoder: GPUCommandEncoder): void {
+    this.#encodePass(
+      encoder,
+      this.#pipelines.prepare,
+      0,
+      dispatchCount(this.#plan.unitCount),
+      "prepare recurrent context",
+    );
+    const stageCount = this.#plan.stageOffsets.length - 1;
+    for (let stage = 0; stage < stageCount; stage += 1) {
+      const length = (this.#plan.stageOffsets[stage + 1] ?? 0)
+        - (this.#plan.stageOffsets[stage] ?? 0);
+      this.#encodePass(
+        encoder,
+        this.#pipelines.forward,
+        stage * WEBGPU_UNIFORM_STRIDE,
+        dispatchCount(length),
+        `forward stage ${stage}`,
+      );
+    }
+    this.#encodePass(
+      encoder,
+      this.#pipelines.gather,
+      0,
+      dispatchCount(this.#plan.outputs.length),
+      "gather output",
+    );
+  }
+
+  #encodeOutputCopy(encoder: GPUCommandEncoder): void {
+    const output = this.#heap.layout.sections.output;
+    encoder.copyBufferToBuffer(
+      this.#heapBuffer,
+      output.offset,
+      this.#readbackBuffer,
+      0,
+      output.byteLength,
+    );
+  }
+
+  async #readOutput(): Promise<Float32Array> {
+    const output = this.#heap.layout.sections.output;
+    await this.#readbackBuffer.mapAsync(MAP_READ, 0, output.byteLength);
+    const bytes = new Uint8Array(
+      this.#readbackBuffer.getMappedRange(0, output.byteLength),
+    ).slice();
+    this.#readbackBuffer.unmap();
+    return new Float32Array(bytes.buffer);
+  }
+
+  async #readHeapSection(name: HeapSectionName): Promise<Float32Array> {
+    const section = this.#heap.layout.sections[name];
+    if (section.byteLength === 0) {
+      return new Float32Array();
+    }
+    const readback = this.#device.createBuffer({
+      label: `synaptic ${name} readback`,
+      size: section.byteLength,
+      usage: BUFFER_USAGE.MAP_READ | BUFFER_USAGE.COPY_DST,
+    });
+    try {
+      const encoder = this.#device.createCommandEncoder({
+        label: `synaptic ${name} snapshot`,
+      });
+      encoder.copyBufferToBuffer(
+        this.#heapBuffer,
+        section.offset,
+        readback,
+        0,
+        section.byteLength,
+      );
+      this.#device.queue.submit([encoder.finish()]);
+      await readback.mapAsync(MAP_READ, 0, section.byteLength);
+      const bytes = new Uint8Array(
+        readback.getMappedRange(0, section.byteLength),
+      ).slice();
+      readback.unmap();
+      return new Float32Array(bytes.buffer);
+    } finally {
+      readback.destroy();
+    }
   }
 
   #encodePass(
@@ -591,7 +778,13 @@ function validateDeviceLimits(
     return Math.max(largest, offset - (offsets[index - 1] ?? 0));
   }, 0);
   invariant(
-    dispatchCount(Math.max(plan.unitCount, largestStage, plan.outputs.length))
+    dispatchCount(Math.max(
+      plan.unitCount,
+      plan.connectionCount,
+      plan.parameterCount,
+      largestStage,
+      plan.outputs.length,
+    ))
       <= device.limits.maxComputeWorkgroupsPerDimension,
     "The compiled model exceeds maxComputeWorkgroupsPerDimension",
     "WEBGPU_DISPATCH_LIMIT",

@@ -35,6 +35,22 @@ describe("WebGpuBackend", () => {
     ).rejects.toMatchObject({ code: "NO_SUPPORTED_BACKEND" });
   });
 
+  it("falls back to a training-capable runtime when the GPU is unavailable", async () => {
+    const { plan, snapshot } = fixture();
+    const session = await new WebGpuBackend({ gpu: null }).compile(
+      plan,
+      snapshot,
+      { training: true },
+    );
+    const metrics = await session.trainStep(
+      { input: [0.25, -0.5], target: [0.75] },
+      { learningRate: 0.05 },
+    );
+    expect(metrics.loss).toBeGreaterThanOrEqual(0);
+    expect(["wasm", "cpu"]).toContain(session.backend);
+    session.dispose();
+  });
+
   it("owns and destroys resources created from an available device", async () => {
     const { plan, snapshot } = fixture();
     const destroyed: string[] = [];
