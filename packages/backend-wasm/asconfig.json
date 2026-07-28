@@ -1,0 +1,27 @@
+{
+  "targets": {
+    "release": {
+      "outFile": "wasm/runtime.wasm",
+      "sourceMap": false,
+      "optimizeLevel": 3,
+      "shrinkLevel": 1,
+      "converge": true,
+      "noAssert": true,
+      "uncheckedBehavior": "always"
+    },
+    "simd": {
+      "outFile": "wasm/runtime-simd.wasm",
+      "sourceMap": false,
+      "optimizeLevel": 3,
+      "shrinkLevel": 1,
+      "converge": true,
+      "noAssert": true,
+      "uncheckedBehavior": "always",
+      "enable": ["simd"]
+    }
+  },
+  "options": {
+    "runtime": "stub",
+    "exportRuntime": true
+  }
+}

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { CpuBackend } from "@synaptic/backend-cpu";
 import { PaperBackend } from "@synaptic/backend-paper";
+import { WasmBackend, WasmSession } from "@synaptic/backend-wasm";
+import { compilePlan } from "@synaptic/core";
 import {
   feedForwardFixture,
   recurrentFixture,
@@ -63,5 +65,28 @@ describe("Paper/CPU conformance", () => {
     ]);
     expectResultClose(cpu, paper);
     expectArrayClose(cpu.checkpoint.parameters, fixture.snapshot.parameters, 7);
+  });
+});
+
+describe("Wasm conformance", () => {
+  it("matches CPU recurrent inference and training state", async () => {
+    const fixture = recurrentFixture();
+    const [wasm, cpu] = await Promise.all([
+      runConformance(new WasmBackend(), fixture, { train: true, learningRate: 0.04 }),
+      runConformance(new CpuBackend(), fixture, { train: true, learningRate: 0.04 }),
+    ]);
+    expectResultClose(wasm, cpu);
+  });
+
+  it("selects a compiled variant and releases disposed sessions", async () => {
+    const fixture = feedForwardFixture();
+    const session = await new WasmBackend().compile(
+      compilePlan(fixture.definition),
+      fixture.snapshot,
+    );
+    expect(session).toBeInstanceOf(WasmSession);
+    expect((session as WasmSession).variant).toMatch(/^(scalar|simd)$/);
+    session.dispose();
+    await expect(session.forward([0, 0])).rejects.toThrow("disposed");
   });
 });

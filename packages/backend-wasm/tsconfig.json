@@ -6,11 +6,5 @@
     "tsBuildInfoFile": "dist/.tsbuildinfo"
   },
   "include": ["src/**/*.ts"],
-  "references": [
-    { "path": "../core" },
-    { "path": "../layers" },
-    { "path": "../backend-paper" },
-    { "path": "../backend-cpu" },
-    { "path": "../backend-wasm" }
-  ]
+  "references": [{ "path": "../core" }]
 }

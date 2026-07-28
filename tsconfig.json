@@ -11,6 +11,9 @@
       "path": "./packages/backend-cpu"
     },
     {
+      "path": "./packages/backend-wasm"
+    },
+    {
       "path": "./packages/layers"
     },
     {
