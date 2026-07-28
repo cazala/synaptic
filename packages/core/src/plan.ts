@@ -28,6 +28,7 @@ export interface ExecutionPlan {
   readonly gatedTargets: Uint32Array;
   readonly extendedTraceConnection: Uint32Array;
   readonly extendedTraceTarget: Uint32Array;
+  readonly extendedTraceOffsets: Uint32Array;
   readonly inputs: Uint32Array;
   readonly outputs: Uint32Array;
 }
@@ -141,7 +142,9 @@ export function compilePlan(definition: ModelDefinition): ExecutionPlan {
 
   const extendedTraceConnection: number[] = [];
   const extendedTraceTarget: number[] = [];
+  const extendedTraceOffsets = new Uint32Array(connectionCount + 1);
   for (const connection of topology.connections) {
+    extendedTraceOffsets[connection.id] = extendedTraceConnection.length;
     if (connection.from === connection.to) {
       continue;
     }
@@ -150,6 +153,7 @@ export function compilePlan(definition: ModelDefinition): ExecutionPlan {
       extendedTraceTarget.push(target);
     }
   }
+  extendedTraceOffsets[connectionCount] = extendedTraceConnection.length;
 
   return Object.freeze({
     definition,
@@ -177,6 +181,7 @@ export function compilePlan(definition: ModelDefinition): ExecutionPlan {
     gatedTargets,
     extendedTraceConnection: Uint32Array.from(extendedTraceConnection),
     extendedTraceTarget: Uint32Array.from(extendedTraceTarget),
+    extendedTraceOffsets,
     inputs: Uint32Array.from(topology.inputs),
     outputs: Uint32Array.from(topology.outputs),
   });

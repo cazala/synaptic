@@ -42,7 +42,7 @@ interface ConnectionOptions extends ParameterOptions {
 
 interface GateOptions {
   readonly delay?: Delay;
-  readonly mode?: "all" | "one-to-one-target";
+  readonly mode?: "all" | "one-to-one-source" | "one-to-one-target";
 }
 
 const DEFAULT_INITIALIZER: InitializerSpec = {
@@ -177,15 +177,21 @@ export class GraphBuilder {
     }
 
     const targetOrder = [...new Set(connections.map((id) => this.#connections[id]?.to))];
+    const sourceOrder = [...new Set(connections.map((id) => this.#connections[id]?.from))];
     if (mode === "one-to-one-target") {
       invariant(gaters.length === targetOrder.length, "Gaters must match unique connection targets", "GATE_SIZE_MISMATCH");
+    } else if (mode === "one-to-one-source") {
+      invariant(gaters.length === sourceOrder.length, "Gaters must match unique connection sources", "GATE_SIZE_MISMATCH");
     }
 
     for (const connectionId of connections) {
       const connection = this.#connections[connectionId];
       invariant(connection, "Gate references an unknown connection", "UNKNOWN_CONNECTION");
       const targetIndex = targetOrder.indexOf(connection.to);
-      const gaterId = mode === "all" ? gaters[0] : gaters[targetIndex];
+      const sourceIndex = sourceOrder.indexOf(connection.from);
+      const gaterId = mode === "all"
+        ? gaters[0]
+        : gaters[mode === "one-to-one-target" ? targetIndex : sourceIndex];
       const gater = gaterId === undefined ? undefined : this.#units[gaterId];
       const target = this.#units[connection.to];
       invariant(gater && target, "Gate references an unknown unit", "UNKNOWN_UNIT");

@@ -5,5 +5,6 @@ export * from "./graph-builder.js";
 export * from "./model.js";
 export * from "./plan.js";
 export * from "./prng.js";
+export * from "./runtime.js";
 export * from "./types.js";
 export * from "./validate.js";

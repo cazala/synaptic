@@ -5,6 +5,18 @@
       "path": "./packages/core"
     },
     {
+      "path": "./packages/backend-paper"
+    },
+    {
+      "path": "./packages/backend-cpu"
+    },
+    {
+      "path": "./packages/layers"
+    },
+    {
+      "path": "./packages/conformance"
+    },
+    {
       "path": "./packages/compat-v1"
     }
   ]

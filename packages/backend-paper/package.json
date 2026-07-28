@@ -1,0 +1,14 @@
+{
+  "name": "@synaptic/backend-paper",
+  "version": "2.0.0-alpha.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@synaptic/core": "2.0.0-alpha.0"
+  }
+}

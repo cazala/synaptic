@@ -1,0 +1,18 @@
+{
+  "name": "@synaptic/conformance",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@synaptic/backend-cpu": "2.0.0-alpha.0",
+    "@synaptic/backend-paper": "2.0.0-alpha.0",
+    "@synaptic/core": "2.0.0-alpha.0",
+    "@synaptic/layers": "2.0.0-alpha.0"
+  }
+}
