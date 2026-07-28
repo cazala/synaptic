@@ -17,7 +17,10 @@
   import { CpuBackend } from "@synaptic/backend-cpu";
   import { WebGpuBackend } from "@synaptic/backend-webgpu";
   import { compilePlan } from "@synaptic/core";
-  import { recurrentFixture } from "../../conformance/dist/index.js";
+  import {
+    recurrentFixture,
+    sharedParameterFixture,
+  } from "../../conformance/dist/index.js";
 
   const result = document.querySelector("#result");
   const maxDifference = (left, right) => {
@@ -57,6 +60,24 @@
       gpu.checkpoint(),
       cpu.checkpoint(),
     ]);
+    const sharedFixture = sharedParameterFixture();
+    const sharedPlan = compilePlan(sharedFixture.definition);
+    const sharedGpu = await new WebGpuBackend({
+      fallbackBackends: [],
+    }).compile(sharedPlan, sharedFixture.snapshot, { training: true });
+    const sharedCpu = await new CpuBackend().compile(
+      sharedPlan,
+      sharedFixture.snapshot,
+      { training: true },
+    );
+    await Promise.all([
+      sharedGpu.trainStep(sharedFixture.sequence[0], { learningRate: 0.1 }),
+      sharedCpu.trainStep(sharedFixture.sequence[0], { learningRate: 0.1 }),
+    ]);
+    const [sharedGpuSnapshot, sharedCpuSnapshot] = await Promise.all([
+      sharedGpu.snapshot(),
+      sharedCpu.snapshot(),
+    ]);
     result.textContent = JSON.stringify({
       backend: gpu.backend,
       lossDifference,
@@ -80,9 +101,16 @@
         gpuCheckpoint.runtime.error,
         cpuCheckpoint.runtime.error,
       ),
+      sharedParameterDifference: maxDifference(
+        sharedGpuSnapshot.parameters,
+        sharedCpuSnapshot.parameters,
+      ),
+      sharedParameter: sharedGpuSnapshot.parameters[0],
     });
     gpu.dispose();
     cpu.dispose();
+    sharedGpu.dispose();
+    sharedCpu.dispose();
   } catch (error) {
     result.textContent = JSON.stringify({
       error: error instanceof Error ? error.message : String(error),

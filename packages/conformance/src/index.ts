@@ -1,4 +1,5 @@
 import {
+  GraphBuilder,
   compilePlan,
   createSnapshot,
   type Backend,
@@ -54,6 +55,35 @@ export function recurrentFixture(): ConformanceFixture {
       { input: [0, 1], target: [1] },
       { input: [0.5, -0.25], target: [0.75] },
       { input: [-0.5, 0.25], target: [0.25] },
+    ],
+  };
+}
+
+export function sharedParameterFixture(): ConformanceFixture {
+  const graph = new GraphBuilder();
+  const inputPort = graph.input(2);
+  graph.stage(1);
+  const output = graph.units(2, {
+    activation: "identity",
+    label: "shared-output",
+  });
+  const shared = graph.parameter({
+    initializer: { kind: "constant", value: 0.25 },
+    label: "shared-kernel",
+  });
+  graph.connect(inputPort.units, output, "all-to-all", {
+    parameter: shared,
+  });
+  const definition = graph.build({
+    inputs: inputPort,
+    outputs: output,
+    metadata: { fixture: "shared-parameter" },
+  });
+  return {
+    definition,
+    snapshot: createSnapshot(definition, 1),
+    sequence: [
+      { input: [2, 3], target: [1, -1] },
     ],
   };
 }

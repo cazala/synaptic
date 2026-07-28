@@ -23,6 +23,9 @@
       "path": "./packages/conformance"
     },
     {
+      "path": "./packages/synaptic"
+    },
+    {
       "path": "./packages/compat-v1"
     }
   ]

@@ -1,0 +1,21 @@
+{
+  "name": "synaptic",
+  "version": "2.0.0-alpha.0",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@synaptic/backend-cpu": "2.0.0-alpha.0",
+    "@synaptic/backend-paper": "2.0.0-alpha.0",
+    "@synaptic/backend-wasm": "2.0.0-alpha.0",
+    "@synaptic/backend-webgpu": "2.0.0-alpha.0",
+    "@synaptic/compat-v1": "2.0.0-alpha.0",
+    "@synaptic/core": "2.0.0-alpha.0",
+    "@synaptic/layers": "2.0.0-alpha.0"
+  }
+}

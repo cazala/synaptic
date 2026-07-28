@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    { "path": "../core" },
+    { "path": "../layers" },
+    { "path": "../backend-paper" },
+    { "path": "../backend-cpu" },
+    { "path": "../backend-wasm" },
+    { "path": "../backend-webgpu" },
+    { "path": "../compat-v1" }
+  ]
+}

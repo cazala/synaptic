@@ -31,6 +31,20 @@ export interface ExecutionPlan {
   readonly extendedTraceOffsets: Uint32Array;
   readonly inputs: Uint32Array;
   readonly outputs: Uint32Array;
+  readonly specializations: PlanSpecializations;
+}
+
+export interface DenseStageSpecialization {
+  readonly kind: "dense";
+  readonly stage: number;
+  readonly sources: Uint32Array;
+  readonly units: Uint32Array;
+  /** Target-major matrix of connection IDs. */
+  readonly connections: Uint32Array;
+}
+
+export interface PlanSpecializations {
+  readonly denseStages: readonly DenseStageSpecialization[];
 }
 
 function buildAdjacency(
@@ -66,6 +80,81 @@ function flattenSets(sets: readonly ReadonlySet<number>[]): readonly [Uint32Arra
   }
   offsets[sets.length] = flattened.length;
   return [offsets, Uint32Array.from(flattened)];
+}
+
+function findDenseStages(
+  stageOffsets: Uint32Array,
+  stageUnits: Uint32Array,
+  incomingOffsets: Uint32Array,
+  incomingConnections: Uint32Array,
+  connectionFrom: Uint32Array,
+  connectionDelay: Uint32Array,
+  connectionGater: Int32Array,
+): readonly DenseStageSpecialization[] {
+  const result: DenseStageSpecialization[] = [];
+  const stageCount = stageOffsets.length - 1;
+  for (let stage = 1; stage < stageCount; stage += 1) {
+    const stageStart = stageOffsets[stage] ?? 0;
+    const stageEnd = stageOffsets[stage + 1] ?? stageStart;
+    const units = stageUnits.slice(stageStart, stageEnd);
+    if (units.length === 0) {
+      continue;
+    }
+    let expectedSources: readonly number[] | undefined;
+    const matrix: number[] = [];
+    let valid = true;
+    for (const unit of units) {
+      const incomingStart = incomingOffsets[unit] ?? 0;
+      const incomingEnd = incomingOffsets[unit + 1] ?? incomingStart;
+      const row: Array<{ readonly connection: number; readonly source: number }> = [];
+      for (let cursor = incomingStart; cursor < incomingEnd; cursor += 1) {
+        const connection = incomingConnections[cursor];
+        if (
+          connection === undefined
+          || connectionDelay[connection] !== 0
+          || (connectionGater[connection] ?? -1) >= 0
+          || connectionFrom[connection] === unit
+        ) {
+          valid = false;
+          break;
+        }
+        row.push({
+          connection,
+          source: connectionFrom[connection] ?? 0,
+        });
+      }
+      if (!valid || row.length === 0) {
+        valid = false;
+        break;
+      }
+      row.sort((left, right) => left.source - right.source);
+      const sources = row.map(({ source }) => source);
+      if (new Set(sources).size !== sources.length) {
+        valid = false;
+        break;
+      }
+      if (expectedSources === undefined) {
+        expectedSources = sources;
+      } else if (
+        sources.length !== expectedSources.length
+        || sources.some((source, index) => source !== expectedSources?.[index])
+      ) {
+        valid = false;
+        break;
+      }
+      matrix.push(...row.map(({ connection }) => connection));
+    }
+    if (valid && expectedSources !== undefined) {
+      result.push(Object.freeze({
+        kind: "dense" as const,
+        stage,
+        sources: Uint32Array.from(expectedSources),
+        units,
+        connections: Uint32Array.from(matrix),
+      }));
+    }
+  }
+  return Object.freeze(result);
 }
 
 export function compilePlan(definition: ModelDefinition): ExecutionPlan {
@@ -154,6 +243,15 @@ export function compilePlan(definition: ModelDefinition): ExecutionPlan {
     }
   }
   extendedTraceOffsets[connectionCount] = extendedTraceConnection.length;
+  const denseStages = findDenseStages(
+    stageOffsets,
+    stageUnits,
+    incomingOffsets,
+    incomingConnections,
+    connectionFrom,
+    connectionDelay,
+    connectionGater,
+  );
 
   return Object.freeze({
     definition,
@@ -184,5 +282,6 @@ export function compilePlan(definition: ModelDefinition): ExecutionPlan {
     extendedTraceOffsets,
     inputs: Uint32Array.from(topology.inputs),
     outputs: Uint32Array.from(topology.outputs),
+    specializations: Object.freeze({ denseStages }),
   });
 }

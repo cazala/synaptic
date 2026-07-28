@@ -8,6 +8,7 @@ import {
   validateSnapshot,
   type Backend,
   type CompileOptions,
+  type DenseStageSpecialization,
   type ExecutionPlan,
   type Metrics,
   type ModelCheckpoint,
@@ -76,6 +77,7 @@ export class CpuSession implements Session {
   readonly #runtime: MutableRuntimeState;
   readonly #inputSlot: Int32Array;
   readonly #outputSlot: Int32Array;
+  readonly #denseStages: ReadonlyMap<number, DenseStageSpecialization>;
   #disposed = false;
 
   constructor(plan: ExecutionPlan, snapshot: ModelSnapshot) {
@@ -93,6 +95,12 @@ export class CpuSession implements Session {
     plan.outputs.forEach((unit, slot) => {
       this.#outputSlot[unit] = slot;
     });
+    this.#denseStages = new Map(
+      plan.specializations.denseStages.map((specialization) => [
+        specialization.stage,
+        specialization,
+      ]),
+    );
   }
 
   async forward(input: TensorLike): Promise<Tensor> {
@@ -105,6 +113,11 @@ export class CpuSession implements Session {
     for (let stage = 0; stage < stageCount; stage += 1) {
       const start = this.#plan.stageOffsets[stage] ?? 0;
       const end = this.#plan.stageOffsets[stage + 1] ?? start;
+      const dense = this.#denseStages.get(stage);
+      if (dense !== undefined) {
+        this.#activateDenseStage(dense);
+        continue;
+      }
       for (let cursor = start; cursor < end; cursor += 1) {
         const unit = this.#plan.stageUnits[cursor];
         invariant(unit !== undefined, "Stage references an unknown unit", "INVALID_PLAN");
@@ -236,6 +249,57 @@ export class CpuSession implements Session {
           Math.fround(this.#selfFactor(target) * (runtime.extendedEligibilityTrace[trace] ?? 0))
           + Math.fround(derivative * eligibility * this.#bigParenthesis(target, unit)),
         );
+      }
+    }
+  }
+
+  #activateDenseStage(specialization: DenseStageSpecialization): void {
+    const runtime = this.#runtime;
+    const width = specialization.sources.length;
+    for (let row = 0; row < specialization.units.length; row += 1) {
+      const unit = specialization.units[row];
+      invariant(unit !== undefined, "Dense specialization has an unknown unit", "INVALID_PLAN");
+      let state = 0;
+      for (let column = 0; column < width; column += 1) {
+        const source = specialization.sources[column];
+        const connection = specialization.connections[row * width + column];
+        invariant(
+          source !== undefined && connection !== undefined,
+          "Dense specialization matrix is incomplete",
+          "INVALID_PLAN",
+        );
+        const parameter = this.#plan.connectionParameter[connection] ?? 0;
+        const sourceActivation = runtime.activation[source] ?? 0;
+        state = Math.fround(
+          state + Math.fround((this.#parameters[parameter] ?? 0) * sourceActivation),
+        );
+        runtime.eligibilityTrace[connection] = sourceActivation;
+      }
+      runtime.state[unit] = state;
+      const [activation, derivative] = activationAndDerivative(
+        this.#plan.unitActivation[unit] ?? 0,
+        state,
+      );
+      runtime.activation[unit] = activation;
+      runtime.derivative[unit] = derivative;
+
+      for (let column = 0; column < width; column += 1) {
+        const connection = specialization.connections[row * width + column];
+        invariant(connection !== undefined, "Dense specialization matrix is incomplete", "INVALID_PLAN");
+        const traceStart = this.#plan.extendedTraceOffsets[connection] ?? 0;
+        const traceEnd = this.#plan.extendedTraceOffsets[connection + 1] ?? traceStart;
+        for (let trace = traceStart; trace < traceEnd; trace += 1) {
+          const target = this.#plan.extendedTraceTarget[trace];
+          invariant(target !== undefined, "Extended trace has no target", "INVALID_PLAN");
+          runtime.extendedEligibilityTrace[trace] = Math.fround(
+            Math.fround(this.#selfFactor(target) * (runtime.extendedEligibilityTrace[trace] ?? 0))
+            + Math.fround(
+              derivative
+              * (runtime.eligibilityTrace[connection] ?? 0)
+              * this.#bigParenthesis(target, unit),
+            ),
+          );
+        }
       }
     }
   }

@@ -28,6 +28,7 @@ describe("layer macros", () => {
       lstm({ units: 2, peepholes: false }),
       dense({ units: 2 }),
     );
+    expect(compilePlan(definition).specializations.denseStages.length).toBeGreaterThan(0);
     const outputGates = new Set(
       definition.topology.units
         .filter((unit) => unit.label?.startsWith("lstm.output-gate"))

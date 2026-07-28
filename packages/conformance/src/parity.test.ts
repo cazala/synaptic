@@ -7,6 +7,7 @@ import {
   feedForwardFixture,
   recurrentFixture,
   runConformance,
+  sharedParameterFixture,
   type ConformanceResult,
 } from "./index.js";
 
@@ -88,5 +89,20 @@ describe("Wasm conformance", () => {
     expect((session as WasmSession).variant).toMatch(/^(scalar|simd)$/);
     session.dispose();
     await expect(session.forward([0, 0])).rejects.toThrow("disposed");
+  });
+});
+
+describe("shared parameter conformance", () => {
+  it("reduces every tied connection into one deterministic update", async () => {
+    const fixture = sharedParameterFixture();
+    const results = await Promise.all([
+      runConformance(new PaperBackend(), fixture, { train: true, learningRate: 0.1 }),
+      runConformance(new CpuBackend(), fixture, { train: true, learningRate: 0.1 }),
+      runConformance(new WasmBackend(), fixture, { train: true, learningRate: 0.1 }),
+    ]);
+    expectResultClose(results[1]!, results[0]!);
+    expectResultClose(results[2]!, results[0]!);
+    expect(results[0]?.checkpoint.parameters).toHaveLength(1);
+    expect(results[0]?.checkpoint.parameters[0]).toBeCloseTo(-1, 6);
   });
 });
