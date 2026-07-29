@@ -90,6 +90,37 @@ Inputs and targets accept arrays or `Float32Array`. Results are a
 `Float32Array` plus a one-dimensional shape. The built-in training step uses
 mean squared error and online LSTM-g updates.
 
+For multiple ordered steps, use the sequence methods:
+
+```ts
+const training = await session.trainSequence(
+  [
+    { input: [0.1, 0.2, 0.3], target: [1, 0] },
+    {
+      input: [0.4, 0.5, 0.6],
+      target: [0, 1],
+      learningRate: 0.01,
+    },
+  ],
+  {
+    learningRate: 0.025,
+    metrics: "none",
+  },
+);
+
+const outputs = await session.forwardSequence([
+  [0.1, 0.2, 0.3],
+  [0.4, 0.5, 0.6],
+]);
+```
+
+`forwardSequence` and `trainSequence` preserve recurrent state in array order.
+Training still performs an online update after every step; this is not a
+mini-batch gradient reduction. A step-level learning rate overrides the
+sequence default. By default, training reports the last step's loss.
+`metrics: "none"` omits loss and lets WebGPU avoid a synchronization and
+readback when the caller does not use it.
+
 Use `resetState()` between independent sequences. It clears recurrent state,
 traces, errors, the logical step, and the PRNG counter; it does not reset
 parameters:

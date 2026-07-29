@@ -62,7 +62,12 @@ WebGPU uses:
 - separate prepare, forward, gather, training-clear, backward, and update
   compute pipelines;
 - one dispatch boundary per semantic stage;
-- deterministic one-invocation-per-parameter gradient reduction;
+- a parameter-to-connection adjacency index for deterministic linear gradient
+  reduction, including tied parameters;
+- packed ordered-sequence uploads with one command submission and one output
+  readback, rather than one queue round trip per scalar step;
+- optional loss suppression for asynchronous training sequences;
+- one contiguous recurrent-state reset write;
 - explicit output, snapshot, and checkpoint readback;
 - device-limit validation, error scopes, device-loss handling, and teardown.
 
@@ -80,6 +85,12 @@ const session = await compileModel(definition, {
 
 Set `fallback: []` to require WebGPU and receive `NO_SUPPORTED_BACKEND` instead
 of changing backend.
+
+Sequence submission removes CPU/GPU synchronization overhead but does not turn a
+small recurrent graph into a wide parallel workload. Every semantic stage still
+has a dispatch boundary, so tiny LSTM stages can remain slower than CPU even
+after batching queue operations. Large independent-sample batching and fused
+graph kernels are separate future specializations.
 
 ## Auto-selection
 

@@ -114,8 +114,15 @@ interface Backend {
 ```
 
 `inspect` makes support decisions explainable. A session owns all mutable
-backend resources and exposes the same async lifecycle: `forward`, `trainStep`,
-`resetState`, `restore`, `snapshot`, `checkpoint`, and `dispose`.
+backend resources and exposes the same async lifecycle: `forward`,
+`forwardSequence`, `trainStep`, `trainSequence`, `resetState`, `restore`,
+`snapshot`, `checkpoint`, and `dispose`.
+
+Sequence calls are an execution-boundary optimization, not a semantic shortcut.
+They retain the order, recurrent state, and per-step online updates of scalar
+calls. CPU, Paper, and Wasm provide portable loop implementations. WebGPU
+lowers a sequence into one packed upload and command buffer and can omit the
+final loss readback.
 
 ## Determinism and precision
 

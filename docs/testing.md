@@ -26,8 +26,9 @@ The suite covers:
 - recurrent state, gates, eligibility traces, extended traces, and errors;
 - tied-parameter gradient reduction;
 - cross-backend checkpoint restoration;
+- portable ordered-sequence inference and training contracts;
 - seeded XOR, MNIST, and discrete sequence recall learning;
-- WebGPU heap offsets and uniform records;
+- WebGPU heap offsets, parameter adjacency, and uniform records;
 - fallback ordering, disabled fallback, ownership, and disposal;
 - Synaptic v1 fixture import and unsupported-format rejection;
 - public facade and auto-selection behavior.
@@ -89,6 +90,7 @@ Then open `http://127.0.0.1:4173/` and choose a test:
 - `http://localhost:4173/packages/backend-webgpu/test/forward-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/training-parity.html`
 - `http://localhost:4173/packages/backend-webgpu/test/learning-workloads.html`
+- `http://localhost:4173/packages/backend-webgpu/test/learn-to-paint.html`
 
 The command builds every workspace first. To use another port:
 
@@ -97,10 +99,19 @@ npm run test:webgpu -- --port 8080
 ```
 
 The pages compile every WGSL entry point and compare forward, recurrent,
-training, trace, and shared-parameter behavior with CPU. The learning page runs
-the same XOR, MNIST, and sequence-recall helpers as the Node suite with fallback
-disabled, so its reported backend must be `webgpu`. Browser console errors or
-non-pass results fail the smoke check.
+training, ordered-sequence, trace, and shared-parameter behavior with CPU. The
+learning page runs the same XOR, MNIST, and sequence-recall helpers as the Node
+suite with fallback disabled, so its reported backend must be `webgpu`; it
+reports end-to-end time for each workload, including model compilation.
+
+The learn-to-paint page is an interactive hardware example inspired by the
+original gh-pages demo. A 2→32→3 network receives only `(x, y)` coordinates and
+learns a procedural RGB target. Its UI reports error, elapsed time, and GPU
+submissions so the sequence optimization is observable: 2,304 online updates
+cross the queue in one training submission per epoch, and all 2,304 preview
+pixels return through one inference submission and readback.
+
+Browser console errors or non-pass smoke results fail the hardware check.
 
 ## Adding backend behavior
 

@@ -65,6 +65,26 @@ All session operations are asynchronous, even on CPU. This gives every backend
 one honest API and avoids changing application structure when work moves to
 WebAssembly or WebGPU.
 
+Ordered work can cross the backend boundary as one sequence:
+
+```ts
+await session.trainSequence(
+  [
+    { input: [0, 0], target: [0] },
+    { input: [0, 1], target: [1] },
+  ],
+  { learningRate: 0.05, metrics: "none" },
+);
+
+const outputs = await session.forwardSequence([[0, 0], [0, 1]]);
+```
+
+Sequences retain recurrent state and online updates between their steps. The
+portable backends execute the same semantics as repeated scalar calls; WebGPU
+packs the inputs into one upload and command submission. Use `metrics: "none"`
+when the loss is not consumed so an accelerator need not synchronize just to
+read a prediction back.
+
 ## Portable state
 
 Definitions contain topology, not devices or executable code. A snapshot adds
@@ -140,6 +160,9 @@ const gpu = await compileModel(definition, {
 WebGPU requires a browser with WebGPU in a secure context (`https:` or
 `localhost`). Explicit WebGPU compilation uses the declared fallback order when
 the API, adapter, plan feature, or device limit is unavailable.
+
+Run `npm run test:webgpu` to serve the hardware tests and interactive
+coordinate-to-RGB [learn-to-paint example](packages/backend-webgpu/test/learn-to-paint.html).
 
 ## Legacy imports
 
