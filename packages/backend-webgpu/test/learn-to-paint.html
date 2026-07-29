@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synaptic WebGPU — learn to paint</title>
+<script type="importmap">
+{
+  "imports": {
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/layers": "/packages/layers/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<style>
+  :root {
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    background: #080b12;
+    color: #edf4ff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 15% 10%, #163650 0, transparent 30rem),
+      radial-gradient(circle at 85% 90%, #3b1738 0, transparent 32rem),
+      #080b12;
+  }
+  main {
+    width: min(72rem, 100%);
+    margin: auto;
+    padding: clamp(1.5rem, 5vw, 4rem);
+  }
+  header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2rem;
+    align-items: end;
+    margin-bottom: 2rem;
+  }
+  h1 {
+    max-width: 12ch;
+    margin: 0;
+    font-size: clamp(2.5rem, 7vw, 5.5rem);
+    letter-spacing: -.065em;
+    line-height: .9;
+  }
+  header p {
+    max-width: 34rem;
+    margin: 1.25rem 0 0;
+    color: #a8b4c7;
+    line-height: 1.6;
+  }
+  .badge {
+    border: 1px solid #5d718c;
+    border-radius: 999px;
+    padding: .55rem .85rem;
+    color: #c9ddfa;
+    font: 600 .72rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .canvases {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+  figure {
+    position: relative;
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid #28384e;
+    border-radius: 1.25rem;
+    background: #0e1520;
+    box-shadow: 0 1.5rem 4rem #0008;
+  }
+  canvas.painting {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    image-rendering: pixelated;
+  }
+  figcaption {
+    position: absolute;
+    top: .8rem;
+    left: .8rem;
+    padding: .45rem .65rem;
+    border: 1px solid #ffffff35;
+    border-radius: .6rem;
+    background: #080b12b8;
+    backdrop-filter: blur(12px);
+    font: 600 .68rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .controls {
+    display: grid;
+    grid-template-columns: minmax(16rem, 1fr) auto;
+    gap: 1.25rem;
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    border: 1px solid #28384e;
+    border-radius: 1rem;
+    background: #0e1520dd;
+  }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .metric small {
+    display: block;
+    margin-bottom: .3rem;
+    color: #7f8da3;
+    font: 600 .65rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .metric output {
+    font: 600 clamp(.95rem, 2vw, 1.2rem) ui-monospace, monospace;
+  }
+  .actions { display: flex; gap: .65rem; }
+  button {
+    min-width: 7.5rem;
+    border: 1px solid #50647f;
+    border-radius: .7rem;
+    padding: .8rem 1rem;
+    background: #172236;
+    color: #edf4ff;
+    font: 700 .78rem ui-monospace, monospace;
+    cursor: pointer;
+  }
+  button.primary {
+    border-color: #ff8585;
+    background: #ff6b6b;
+    color: #24090d;
+  }
+  button:disabled { cursor: wait; opacity: .55; }
+  .explain {
+    margin: 1rem 0 0;
+    color: #7f8da3;
+    font: .72rem/1.6 ui-monospace, monospace;
+  }
+  .error { color: #ff9f9f; }
+  @media (max-width: 760px) {
+    header, .controls { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .actions { flex-wrap: wrap; }
+  }
+</style>
+<main>
+  <header>
+    <div>
+      <h1>Learn to paint.</h1>
+      <p>
+        A neural network receives only normalized <em>x</em> and <em>y</em>
+        coordinates. WebGPU trains it to reproduce the RGB target—an updated,
+        dependency-free take on Synaptic’s original paint-an-image demo.
+      </p>
+    </div>
+    <span class="badge" id="backend">initializing WebGPU</span>
+  </header>
+
+  <section class="canvases" aria-label="Neural painting comparison">
+    <figure>
+      <canvas class="painting" id="target" width="48" height="48"></canvas>
+      <figcaption>Target</figcaption>
+    </figure>
+    <figure>
+      <canvas class="painting" id="learned" width="48" height="48"></canvas>
+      <figcaption>Network output</figcaption>
+    </figure>
+  </section>
+
+  <section class="controls">
+    <div class="metrics">
+      <div class="metric">
+        <small>Epoch</small>
+        <output id="epoch">0</output>
+      </div>
+      <div class="metric">
+        <small>Mean error</small>
+        <output id="loss">—</output>
+      </div>
+      <div class="metric">
+        <small>Train time</small>
+        <output id="time">—</output>
+      </div>
+      <div class="metric">
+        <small>GPU submits</small>
+        <output id="submits">0</output>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="reset">Reset</button>
+      <button id="one">+1 epoch</button>
+      <button class="primary" id="ten">+10 epochs</button>
+    </div>
+  </section>
+  <p class="explain" id="status">
+    2,304 online training steps are encoded into one WebGPU submission per
+    epoch. Rendering all pixels uses one further submission and one readback.
+  </p>
+</main>
+
+<script type="module">
+  import { WebGpuBackend } from "@synaptic/backend-webgpu";
+  import { compilePlan, createSnapshot } from "@synaptic/core";
+  import { dense, input, sequential } from "@synaptic/layers";
+
+  const SIZE = 48;
+  const PIXELS = SIZE * SIZE;
+  const TARGET_CANVAS = document.querySelector("#target");
+  const LEARNED_CANVAS = document.querySelector("#learned");
+  const backendOutput = document.querySelector("#backend");
+  const epochOutput = document.querySelector("#epoch");
+  const lossOutput = document.querySelector("#loss");
+  const timeOutput = document.querySelector("#time");
+  const submitsOutput = document.querySelector("#submits");
+  const status = document.querySelector("#status");
+  const buttons = [...document.querySelectorAll("button")];
+  const oneButton = document.querySelector("#one");
+  const tenButton = document.querySelector("#ten");
+  const resetButton = document.querySelector("#reset");
+
+  let session;
+  let epoch = 0;
+  let submissions = 0;
+  let busy = false;
+
+  const clamp = (value) => Math.max(0, Math.min(1, value));
+  const smoothstep = (edge0, edge1, value) => {
+    const t = clamp((value - edge0) / (edge1 - edge0));
+    return t * t * (3 - 2 * t);
+  };
+  const targetColor = (x, y) => {
+    const horizon = smoothstep(.36, .7, y);
+    const sun = smoothstep(.28, .02, Math.hypot(x - .72, y - .27));
+    const ribbon = smoothstep(.12, .015, Math.abs(y - (.78 - .34 * x)));
+    const glow = smoothstep(.55, .04, Math.hypot(x - .25, y - .62));
+    return [
+      clamp(.08 + .54 * x + .32 * horizon + .58 * sun - .3 * ribbon),
+      clamp(.09 + .46 * y + .18 * glow + .2 * sun - .15 * ribbon),
+      clamp(.2 + .48 * (1 - x) + .32 * glow + .36 * ribbon - .2 * horizon),
+    ];
+  };
+
+  const samples = [];
+  for (let y = 0; y < SIZE; y += 1) {
+    for (let x = 0; x < SIZE; x += 1) {
+      const normalizedX = x / (SIZE - 1);
+      const normalizedY = y / (SIZE - 1);
+      samples.push({
+        input: [normalizedX * 2 - 1, normalizedY * 2 - 1],
+        target: targetColor(normalizedX, normalizedY),
+      });
+    }
+  }
+
+  const paint = (canvas, colors) => {
+    const context = canvas.getContext("2d");
+    const image = context.createImageData(SIZE, SIZE);
+    for (let pixel = 0; pixel < PIXELS; pixel += 1) {
+      const color = colors[pixel] ?? [0, 0, 0];
+      const offset = pixel * 4;
+      image.data[offset] = Math.round(clamp(color[0] ?? 0) * 255);
+      image.data[offset + 1] = Math.round(clamp(color[1] ?? 0) * 255);
+      image.data[offset + 2] = Math.round(clamp(color[2] ?? 0) * 255);
+      image.data[offset + 3] = 255;
+    }
+    context.putImageData(image, 0, 0);
+  };
+
+  paint(TARGET_CANVAS, samples.map(({ target }) => target));
+  paint(LEARNED_CANVAS, Array.from({ length: PIXELS }, () => [.5, .5, .5]));
+
+  const createSession = async () => {
+    const definition = sequential(
+      input({ size: 2 }),
+      dense({ units: 32, activation: "tanh", label: "paint.hidden" }),
+      dense({ units: 3, activation: "logistic", label: "paint.rgb" }),
+    );
+    return new WebGpuBackend({ fallbackBackends: [] }).compile(
+      compilePlan(definition),
+      createSnapshot(definition, 0x7061_696e),
+      { training: true },
+    );
+  };
+
+  const setBusy = (value) => {
+    busy = value;
+    for (const button of buttons) {
+      button.disabled = value;
+    }
+  };
+
+  const renderNetwork = async () => {
+    const outputs = await session.forwardSequence(
+      samples.map(({ input }) => input),
+    );
+    submissions += 1;
+    const colors = outputs.map(({ data }) => data);
+    paint(LEARNED_CANVAS, colors);
+    let error = 0;
+    for (let pixel = 0; pixel < PIXELS; pixel += 1) {
+      const target = samples[pixel]?.target ?? [];
+      const output = colors[pixel] ?? [];
+      for (let channel = 0; channel < 3; channel += 1) {
+        const difference = (target[channel] ?? 0) - (output[channel] ?? 0);
+        error += difference * difference;
+      }
+    }
+    lossOutput.value = (error / (PIXELS * 3)).toFixed(5);
+    submitsOutput.value = String(submissions);
+  };
+
+  const train = async (count) => {
+    if (busy || !session) return;
+    setBusy(true);
+    status.classList.remove("error");
+    const start = performance.now();
+    try {
+      for (let iteration = 0; iteration < count; iteration += 1) {
+        const learningRate = .08 / (1 + epoch * .025);
+        const stride = 109;
+        const startIndex = (epoch * 53) % PIXELS;
+        const sequence = Array.from(
+          { length: PIXELS },
+          (_, index) => samples[(startIndex + index * stride) % PIXELS],
+        );
+        await session.trainSequence(sequence, {
+          learningRate,
+          metrics: "none",
+        });
+        submissions += 1;
+        epoch += 1;
+        epochOutput.value = String(epoch);
+        status.textContent = `Training epoch ${epoch}; GPU work is synchronized only when the preview is read back.`;
+        await renderNetwork();
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+      timeOutput.value = `${Math.round(performance.now() - start)} ms`;
+      status.textContent =
+        `${PIXELS.toLocaleString()} online steps → 1 training submission; `
+        + `${PIXELS.toLocaleString()} predictions → 1 rendering submission + readback.`;
+    } catch (error) {
+      status.classList.add("error");
+      status.textContent = error instanceof Error ? error.message : String(error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const reset = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      session?.dispose();
+      session = await createSession();
+      epoch = 0;
+      submissions = 0;
+      epochOutput.value = "0";
+      timeOutput.value = "—";
+      backendOutput.textContent = session.backend;
+      await renderNetwork();
+      status.textContent =
+        "Ready. Train the coordinate-to-RGB network for one or ten epochs.";
+    } catch (error) {
+      backendOutput.textContent = "WebGPU unavailable";
+      status.classList.add("error");
+      status.textContent = error instanceof Error ? error.message : String(error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  oneButton.addEventListener("click", () => void train(1));
+  tenButton.addEventListener("click", () => void train(10));
+  resetButton.addEventListener("click", () => void reset());
+  await reset();
+</script>
+</html>

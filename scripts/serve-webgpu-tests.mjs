@@ -27,6 +27,11 @@ const tests = [
     name: "Learning workloads",
     path: "/packages/backend-webgpu/test/learning-workloads.html",
   },
+  {
+    description: "Train a coordinate-to-RGB network and watch it reconstruct a procedural painting.",
+    name: "Learn to paint",
+    path: "/packages/backend-webgpu/test/learn-to-paint.html",
+  },
 ];
 
 const contentTypes = new Map([
