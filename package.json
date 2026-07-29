@@ -13,7 +13,7 @@
     "build:wasm": "node packages/backend-wasm/scripts/build.mjs",
     "benchmark:wasm": "node packages/backend-wasm/bench/compare.mjs",
     "clean": "node scripts/clean.mjs",
-    "test": "vitest run",
+    "test": "vitest run --reporter=verbose",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc -b --pretty false && npm run typecheck:test",

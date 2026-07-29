@@ -67,6 +67,8 @@ CPU, and Wasm:
 These are bounded regression tests, not representative accuracy benchmarks.
 The dataset split, ordering, initialization, and validation sequences are fixed
 so a backend regression cannot hide behind favorable random sampling.
+The default test reporter names the backend in every learning test and prints a
+summary table with per-workload elapsed time and achieved accuracy.
 
 ## Browser WebGPU smoke tests
 
