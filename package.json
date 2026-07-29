@@ -15,6 +15,7 @@
     "clean": "node scripts/clean.mjs",
     "test": "vitest run --reporter=verbose",
     "test:coverage": "vitest run --coverage",
+    "test:webgpu": "node scripts/serve-webgpu-tests.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc -b --pretty false && npm run typecheck:test",
     "typecheck:test": "tsc -p tsconfig.test.json --pretty false",

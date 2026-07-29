@@ -77,19 +77,24 @@ its own per-workload timings alongside the hardware results.
 WebGPU needs a real adapter; Node-only CI tests validate layout, support
 reporting, fallback, and resource ownership with no fake numerical GPU.
 
-Build and serve the repository over localhost:
+Build and serve a local index of the hardware tests:
 
 ```sh
-npm run build
-python3 -m http.server 4173
+npm run test:webgpu
 ```
 
-Then open:
+Then open `http://127.0.0.1:4173/` and choose a test:
 
 - `http://localhost:4173/packages/backend-webgpu/test/shader-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/forward-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/training-parity.html`
 - `http://localhost:4173/packages/backend-webgpu/test/learning-workloads.html`
+
+The command builds every workspace first. To use another port:
+
+```sh
+npm run test:webgpu -- --port 8080
+```
 
 The pages compile every WGSL entry point and compare forward, recurrent,
 training, trace, and shared-parameter behavior with CPU. The learning page runs
