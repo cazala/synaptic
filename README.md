@@ -166,6 +166,8 @@ learning demos: [XOR](packages/backend-webgpu/test/xor.html),
 [MNIST digit drawing](packages/backend-webgpu/test/mnist.html),
 [discrete sequence recall](packages/backend-webgpu/test/dsr.html), and the
 coordinate-to-RGB [learn-to-paint portrait](packages/backend-webgpu/test/learn-to-paint.html).
+The portrait source is bundled with the example, so it does not depend on a
+remote image at runtime.
 
 ## Legacy imports
 

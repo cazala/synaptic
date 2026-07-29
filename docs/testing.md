@@ -110,18 +110,19 @@ reports end-to-end time for each workload, including model compilation.
 The first four pages are polished interactive examples:
 
 - XOR shows the 2→3→1 topology and all four predictions as training converges.
-- MNIST trains a 49→48→10 classifier on 300 samples, evaluates 100 held-out
-  samples, and lets you draw a digit. Strokes are centered, scaled to 28×28,
-  and averaged to the same 7×7 input representation used for training.
+- MNIST trains a 196→128→10 classifier on 300 MNIST samples plus 80
+  drawing-oriented examples, evaluates 100 held-out MNIST samples, and lets
+  you draw a digit. Strokes are centered, scaled to 28×28, and averaged to the
+  same 14×14 input representation used for training.
 - Sequence recall trains the length 4→10 DSR curriculum, then animates random
   length-10 sequences one symbol at a time. Colored inputs and outputs make
   targets, distractors, prompts, silence, and recall errors visible.
-- Learn to paint is inspired by the original gh-pages demo. An 88→3 neural
+- Learn to paint is inspired by the original gh-pages demo. A 180→48→3 neural
   field receives only a Fourier encoding of `(x, y)` coordinates and
-  continuously learns the selected portrait. Play/pause controls the loop. Its
-  UI reports error, elapsed time, and GPU submissions so batching is
-  observable: 2,304 online updates cross the queue in one training submission
-  per epoch, and all 2,304 preview pixels return through one inference
+  continuously learns the bundled portrait at 64×64. Play/pause controls the
+  loop. Its UI reports error, elapsed time, and GPU submissions so batching is
+  observable: 4,096 online updates cross the queue in one training submission
+  per epoch, and all 4,096 preview pixels return through one inference
   submission and readback.
 
 Browser console errors or non-pass smoke results fail the hardware check.

@@ -77,7 +77,7 @@ async function evaluateMnist(session, examples) {
 export async function trainMnistDemo(dataset, onProgress) {
   const definition = sequential(
     input({ size: dataset.imageSize * dataset.imageSize }),
-    dense({ units: 48, activation: "logistic", label: "mnist.hidden" }),
+    dense({ units: 128, activation: "logistic", label: "mnist.hidden" }),
     dense({ units: 10, activation: "logistic", label: "mnist.output" }),
   );
   const session = await createBackend().compile(

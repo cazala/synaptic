@@ -30,7 +30,7 @@
     display: block;
     width: 100%;
     aspect-ratio: 1;
-    image-rendering: pixelated;
+    image-rendering: auto;
   }
   figcaption {
     position: absolute;
@@ -65,10 +65,10 @@
     <div>
       <h1>Learn to paint.</h1>
       <p>
-        A neural field receives a Fourier encoding derived only from normalized
-        <em>x</em> and <em>y</em> coordinates. WebGPU continuously trains it to reproduce
-        <a class="source" href="https://avatars.githubusercontent.com/u/2781777"
-          target="_blank" rel="noreferrer">this RGB portrait</a>.
+        A 180→48→3 neural field receives a Fourier encoding derived only from
+        normalized <em>x</em> and <em>y</em> coordinates. WebGPU continuously
+        trains it to reproduce <a class="source" href="./portrait.jpg"
+          target="_blank">this RGB portrait</a>.
       </p>
     </div>
     <span class="badge" id="backend">loading target</span>
@@ -76,11 +76,11 @@
 
   <section class="canvases" aria-label="Neural painting comparison">
     <figure class="panel">
-      <canvas class="painting" id="target" width="48" height="48"></canvas>
+      <canvas class="painting" id="target" width="64" height="64"></canvas>
       <figcaption>Target portrait</figcaption>
     </figure>
     <figure class="panel">
-      <canvas class="painting" id="learned" width="48" height="48"></canvas>
+      <canvas class="painting" id="learned" width="64" height="64"></canvas>
       <figcaption>Network output</figcaption>
     </figure>
   </section>
@@ -118,12 +118,12 @@
   import { compilePlan, createSnapshot } from "@synaptic/core";
   import { dense, input, sequential } from "@synaptic/layers";
 
-  const AVATAR_URL = "https://avatars.githubusercontent.com/u/2781777";
-  const SIZE = 48;
+  const AVATAR_URL = "./portrait.jpg";
+  const SIZE = 64;
   const PIXELS = SIZE * SIZE;
   const FREQUENCIES = [];
-  for (let frequencyY = 0; frequencyY <= 4; frequencyY += 1) {
-    for (let frequencyX = -4; frequencyX <= 4; frequencyX += 1) {
+  for (let frequencyY = 0; frequencyY <= 6; frequencyY += 1) {
+    for (let frequencyX = -6; frequencyX <= 6; frequencyX += 1) {
       if (frequencyX !== 0 || frequencyY !== 0) {
         FREQUENCIES.push([frequencyX, frequencyY]);
       }
@@ -172,7 +172,7 @@
   };
 
   const loadTarget = async () => {
-    const response = await fetch(AVATAR_URL, { mode: "cors" });
+    const response = await fetch(AVATAR_URL);
     if (!response.ok) {
       throw new Error(`Unable to load target portrait (${response.status})`);
     }
@@ -215,6 +215,7 @@
   const createSession = async () => {
     const definition = sequential(
       input({ size: INPUT_SIZE }),
+      dense({ units: 48, activation: "tanh", label: "paint.hidden" }),
       dense({ units: 3, activation: "logistic", label: "paint.rgb" }),
     );
     return new WebGpuBackend({ fallbackBackends: [] }).compile(

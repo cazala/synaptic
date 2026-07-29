@@ -158,9 +158,9 @@
     <div>
       <h1>Draw a digit.</h1>
       <p>
-        WebGPU trains a 49→48→10 network on all ten MNIST classes. Draw any
+        WebGPU trains a 196→128→10 network on all ten MNIST classes. Draw any
         number from zero to nine; your strokes are normalized to the same
-        7×7 representation the network learned.
+        14×14 representation the network learned.
       </p>
     </div>
     <span class="badge" id="backend">loading MNIST</span>
@@ -191,9 +191,9 @@
       <div class="probabilities" id="probabilities"
         aria-label="Network output by digit"></div>
       <div class="preview">
-        <canvas id="input-preview" width="7" height="7"
-          aria-label="7 by 7 network input"></canvas>
-        <span>This tiny image is the exact 49-value input sent to WebGPU.</span>
+        <canvas id="input-preview" width="14" height="14"
+          aria-label="14 by 14 network input"></canvas>
+        <span>This tiny image is the exact 196-value input sent to WebGPU.</span>
       </div>
     </article>
   </section>
@@ -206,7 +206,7 @@
       <div class="metric"><small>Train time</small><output id="time">—</output></div>
     </div>
     <div class="actions">
-      <span class="badge" id="model">49 → 48 → 10</span>
+      <span class="badge" id="model">196 → 128 → 10</span>
     </div>
   </section>
   <div class="progress" aria-hidden="true"><span id="progress"></span></div>
@@ -217,6 +217,9 @@
   import { createMnistDataset } from "../../conformance/dist/index.js";
   import { trainMnistDemo } from "./demo-models.js";
 
+  const IMAGE_SIZE = 14;
+  const MNIST_SIZE = 28;
+  const DOWNSAMPLE_BLOCK = MNIST_SIZE / IMAGE_SIZE;
   const drawing = document.querySelector("#drawing");
   const drawingContext = drawing.getContext("2d", { willReadFrequently: true });
   const preview = document.querySelector("#input-preview");
@@ -282,6 +285,88 @@
     lastPoint = point;
   };
 
+  const downsamplePixels = (pixels) => {
+    const input = [];
+    for (let outputY = 0; outputY < IMAGE_SIZE; outputY += 1) {
+      for (let outputX = 0; outputX < IMAGE_SIZE; outputX += 1) {
+        let value = 0;
+        for (let sourceY = 0; sourceY < DOWNSAMPLE_BLOCK; sourceY += 1) {
+          for (let sourceX = 0; sourceX < DOWNSAMPLE_BLOCK; sourceX += 1) {
+            const x = outputX * DOWNSAMPLE_BLOCK + sourceX;
+            const y = outputY * DOWNSAMPLE_BLOCK + sourceY;
+            value += pixels[(y * MNIST_SIZE + x) * 4] ?? 0;
+          }
+        }
+        input.push(value / (255 * DOWNSAMPLE_BLOCK * DOWNSAMPLE_BLOCK));
+      }
+    }
+    return input;
+  };
+
+  const createDrawingExamples = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = MNIST_SIZE;
+    canvas.height = MNIST_SIZE;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    const examples = [];
+    const variants = [
+      { angle: -.06, font: "700 24px Arial", offsetX: -1, offsetY: 1 },
+      { angle: .04, font: "600 25px Arial", offsetX: 1, offsetY: 0 },
+      { angle: -.03, font: "700 24px sans-serif", offsetX: 0, offsetY: -1 },
+      { angle: .06, font: "600 25px sans-serif", offsetX: -1, offsetY: 0 },
+      { angle: 0, font: "700 23px serif", offsetX: 1, offsetY: 1 },
+      { angle: .02, font: "600 24px serif", offsetX: 0, offsetY: 0 },
+    ];
+    const addExample = (digit) => {
+      const target = new Array(10).fill(0);
+      target[digit] = 1;
+      examples.push({
+        input: downsamplePixels(
+          context.getImageData(0, 0, MNIST_SIZE, MNIST_SIZE).data,
+        ),
+        label: digit,
+        target,
+      });
+    };
+    for (let digit = 0; digit < 10; digit += 1) {
+      for (const variant of variants) {
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.fillStyle = "#000";
+        context.fillRect(0, 0, MNIST_SIZE, MNIST_SIZE);
+        context.translate(
+          MNIST_SIZE / 2 + variant.offsetX,
+          MNIST_SIZE / 2 + variant.offsetY,
+        );
+        context.rotate(variant.angle);
+        context.fillStyle = "#fff";
+        context.font = variant.font;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(String(digit), 0, 1);
+        addExample(digit);
+      }
+    }
+    for (let variant = 0; variant < 20; variant += 1) {
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.fillStyle = "#000";
+      context.fillRect(0, 0, MNIST_SIZE, MNIST_SIZE);
+      const left = 3 + variant % 3;
+      const right = 23 + variant % 2;
+      const top = 3 + variant % 2;
+      context.strokeStyle = "#fff";
+      context.lineWidth = 2.5 + variant % 4 * .35;
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.beginPath();
+      context.moveTo(left, top);
+      context.lineTo(right, top);
+      context.lineTo(8 + variant % 5, 23 + variant % 3);
+      context.stroke();
+      addExample(7);
+    }
+    return examples;
+  };
+
   const normalizeDrawing = () => {
     const pixels = drawingContext.getImageData(
       0,
@@ -327,26 +412,13 @@
       width,
       height,
     );
-    const normalizedPixels = context.getImageData(0, 0, 28, 28).data;
-    const input = [];
-    for (let outputY = 0; outputY < 7; outputY += 1) {
-      for (let outputX = 0; outputX < 7; outputX += 1) {
-        let value = 0;
-        for (let sourceY = 0; sourceY < 4; sourceY += 1) {
-          for (let sourceX = 0; sourceX < 4; sourceX += 1) {
-            const x = outputX * 4 + sourceX;
-            const y = outputY * 4 + sourceY;
-            value += normalizedPixels[(y * 28 + x) * 4] ?? 0;
-          }
-        }
-        input.push(value / (255 * 16));
-      }
-    }
-    return input;
+    return downsamplePixels(
+      context.getImageData(0, 0, MNIST_SIZE, MNIST_SIZE).data,
+    );
   };
 
   const renderPreview = (input) => {
-    const image = previewContext.createImageData(7, 7);
+    const image = previewContext.createImageData(IMAGE_SIZE, IMAGE_SIZE);
     input.forEach((value, index) => {
       const intensity = Math.round(value * 255);
       image.data[index * 4] = intensity;
@@ -417,9 +489,11 @@
   resetDrawing();
   try {
     const dataset = createMnistDataset(window.mnist, {
+      imageSize: IMAGE_SIZE,
       trainingPerDigit: 30,
       testPerDigit: 10,
     });
+    dataset.training.push(...createDrawingExamples());
     status.textContent =
       `Training on ${dataset.training.length.toLocaleString()} examples; `
       + `${dataset.test.length.toLocaleString()} remain held out.`;
@@ -436,8 +510,8 @@
     answerCopy.textContent = "The prediction updates when you finish a stroke.";
     const pass =
       result.backend === "webgpu"
-      && result.trainingAccuracy >= .85
-      && result.testAccuracy >= .8;
+      && result.trainingAccuracy >= .95
+      && result.testAccuracy >= .85;
     status.textContent = pass
       ? "Ready. Draw a large, centered digit in one or more strokes."
       : "Training finished below the expected accuracy threshold.";
