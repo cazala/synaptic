@@ -100,6 +100,7 @@ describe("cross-backend learning workloads", () => {
       );
 
       expect(result.backend).toBe(backend.id);
+      expect(result.trainingTrials).toBe(9_625);
       expect(result.distractorAccuracy).toBe(1);
       expect(result.promptAccuracy).toBeGreaterThanOrEqual(0.95);
       expect(result.sequenceAccuracy).toBeGreaterThanOrEqual(0.95);

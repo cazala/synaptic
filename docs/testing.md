@@ -61,9 +61,9 @@ CPU, and Wasm:
   least 85% training and 80% held-out accuracy.
 - Discrete sequence recall reproduces the `gh-pages` demo vocabulary: targets
   2 and 4, distractors 3 and 5, prompts 0 and 1, and length-10 sequences. A
-  seeded length curriculum trains a 6-4-2 LSTM; 100 separately seeded
-  validation sequences require at least 95% prompt and whole-sequence
-  accuracy.
+  seeded 4→10 length curriculum trains a 6-4-2 LSTM for 1,375 trials at each
+  length; 100 separately seeded length-10 validation sequences require at least
+  95% prompt and whole-sequence accuracy.
 
 These are bounded regression tests, not representative accuracy benchmarks.
 The dataset split, ordering, initialization, and validation sequences are fixed

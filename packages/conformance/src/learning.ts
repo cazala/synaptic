@@ -454,10 +454,12 @@ export async function runDsrLearning(
   options: DsrLearningOptions = {},
 ): Promise<DsrLearningResult> {
   const sequenceLength = options.sequenceLength ?? 10;
-  const trainingTrials = options.trainingTrials ?? 8_250;
   const validationTrials = options.validationTrials ?? 100;
   const curriculumTrialsPerLength =
     options.curriculumTrialsPerLength ?? 1_375;
+  const trainingTrials =
+    options.trainingTrials
+    ?? curriculumTrialsPerLength * (sequenceLength - 3);
   const hiddenUnits = options.hiddenUnits ?? 4;
   const learningRate = options.learningRate ?? 0.03;
   const distractorLearningRate = options.distractorLearningRate ?? 0.003;
