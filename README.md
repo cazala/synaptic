@@ -143,8 +143,7 @@ the API, adapter, plan feature, or device limit is unavailable.
 
 ## Legacy imports
 
-`@synaptic/compat-v1` imports both Synaptic v1 `Network.toJSON()` data and the
-unfinished `synaptic2` engine representation:
+`@synaptic/compat-v1` imports Synaptic v1 `Network.toJSON()` data:
 
 ```ts
 import { compileModel, importLegacy } from "synaptic";
@@ -171,7 +170,7 @@ lossless conversion.
 | `@synaptic/backend-cpu` | Portable typed-array runtime |
 | `@synaptic/backend-wasm` | Persistent scalar/SIMD WebAssembly runtime |
 | `@synaptic/backend-webgpu` | WGSL compute runtime and fallbacks |
-| `@synaptic/compat-v1` | v1 and `synaptic2` importers |
+| `@synaptic/compat-v1` | Synaptic v1 importer |
 | `@synaptic/conformance` | Shared backend fixtures and parity tests |
 
 ## Documentation

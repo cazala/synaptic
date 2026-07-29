@@ -28,7 +28,7 @@ The suite covers:
 - cross-backend checkpoint restoration;
 - WebGPU heap offsets and uniform records;
 - fallback ordering, disabled fallback, ownership, and disposal;
-- v1 and `synaptic2` fixture import;
+- Synaptic v1 fixture import and unsupported-format rejection;
 - public facade and auto-selection behavior.
 
 ## Conformance

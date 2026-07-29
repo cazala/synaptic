@@ -10,7 +10,7 @@ milestones.
 | WebAssembly | Persistent AssemblyScript heap, buffered boundaries, scalar and SIMD artifacts, benchmark policy |
 | WebGPU inference | Packed heap, WGSL stage scheduling, recurrent context, fallback, lifecycle and browser validation |
 | WebGPU training | Backward/error passes, traces, deterministic shared-parameter reduction, checkpoint readback |
-| Specialization/migration | Dense CPU specialization, v1 and `synaptic2` importers, public facade and backend selection |
+| Specialization/migration | Dense CPU specialization, Synaptic v1 importer, public facade and backend selection |
 | Hardening | Full checkpoint restore/artifacts, comprehensive tests/docs, package cleanup, coverage and dependency audit |
 
 ASM.js is intentionally absent. Modern JavaScript engines, WebAssembly, and

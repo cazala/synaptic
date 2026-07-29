@@ -108,19 +108,6 @@ The importer:
 - reports trace dictionaries that cannot be recovered because v1 JSON omitted
   stable runtime connection IDs.
 
-## Import the unfinished `synaptic2` engine
-
-The same function detects engine JSON through its `activationFunction` and
-`layers` fields:
-
-```ts
-const result = importLegacy(synaptic2EngineJson);
-```
-
-It converts layers, weights, gates, bias units, recurrent context, errors, and
-available eligibility arrays. Intra-layer connections that depended on serial
-array order are expanded into explicit stages and produce a warning.
-
 ## Migration policy
 
 Importers are one-way boundaries. After import:

@@ -35,25 +35,13 @@ describe("legacy import", () => {
     session.dispose();
   });
 
-  it("imports a synaptic2 engine as the same portable runtime contract", async () => {
-    const source = await readFixture("synaptic2-engine.json");
-    expect(detectLegacyFormat(source)).toBe("synaptic2-engine");
-    const imported = importLegacy(source);
-    const { definition, snapshot } = imported.value;
-
-    expect(definition.topology.inputs).toEqual([0]);
-    expect(definition.topology.outputs).toEqual([1]);
-    expect([...snapshot.parameters]).toEqual([0.5]);
-
-    const session = await new CpuBackend().compile(
-      compilePlan(definition),
-      snapshot,
-    );
-    expect((await session.forward([2])).data[0]).toBeCloseTo(
-      1 / (1 + Math.exp(-1)),
-      6,
-    );
-    session.dispose();
+  it("rejects unfinished synaptic2 engine artifacts", () => {
+    expect(() => importLegacy({
+      activationFunction: [5, 0],
+      connections: [{ from: 0, to: 1 }],
+      layers: [[0], [1]],
+      size: 2,
+    })).toThrow("Unknown legacy artifact format");
   });
 
   it("rejects unknown legacy artifacts", () => {

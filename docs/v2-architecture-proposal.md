@@ -5,8 +5,9 @@ Status: implemented baseline; retained as the research and decision record
 Implementation summary: [v2 implementation status](implementation-status.md)
 
 The final baseline omits ASM.js, keeps Wasm explicit rather than auto-selecting
-it until specialization wins benchmarks, and implements portable checkpoint
-restoration across backends.
+it until specialization wins benchmarks, implements portable checkpoint
+restoration across backends, and supports migration from released Synaptic v1
+artifacts only. The unfinished `synaptic2` repository remains research input.
 
 Branch: `v2`
 
@@ -498,7 +499,7 @@ packages/
   backend-cpu/          typed-array backend
   backend-wasm/         host adapter plus Wasm binaries
   backend-webgpu/       WGSL, layout generator, device/session lifecycle
-  compat-v1/            v1 and synaptic2 artifact import
+  compat-v1/            Synaptic v1 artifact import
   conformance/          shared backend fixtures and test harness
   synaptic/             ergonomic public facade and auto selection
 ```
@@ -547,10 +548,9 @@ Required layers of testing:
 9. **Performance tests** - startup, warm execution, memory, transfer bytes,
    steps/second, and readback separately.
 
-The existing `synaptic2` LSTM fixtures should become the first migration
-fixtures. New golden artifacts should include small graphs specifically chosen
-to exercise self-gating, cross-gating, delayed edges, peepholes, and a unit
-that both projects and gates.
+New golden artifacts should include small graphs specifically chosen to
+exercise self-gating, cross-gating, delayed edges, peepholes, and a unit that
+both projects and gates.
 
 ## Migration
 
@@ -564,10 +564,6 @@ that both projects and gates.
 - warn when a legacy graph depends on serial order within a layer;
 - emit a normal versioned v2 snapshot.
 
-A second importer can recognize `synaptic2` engine JSON, including its existing
-`elegibilityTrace` spelling, and split it into definition, parameters, and
-checkpoint state.
-
 The v1 API itself should not be emulated inside the new core. A thin adapter can
 be offered for migration, but `Neuron` objects must not leak into compiled
 sessions.
@@ -578,7 +574,7 @@ sessions.
 
 - Establish the TypeScript workspace and strict build/test tooling.
 - Write the versioned artifact schema and stage/delay semantics.
-- Import representative v1 and `synaptic2` fixtures.
+- Import representative Synaptic v1 fixtures.
 - Freeze the backend/session interfaces.
 
 Exit criterion: deterministic artifact round trips and topology validation.
