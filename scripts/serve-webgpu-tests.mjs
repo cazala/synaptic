@@ -20,7 +20,7 @@ const tests = [
     path: "/packages/backend-webgpu/test/mnist.html",
   },
   {
-    description: "Learn a tied 3×3 MNIST convolution, transfer it exactly, and run it as a Neural CA.",
+    description: "Train direct and network MNIST rules, transfer both exactly, and compare them as Neural CAs.",
     kind: "Interactive demo",
     name: "MNIST to Neural CA",
     path: "/packages/backend-webgpu/test/mnist-automata.html",

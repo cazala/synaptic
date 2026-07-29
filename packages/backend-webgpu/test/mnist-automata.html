@@ -18,6 +18,32 @@
 </script>
 <script src="/node_modules/mnist/dist/mnist.js"></script>
 <style>
+  .hero-side {
+    display: grid;
+    justify-items: end;
+    gap: .65rem;
+  }
+  .mode-switch {
+    display: inline-grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .2rem;
+    padding: .22rem;
+    border: 1px solid #2c4058;
+    border-radius: .75rem;
+    background: #070d16;
+  }
+  .mode-switch button {
+    min-width: 5.5rem;
+    border: 0;
+    padding: .58rem .8rem;
+    background: transparent;
+    color: #708299;
+  }
+  .mode-switch button[aria-pressed="true"] {
+    background: linear-gradient(135deg, #1b4260, #39203e);
+    color: #f2f7ff;
+    box-shadow: inset 0 0 0 1px #6ce2cf45;
+  }
   .pipeline {
     display: grid;
     grid-template-columns: minmax(8rem, 1fr) auto minmax(9rem, 1fr) auto minmax(8rem, 1fr);
@@ -53,7 +79,7 @@
     grid-template-columns: minmax(18rem, .78fr) minmax(24rem, 1.22fr);
     gap: 1.5rem;
   }
-  .kernel-panel, .automata-panel { overflow: hidden; }
+  .model-panel, .automata-panel { overflow: hidden; }
   .panel-head {
     display: flex;
     justify-content: space-between;
@@ -78,7 +104,7 @@
     letter-spacing: .06em;
     text-transform: uppercase;
   }
-  .kernel-wrap { padding: .5rem 1.25rem 1.25rem; }
+  .model-wrap { padding: .5rem 1.25rem 1.25rem; }
   .kernel-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -103,6 +129,19 @@
     font: 650 .52rem ui-monospace, monospace;
     letter-spacing: .06em;
     text-transform: uppercase;
+  }
+  .matrix-wrap {
+    margin-top: 1rem;
+    padding: .7rem;
+    border: 1px solid #2b3d53;
+    border-radius: .75rem;
+    background: #060b13;
+  }
+  .matrix-wrap[hidden] { display: none; }
+  #weight-matrices {
+    display: block;
+    width: 100%;
+    height: auto;
   }
   .mapping {
     display: grid;
@@ -203,6 +242,7 @@
     .samples { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   }
   @media (max-width: 620px) {
+    .hero-side { justify-items: start; }
     .pipeline {
       grid-template-columns: 1fr;
       text-align: center;
@@ -222,15 +262,20 @@
 
   <header class="hero">
     <div>
-      <h1>Train a filter. Set it alive.</h1>
-      <p>
+      <h1>Train a rule. Set it alive.</h1>
+      <p id="hero-copy">
         Synaptic learns MNIST through a tied, symmetric 3×3 convolution.
-        Its three learned weights and <em>tanh</em> activation are then copied
-        unchanged into the direct Neural CA from
-        <code>@cazala/automata</code>.
+        Its three learned weights and <em>tanh</em> activation are copied
+        unchanged into Automata's direct Neural CA.
       </p>
     </div>
-    <span class="badge" id="backend">loading MNIST</span>
+    <div class="hero-side">
+      <span class="badge" id="backend">loading MNIST</span>
+      <div class="mode-switch" role="group" aria-label="Neural automaton mode">
+        <button data-mode="direct" aria-pressed="true" disabled>Direct</button>
+        <button data-mode="network" aria-pressed="false" disabled>Network</button>
+      </div>
+    </div>
   </header>
 
   <section class="pipeline panel" aria-label="Experiment architecture">
@@ -240,8 +285,8 @@
     </div>
     <span class="pipeline-arrow" aria-hidden="true">→</span>
     <div class="pipeline-node transfer">
-      <strong>3×3 tied convolution</strong>
-      <small>corner · edge · center + tanh</small>
+      <strong id="transfer-title">3×3 tied convolution</strong>
+      <small id="transfer-meta">corner · edge · center + tanh</small>
     </div>
     <span class="pipeline-arrow" aria-hidden="true">→</span>
     <div class="pipeline-node">
@@ -251,15 +296,17 @@
   </section>
 
   <section class="experiment">
-    <article class="kernel-panel panel">
+    <article class="model-panel panel">
       <div class="panel-head">
         <div>
-          <h2>The learned kernel</h2>
-          <p>One parameter is shared by every cell of the same kind.</p>
+          <h2 id="model-heading">The learned kernel</h2>
+          <p id="model-description">
+            One parameter is shared by every cell of the same kind.
+          </p>
         </div>
-        <span class="exact">exact transfer</span>
+        <span class="exact" id="transfer-count">3 values</span>
       </div>
-      <div class="kernel-wrap">
+      <div class="model-wrap">
         <div class="kernel-grid" id="kernel" aria-label="Learned 3 by 3 kernel">
           <div class="kernel-cell" data-weight="corner"></div>
           <div class="kernel-cell" data-weight="edge"></div>
@@ -271,12 +318,16 @@
           <div class="kernel-cell" data-weight="edge"></div>
           <div class="kernel-cell" data-weight="corner"></div>
         </div>
-        <div class="mapping">
-          <div><strong>Synaptic</strong>tanh</div>
-          <span>≡</span>
-          <div><strong>Automata</strong>activation 1</div>
+        <div class="matrix-wrap" id="matrix-wrap" hidden>
+          <canvas id="weight-matrices" width="720" height="300"
+            aria-label="Learned network weight matrices"></canvas>
         </div>
-        <p class="caveat">
+        <div class="mapping">
+          <div id="mapping-source"><strong>Synaptic</strong>tanh</div>
+          <span>≡</span>
+          <div id="mapping-target"><strong>Automata</strong>activation 1</div>
+        </div>
+        <p class="caveat" id="caveat">
           The 10-way readout learns to name digits, but is not part of the CA.
           The highlighted convolution is the complete local rule being run at
           right, recurrently and across three color channels.
@@ -288,17 +339,17 @@
       <div class="panel-head">
         <div>
           <h2>The transferred automaton</h2>
-          <p>
+          <p id="automata-description">
             Every generation reapplies the learned MNIST convolution; digit
-            seeds loop before the high-frequency attractor fills the grid.
+            seeds loop before the attractor fills the grid.
           </p>
         </div>
         <span class="exact" id="ca-state">waiting</span>
       </div>
       <div class="automata-wrap">
         <canvas id="automata" width="720" height="540"
-          aria-label="Neural cellular automaton using the learned MNIST kernel"></canvas>
-        <span class="canvas-chip">Direct Neural CA · wrap enabled</span>
+          aria-label="Neural cellular automaton using a learned MNIST rule"></canvas>
+        <span class="canvas-chip" id="canvas-chip">Direct Neural CA · wrap enabled</span>
       </div>
     </article>
   </section>
@@ -306,14 +357,14 @@
   <section class="sample-panel panel">
     <header>
       <h2>Seed with a held-out digit</h2>
-      <p>Caption: expected → predicted</p>
+      <p>Caption: expected → prediction from the selected model</p>
     </header>
     <div class="samples" id="samples"></div>
   </section>
 
   <section class="controls panel">
     <div class="metrics">
-      <div class="metric"><small>Training phase</small><output id="epoch">0 / 42</output></div>
+      <div class="metric"><small>Training phase</small><output id="epoch">0 / 78</output></div>
       <div class="metric"><small>Train accuracy</small><output id="train-accuracy">—</output></div>
       <div class="metric"><small>Test accuracy</small><output id="test-accuracy">—</output></div>
       <div class="metric"><small>Train time</small><output id="time">—</output></div>
@@ -334,6 +385,7 @@
     AUTOMATA_KERNEL_INITIAL,
     AUTOMATA_TANH_ACTIVATION,
     trainAutomataConvolutionDemo,
+    trainAutomataNetworkDemo,
   } from "./demo-models.js";
 
   const backend = document.querySelector("#backend");
@@ -344,17 +396,37 @@
   const progress = document.querySelector("#progress");
   const status = document.querySelector("#status");
   const kernelGrid = document.querySelector("#kernel");
+  const matrixWrap = document.querySelector("#matrix-wrap");
+  const matrixCanvas = document.querySelector("#weight-matrices");
   const canvas = document.querySelector("#automata");
   const caState = document.querySelector("#ca-state");
   const playButton = document.querySelector("#play");
   const noiseButton = document.querySelector("#noise");
   const samples = document.querySelector("#samples");
+  const modeButtons = [...document.querySelectorAll("[data-mode]")];
 
+  const copy = {
+    hero: document.querySelector("#hero-copy"),
+    transferTitle: document.querySelector("#transfer-title"),
+    transferMeta: document.querySelector("#transfer-meta"),
+    heading: document.querySelector("#model-heading"),
+    description: document.querySelector("#model-description"),
+    count: document.querySelector("#transfer-count"),
+    source: document.querySelector("#mapping-source"),
+    target: document.querySelector("#mapping-target"),
+    caveat: document.querySelector("#caveat"),
+    automata: document.querySelector("#automata-description"),
+    chip: document.querySelector("#canvas-chip"),
+  };
+
+  const results = {};
+  let activeMode = "direct";
   let engine;
   let stopResize;
   let frameTimer;
   let selectedSample;
   let selectedButton;
+  let selectedLabel = 3;
   let generationStart = 0;
 
   const percent = (value) => `${Math.round(value * 100)}%`;
@@ -372,6 +444,115 @@
         <output>${value >= 0 ? "+" : ""}${value.toFixed(4)}</output>
         <small>${name}</small>
       `;
+    }
+  };
+
+  const drawMatrix = (context, values, rows, columns, bounds, title) => {
+    const maximum = Math.max(...values.map(Math.abs), .0001);
+    const gap = 2;
+    const cellWidth = (bounds.width - gap * (columns - 1)) / columns;
+    const cellHeight = (bounds.height - gap * (rows - 1)) / rows;
+    context.fillStyle = "#91a4bd";
+    context.font = "700 17px ui-monospace, monospace";
+    context.fillText(title, bounds.x, bounds.y - 13);
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const value = values[row * columns + column] ?? 0;
+        const strength = Math.abs(value) / maximum;
+        context.fillStyle = value >= 0
+          ? `rgba(66, 207, 238, ${.12 + strength * .82})`
+          : `rgba(255, 105, 148, ${.12 + strength * .82})`;
+        context.fillRect(
+          bounds.x + column * (cellWidth + gap),
+          bounds.y + row * (cellHeight + gap),
+          cellWidth,
+          cellHeight,
+        );
+      }
+    }
+  };
+
+  const renderMatrices = (weights) => {
+    const context = matrixCanvas.getContext("2d");
+    context.clearRect(0, 0, matrixCanvas.width, matrixCanvas.height);
+    drawMatrix(
+      context,
+      [...weights.inputToHidden],
+      weights.hidden,
+      weights.channels * 4,
+      { x: 22, y: 42, width: 676, height: 126 },
+      `input → hidden · ${weights.hidden} × ${weights.channels * 4}`,
+    );
+    drawMatrix(
+      context,
+      [...weights.hiddenToOutput],
+      weights.channels,
+      weights.hidden,
+      { x: 22, y: 218, width: 676, height: 58 },
+      `hidden → delta · ${weights.channels} × ${weights.hidden}`,
+    );
+  };
+
+  const renderMode = (mode) => {
+    const result = results[mode];
+    if (!result) return;
+    activeMode = mode;
+    renderKernel(result.kernel);
+    trainAccuracy.textContent = percent(result.trainingAccuracy);
+    testAccuracy.textContent = percent(result.testAccuracy);
+    time.textContent = `${(result.durationMs / 1_000).toFixed(2)} s`;
+    epoch.textContent = `${result.epochs} epochs · ${mode}`;
+    for (const button of modeButtons) {
+      button.setAttribute("aria-pressed", String(button.dataset.mode === mode));
+    }
+
+    if (mode === "direct") {
+      matrixWrap.hidden = true;
+      copy.hero.innerHTML =
+        `Synaptic learns MNIST through a tied, symmetric 3×3 convolution.
+        Its three learned weights and <em>tanh</em> activation are copied
+        unchanged into Automata's direct Neural CA.`;
+      copy.transferTitle.textContent = "3×3 tied convolution";
+      copy.transferMeta.textContent = "corner · edge · center + tanh";
+      copy.heading.textContent = "The learned kernel";
+      copy.description.textContent =
+        "One parameter is shared by every cell of the same kind.";
+      copy.count.textContent = "3 values";
+      copy.source.innerHTML = "<strong>Synaptic</strong>tanh";
+      copy.target.innerHTML = "<strong>Automata</strong>activation 1";
+      copy.caveat.textContent =
+        "The 10-way readout learns to name digits, but is not part of the CA. " +
+        "The displayed convolution is the complete transferred local rule, " +
+        "reapplied recurrently across three color channels.";
+      copy.automata.textContent =
+        "Every generation reapplies the learned MNIST convolution; digit " +
+        "seeds loop before the attractor fills the grid.";
+      copy.chip.textContent = "Direct Neural CA · wrap enabled";
+    } else {
+      matrixWrap.hidden = false;
+      renderMatrices(result.weights);
+      copy.hero.innerHTML =
+        `Synaptic trains Automata's exact four-filter perception and shared
+        <em>tanh</em> MLP. The learned kernel, matrices, and biases are injected
+        through the Neural network-weight API in <code>@cazala/automata@0.2.0</code>.`;
+      copy.transferTitle.textContent = "4 filters → 8 tanh → 3";
+      copy.transferMeta.textContent =
+        "identity · Sobel x/y · learned kernel";
+      copy.heading.textContent = "The learned local network";
+      copy.description.textContent =
+        "The 3×3 kernel and both MLP matrices are shared at every grid cell.";
+      copy.count.textContent = "137 values";
+      copy.source.innerHTML = "<strong>Synaptic</strong>12 → 8 tanh → 3";
+      copy.target.innerHTML = "<strong>Automata 0.2</strong>network weights";
+      copy.caveat.textContent =
+        "The heatmaps show input→hidden and hidden→delta in Automata's exact " +
+        "row-major order; eight hidden and three output biases are transferred " +
+        "too. The classifier readout is excluded. Automata then applies the " +
+        "learned delta recurrently with a deliberately gentle step size of 0.02.";
+      copy.automata.textContent =
+        "Each generation perceives identity, Sobel-x, Sobel-y, and the learned " +
+        "kernel before applying the transferred shared MLP as a residual update.";
+      copy.chip.textContent = "Network Neural CA · 12 → 8 → 3";
     }
   };
 
@@ -401,7 +582,8 @@
     for (let y = 0; y < 14; y += 1) {
       for (let x = 0; x < 14; x += 1) {
         for (let channel = 0; channel < channels; channel += 1) {
-          const shiftedX = (x + channel - 1 + 14) % 14;
+          const shift = activeMode === "direct" ? channel - 1 : 0;
+          const shiftedX = (x + shift + 14) % 14;
           const value = example.input[y * 14 + shiftedX] ?? 0;
           const destination =
             ((originY + y) * width + originX + x) * channels + channel;
@@ -415,8 +597,9 @@
     }
     selectedSample = example;
     selectedButton = button;
+    selectedLabel = example.label;
     generationStart = engine.getFrame();
-    caState.textContent = `seed ${example.label} · generation 0`;
+    caState.textContent = `${activeMode} · seed ${example.label} · generation 0`;
   };
 
   const renderSamples = (examples) => {
@@ -442,22 +625,63 @@
     });
   };
 
-  const startAutomata = async (kernel, examples) => {
+  const createAutomaton = (mode) => {
+    const result = results[mode];
+    if (mode === "direct") {
+      return new Neural({
+        mode: "direct",
+        channels: 3,
+        activation: AUTOMATA_TANH_ACTIVATION,
+        kernel: result.kernel,
+      });
+    }
+    return new Neural({
+      mode: "network",
+      activation: AUTOMATA_TANH_ACTIVATION,
+      kernel: result.kernel,
+      weights: result.weights,
+      updateRate: 1,
+      stepSize: .02,
+      aliveMask: false,
+    });
+  };
+
+  const useMode = (mode) => {
+    if (!results[mode]) return;
+    const wasPlaying = engine?.isPlaying() ?? true;
+    const changed = mode !== activeMode;
+    if (engine && changed) {
+      engine.pause();
+      engine.setAutomaton(createAutomaton(mode));
+      engine.coverGrid();
+    }
+    renderMode(mode);
+    const examples = results[mode].examples;
+    renderSamples(examples);
+    const sampleIndex = Math.max(
+      0,
+      examples.findIndex((example) => example.label === selectedLabel),
+    );
+    const nextExample = examples[sampleIndex] ?? examples[0];
+    const nextButton = samples.children[sampleIndex] ?? samples.children[0];
+    if (engine && nextExample && nextButton) {
+      seedDigit(nextExample, nextButton);
+    }
+    if (engine && wasPlaying) engine.play();
+    playButton.textContent = wasPlaying ? "Pause" : "Play";
+    playButton.setAttribute("aria-pressed", String(wasPlaying));
+  };
+
+  const startAutomata = async () => {
     const bounds = canvas.parentElement.getBoundingClientRect();
     const grid = gridForCanvas(bounds.width, bounds.height, {
       cellSize: 5,
       minCells: 72,
       maxCells: 128,
     });
-    const automaton = new Neural({
-      mode: "direct",
-      channels: 3,
-      activation: AUTOMATA_TANH_ACTIVATION,
-      kernel,
-    });
     engine = new Engine({
       canvas,
-      automaton,
+      automaton: createAutomaton("direct"),
       grid: { ...grid, wrap: true, maxCells: 128 },
       stepsPerSecond: 16,
       render: {
@@ -474,37 +698,35 @@
     await engine.initialize();
     engine.coverGrid();
     stopResize = engine.autoResize(canvas.parentElement);
-    renderSamples(examples);
-    const initialButton = samples.children[3] ?? samples.children[0];
-    const initialExample = examples[3] ?? examples[0];
-    if (initialButton && initialExample) {
-      seedDigit(initialExample, initialButton);
-    } else {
-      engine.reset({ mode: "noise", density: .24 });
-    }
+    useMode("direct");
     engine.play();
+    playButton.textContent = "Pause";
+    playButton.setAttribute("aria-pressed", "true");
     playButton.disabled = false;
     noiseButton.disabled = false;
-    caState.textContent = initialExample ? `seed ${initialExample.label}` : "running";
     frameTimer = window.setInterval(() => {
-      if (engine?.isPlaying()) {
-        const frame = engine.getFrame();
-        const generation = frame - generationStart;
-        if (selectedSample && selectedButton && generation >= 96) {
-          seedDigit(selectedSample, selectedButton);
-          return;
-        }
-        if (!selectedSample && generation >= 160) {
-          engine.reset({ mode: "noise", density: .24 });
-          generationStart = frame;
-          return;
-        }
-        caState.textContent = selectedSample
-          ? `seed ${selectedSample.label} · generation ${generation}`
-          : `noise · generation ${generation}`;
+      if (!engine?.isPlaying()) return;
+      const frame = engine.getFrame();
+      const generation = frame - generationStart;
+      const limit = activeMode === "direct" ? 96 : 160;
+      if (selectedSample && selectedButton && generation >= limit) {
+        seedDigit(selectedSample, selectedButton);
+        return;
       }
+      if (!selectedSample && generation >= 180) {
+        engine.reset({ mode: "noise", density: .24 });
+        generationStart = frame;
+        return;
+      }
+      caState.textContent = selectedSample
+        ? `${activeMode} · seed ${selectedSample.label} · generation ${generation}`
+        : `${activeMode} · noise · generation ${generation}`;
     }, 250);
   };
+
+  for (const button of modeButtons) {
+    button.addEventListener("click", () => useMode(button.dataset.mode));
+  }
 
   playButton.addEventListener("click", () => {
     if (!engine) return;
@@ -512,7 +734,7 @@
     const playing = engine.isPlaying();
     playButton.textContent = playing ? "Pause" : "Play";
     playButton.setAttribute("aria-pressed", String(playing));
-    caState.textContent = playing ? "running" : "paused";
+    caState.textContent = playing ? `${activeMode} · running` : `${activeMode} · paused`;
   });
 
   noiseButton.addEventListener("click", () => {
@@ -524,7 +746,7 @@
     for (const sample of samples.children) {
       sample.setAttribute("aria-pressed", "false");
     }
-    caState.textContent = "color noise";
+    caState.textContent = `${activeMode} · color noise`;
   });
 
   window.addEventListener("pagehide", () => {
@@ -543,24 +765,39 @@
       trainingPerDigit: 30,
       testPerDigit: 10,
     });
-    backend.textContent = "compiling WebGPU";
+    const directEpochs = 42;
+    const networkEpochs = 36;
+    const totalEpochs = directEpochs + networkEpochs;
+
+    backend.textContent = "training direct";
     status.textContent =
-      "First training the classifier readout; then fine-tuning the shared kernel…";
-    const result = await trainAutomataConvolutionDemo(
+      "Training the direct convolution and its classifier readout…";
+    results.direct = await trainAutomataConvolutionDemo(
       dataset,
-      (current, total, phase) => {
-        epoch.textContent = `${current} / ${total} · ${phase}`;
-        progress.style.width = `${current / total * 100}%`;
+      (current, _total, phase) => {
+        epoch.textContent = `${current} / ${totalEpochs} · direct ${phase}`;
+        progress.style.width = `${current / totalEpochs * 100}%`;
       },
     );
-    backend.textContent = `${result.backend} + automata`;
-    trainAccuracy.textContent = percent(result.trainingAccuracy);
-    testAccuracy.textContent = percent(result.testAccuracy);
-    time.textContent = `${(result.durationMs / 1_000).toFixed(2)} s`;
-    renderKernel(result.kernel);
+
+    backend.textContent = "training network";
     status.textContent =
-      "Training complete. The three displayed weights now drive the live Automata simulation.";
-    await startAutomata(result.kernel, result.examples);
+      "Training the exact Automata perception → tanh MLP → delta substrate…";
+    results.network = await trainAutomataNetworkDemo(
+      dataset,
+      (current, _total, phase) => {
+        const combined = directEpochs + current;
+        epoch.textContent = `${combined} / ${totalEpochs} · ${phase}`;
+        progress.style.width = `${combined / totalEpochs * 100}%`;
+      },
+    );
+
+    backend.textContent = `${results.direct.backend} + automata 0.2`;
+    for (const button of modeButtons) button.disabled = false;
+    progress.style.width = "100%";
+    status.textContent =
+      "Both local rules are trained. Switch modes to compare their exact transferred artifacts and live dynamics.";
+    await startAutomata();
   } catch (error) {
     backend.textContent = "failed";
     status.classList.add("error");

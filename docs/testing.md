@@ -115,19 +115,18 @@ The first five pages are polished interactive examples:
   drawing-oriented examples, evaluates 100 held-out MNIST samples, and lets
   you draw a digit. Strokes are centered, scaled to 28×28, and averaged to the
   same 14×14 input representation used for training.
-- MNIST to Neural CA trains a direct 196→196→10 classifier whose middle stage
-  is a wrapped, symmetric 3×3 convolution with only three tied parameters:
-  corner, edge, and center. After a frozen-kernel readout warm-up, WebGPU
-  fine-tunes the kernel and copies those three values unchanged into
-  `@cazala/automata` direct Neural mode. Synaptic `tanh` and Automata activation
-  `1` implement the same activation. The page visualizes the learned kernel,
-  classifies one held-out sample per digit, and can seed the live three-channel
-  CA with any sample or independent color noise. The 10-way classifier readout
-  is deliberately not transferred because it is not part of the local CA rule.
-  This experiment uses direct mode because `@cazala/automata@0.1.0` does not
-  expose a public setter for the private MLP weights in Neural network mode. A
-  hidden Neural CA experiment would first require an injectable network-weight
-  artifact API in Automata (or a custom Automaton descriptor).
+- MNIST to Neural CA trains and compares both Neural substrates from
+  `@cazala/automata@0.2.0`. Direct mode uses a wrapped, symmetric 3×3
+  convolution with only three tied parameters: corner, edge, and center.
+  Network mode reproduces Automata's exact identity/Sobel-x/Sobel-y/symmetric
+  perception order and trains a spatially shared 12→8→3 MLP. After frozen-rule
+  readout warm-ups, WebGPU fine-tunes the transferable parameters. The mode
+  switch injects either the three direct weights or the network kernel plus its
+  row-major matrices and biases into a live three-channel Neural CA. Synaptic
+  `tanh` and Automata activation `1` are equivalent. Matrix heatmaps make the
+  network artifact visible, and held-out digit seeds or independent color noise
+  reveal each rule's recurrent dynamics. The 10-way classifier readout is
+  deliberately not transferred because it is not part of either local CA rule.
 - Sequence recall trains the length 4→10 DSR curriculum, then animates random
   length-10 sequences one symbol at a time. Colored inputs and outputs make
   targets, distractors, prompts, silence, and recall errors visible.
