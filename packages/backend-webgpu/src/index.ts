@@ -5,6 +5,8 @@ import {
   copyOptimizerState,
   invariant,
   readTensor,
+  runForwardSequence,
+  runTrainingSequence,
   validateCheckpoint,
   validateSnapshot,
   type Backend,
@@ -14,12 +16,15 @@ import {
   type ModelCheckpoint,
   type ModelSnapshot,
   type RuntimeState,
+  type SequenceMetrics,
+  type SequenceOptions,
   type Session,
   type SupportIssue,
   type SupportReport,
   type Tensor,
   type TensorLike,
   type TrainingBatch,
+  type TrainingSequenceStep,
   type TrainStepOptions,
 } from "@synaptic/core";
 import {
@@ -456,6 +461,10 @@ export class WebGpuSession implements Session {
     }
   }
 
+  async forwardSequence(inputs: readonly TensorLike[]): Promise<readonly Tensor[]> {
+    return runForwardSequence(this, inputs);
+  }
+
   async trainStep(
     batch: TrainingBatch,
     options: TrainStepOptions = {},
@@ -531,6 +540,13 @@ export class WebGpuSession implements Session {
     } finally {
       this.#busy = false;
     }
+  }
+
+  async trainSequence(
+    sequence: readonly TrainingSequenceStep[],
+    options: SequenceOptions = {},
+  ): Promise<SequenceMetrics> {
+    return runTrainingSequence(this, sequence, options);
   }
 
   async resetState(): Promise<void> {

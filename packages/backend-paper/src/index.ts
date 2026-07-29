@@ -9,6 +9,8 @@ import {
   invariant,
   readTensor,
   restoreRuntimeState,
+  runForwardSequence,
+  runTrainingSequence,
   validateCheckpoint,
   validateSnapshot,
   type Backend,
@@ -19,11 +21,14 @@ import {
   type ModelSnapshot,
   type MutableRuntimeState,
   type NumericArray,
+  type SequenceMetrics,
+  type SequenceOptions,
   type Session,
   type SupportReport,
   type Tensor,
   type TensorLike,
   type TrainingBatch,
+  type TrainingSequenceStep,
   type TrainStepOptions,
 } from "@synaptic/core";
 
@@ -158,6 +163,10 @@ export class PaperSession implements Session {
     return { data: output, shape: [output.length] };
   }
 
+  async forwardSequence(inputs: readonly TensorLike[]): Promise<readonly Tensor[]> {
+    return runForwardSequence(this, inputs);
+  }
+
   async trainStep(
     batch: TrainingBatch,
     options: TrainStepOptions = {},
@@ -178,6 +187,13 @@ export class PaperSession implements Session {
       loss += difference * difference;
     }
     return { loss: loss / target.length, step: this.#runtime.step };
+  }
+
+  async trainSequence(
+    sequence: readonly TrainingSequenceStep[],
+    options: SequenceOptions = {},
+  ): Promise<SequenceMetrics> {
+    return runTrainingSequence(this, sequence, options);
   }
 
   async resetState(): Promise<void> {
