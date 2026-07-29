@@ -341,7 +341,7 @@
           <h2>The transferred automaton</h2>
           <p id="automata-description">
             Every generation reapplies the learned MNIST convolution; digit
-            seeds loop before the attractor fills the grid.
+            seeds keep evolving until you reset them.
           </p>
         </div>
         <span class="exact" id="ca-state">waiting</span>
@@ -371,6 +371,7 @@
     </div>
     <div class="actions">
       <button class="primary" id="play" disabled>Pause</button>
+      <button id="reset" disabled>Reset</button>
       <button id="noise" disabled>Color noise</button>
     </div>
   </section>
@@ -401,6 +402,7 @@
   const canvas = document.querySelector("#automata");
   const caState = document.querySelector("#ca-state");
   const playButton = document.querySelector("#play");
+  const resetButton = document.querySelector("#reset");
   const noiseButton = document.querySelector("#noise");
   const samples = document.querySelector("#samples");
   const modeButtons = [...document.querySelectorAll("[data-mode]")];
@@ -526,7 +528,7 @@
         "reapplied recurrently across three color channels.";
       copy.automata.textContent =
         "Every generation reapplies the learned MNIST convolution; digit " +
-        "seeds loop before the attractor fills the grid.";
+        "seeds keep evolving until you reset them.";
       copy.chip.textContent = "Direct Neural CA · wrap enabled";
     } else {
       matrixWrap.hidden = false;
@@ -709,21 +711,12 @@
     playButton.textContent = "Pause";
     playButton.setAttribute("aria-pressed", "true");
     playButton.disabled = false;
+    resetButton.disabled = false;
     noiseButton.disabled = false;
     frameTimer = window.setInterval(() => {
       if (!engine?.isPlaying()) return;
       const frame = engine.getFrame();
       const generation = frame - generationStart;
-      const limit = activeMode === "direct" ? 96 : 160;
-      if (selectedSample && selectedButton && generation >= limit) {
-        seedDigit(selectedSample, selectedButton);
-        return;
-      }
-      if (!selectedSample && generation >= 180) {
-        engine.reset({ mode: "noise", density: .24 });
-        generationStart = frame;
-        return;
-      }
       caState.textContent = selectedSample
         ? `${activeMode} · seed ${selectedSample.label} · generation ${generation}`
         : `${activeMode} · noise · generation ${generation}`;
@@ -741,6 +734,17 @@
     playButton.textContent = playing ? "Pause" : "Play";
     playButton.setAttribute("aria-pressed", String(playing));
     caState.textContent = playing ? `${activeMode} · running` : `${activeMode} · paused`;
+  });
+
+  resetButton.addEventListener("click", () => {
+    if (!engine) return;
+    if (selectedSample && selectedButton) {
+      seedDigit(selectedSample, selectedButton);
+      return;
+    }
+    engine.reset({ mode: "noise", density: .24 });
+    generationStart = engine.getFrame();
+    caState.textContent = `${activeMode} · fresh color noise · generation 0`;
   });
 
   noiseButton.addEventListener("click", () => {
