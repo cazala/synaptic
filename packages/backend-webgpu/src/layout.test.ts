@@ -55,6 +55,40 @@ describe("WebGPU heap lowering", () => {
     expect(parameters).toEqual(snapshot.parameters);
   });
 
+  it("indexes connections by parameter without a quadratic shader scan", () => {
+    const definition = fixture();
+    const plan = compilePlan(definition);
+    const heap = buildWebGpuHeap(plan, createSnapshot(definition, 44));
+    const offsetsSection = heap.layout.sections.parameterOffsets;
+    const connectionsSection = heap.layout.sections.parameterConnections;
+    const offsets = new Uint32Array(
+      heap.bytes.buffer,
+      offsetsSection.offset,
+      offsetsSection.length,
+    );
+    const connections = new Uint32Array(
+      heap.bytes.buffer,
+      connectionsSection.offset,
+      connectionsSection.length,
+    );
+
+    expect(offsets[plan.parameterCount]).toBe(plan.connectionCount);
+    expect([...connections].sort((left, right) => left - right)).toEqual(
+      Array.from({ length: plan.connectionCount }, (_, index) => index),
+    );
+    for (let parameter = 0; parameter < plan.parameterCount; parameter += 1) {
+      const start = offsets[parameter] ?? 0;
+      const end = offsets[parameter + 1] ?? start;
+      for (let cursor = start; cursor < end; cursor += 1) {
+        expect(plan.connectionParameter[connections[cursor] ?? -1]).toBe(parameter);
+      }
+    }
+    expect(FORWARD_WGSL).toContain("config.parameterConnections + cursor");
+    expect(FORWARD_WGSL).not.toContain(
+      "connection < config.connectionCount; connection += 1u",
+    );
+  });
+
   it("guards every over-dispatched entry point", () => {
     expect(FORWARD_WGSL).toContain("if (unit >= config.unitCount)");
     expect(FORWARD_WGSL).toContain("if (localIndex >= stageLength)");

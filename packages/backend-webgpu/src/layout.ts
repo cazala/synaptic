@@ -13,6 +13,8 @@ export type HeapSectionName =
   | "connectionFrom"
   | "connectionTo"
   | "connectionParameter"
+  | "parameterOffsets"
+  | "parameterConnections"
   | "connectionDelay"
   | "connectionGater"
   | "gateDelay"
@@ -76,6 +78,8 @@ export function buildHeapLayout(plan: ExecutionPlan): WebGpuHeapLayout {
     connectionFrom: plan.connectionFrom.length,
     connectionTo: plan.connectionTo.length,
     connectionParameter: plan.connectionParameter.length,
+    parameterOffsets: plan.parameterCount + 1,
+    parameterConnections: plan.connectionCount,
     connectionDelay: plan.connectionDelay.length,
     connectionGater: plan.connectionGater.length,
     gateDelay: plan.gateDelay.length,
@@ -167,6 +171,24 @@ export function buildWebGpuHeap(
     plan.definition.topology.parameters,
     (parameter) => Number(parameter.trainable),
   );
+  const parameterOffsets = new Uint32Array(plan.parameterCount + 1);
+  for (const parameter of plan.connectionParameter) {
+    parameterOffsets[parameter + 1] = (parameterOffsets[parameter + 1] ?? 0) + 1;
+  }
+  for (let parameter = 0; parameter < plan.parameterCount; parameter += 1) {
+    parameterOffsets[parameter + 1] =
+      (parameterOffsets[parameter + 1] ?? 0) + (parameterOffsets[parameter] ?? 0);
+  }
+  const parameterCursor = parameterOffsets.slice(0, plan.parameterCount);
+  const parameterConnections = new Uint32Array(plan.connectionCount);
+  for (let connection = 0; connection < plan.connectionCount; connection += 1) {
+    const parameter = plan.connectionParameter[connection];
+    invariant(parameter !== undefined, "Connection has no parameter", "INVALID_PLAN");
+    const cursor = parameterCursor[parameter];
+    invariant(cursor !== undefined, "Parameter adjacency is invalid", "INVALID_PLAN");
+    parameterConnections[cursor] = connection;
+    parameterCursor[parameter] = cursor + 1;
+  }
 
   writeU32("stageUnits", plan.stageUnits);
   writeU32("unitActivation", plan.unitActivation);
@@ -176,6 +198,8 @@ export function buildWebGpuHeap(
   writeU32("connectionFrom", plan.connectionFrom);
   writeU32("connectionTo", plan.connectionTo);
   writeU32("connectionParameter", plan.connectionParameter);
+  writeU32("parameterOffsets", parameterOffsets);
+  writeU32("parameterConnections", parameterConnections);
   writeU32("connectionDelay", plan.connectionDelay);
   writeI32("connectionGater", plan.connectionGater);
   writeU32("gateDelay", plan.gateDelay);
@@ -196,7 +220,7 @@ export function buildWebGpuHeap(
 }
 
 export const WEBGPU_UNIFORM_STRIDE = 256;
-export const WEBGPU_UNIFORM_WORDS = 44;
+export const WEBGPU_UNIFORM_WORDS = 48;
 
 export function buildUniformRecords(
   plan: ExecutionPlan,
@@ -254,6 +278,10 @@ export function buildUniformRecords(
       layout.sections.learningRate.wordOffset,
       plan.connectionCount,
       plan.parameterCount,
+      layout.sections.parameterOffsets.wordOffset,
+      layout.sections.parameterConnections.wordOffset,
+      0,
+      0,
       0,
     ]);
   }

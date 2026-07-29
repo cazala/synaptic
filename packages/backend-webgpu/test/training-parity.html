@@ -45,17 +45,11 @@
       fixture.snapshot,
       { training: true },
     );
-    let lossDifference = 0;
-    for (const batch of fixture.sequence) {
-      const [gpuMetrics, cpuMetrics] = await Promise.all([
-        gpu.trainStep(batch, { learningRate: 0.04 }),
-        cpu.trainStep(batch, { learningRate: 0.04 }),
-      ]);
-      lossDifference = Math.max(
-        lossDifference,
-        Math.abs(gpuMetrics.loss - cpuMetrics.loss),
-      );
-    }
+    const [gpuMetrics, cpuMetrics] = await Promise.all([
+      gpu.trainSequence(fixture.sequence, { learningRate: 0.04 }),
+      cpu.trainSequence(fixture.sequence, { learningRate: 0.04 }),
+    ]);
+    const lossDifference = Math.abs(gpuMetrics.loss - cpuMetrics.loss);
     const [gpuCheckpoint, cpuCheckpoint] = await Promise.all([
       gpu.checkpoint(),
       cpu.checkpoint(),
@@ -68,9 +62,9 @@
       cpuCheckpoint,
       { training: true },
     );
-    const [restoredGpuOutput, restoredCpuOutput] = await Promise.all([
-      restoredGpu.forward(fixture.sequence[0].input),
-      restoredCpu.forward(fixture.sequence[0].input),
+    const [restoredGpuOutputs, restoredCpuOutputs] = await Promise.all([
+      restoredGpu.forwardSequence(fixture.sequence.map(({ input }) => input)),
+      restoredCpu.forwardSequence(fixture.sequence.map(({ input }) => input)),
     ]);
     const sharedFixture = sharedParameterFixture();
     const sharedPlan = compilePlan(sharedFixture.definition);
@@ -83,8 +77,14 @@
       { training: true },
     );
     await Promise.all([
-      sharedGpu.trainStep(sharedFixture.sequence[0], { learningRate: 0.1 }),
-      sharedCpu.trainStep(sharedFixture.sequence[0], { learningRate: 0.1 }),
+      sharedGpu.trainSequence(sharedFixture.sequence, {
+        learningRate: 0.1,
+        metrics: "none",
+      }),
+      sharedCpu.trainSequence(sharedFixture.sequence, {
+        learningRate: 0.1,
+        metrics: "none",
+      }),
     ]);
     const [sharedGpuSnapshot, sharedCpuSnapshot] = await Promise.all([
       sharedGpu.snapshot(),
@@ -93,6 +93,7 @@
     result.textContent = JSON.stringify({
       backend: gpu.backend,
       lossDifference,
+      sequenceSteps: gpuMetrics.steps,
       parameterDifference: maxDifference(
         gpuCheckpoint.parameters,
         cpuCheckpoint.parameters,
@@ -114,8 +115,8 @@
         cpuCheckpoint.runtime.error,
       ),
       restoredOutputDifference: maxDifference(
-        restoredGpuOutput.data,
-        restoredCpuOutput.data,
+        restoredGpuOutputs.flatMap(({ data }) => [...data]),
+        restoredCpuOutputs.flatMap(({ data }) => [...data]),
       ),
       sharedParameterDifference: maxDifference(
         sharedGpuSnapshot.parameters,

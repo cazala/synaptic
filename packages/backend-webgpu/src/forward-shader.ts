@@ -43,7 +43,11 @@ struct Config {
   learningRate: u32,
   connectionCount: u32,
   parameterCount: u32,
+  parameterOffsets: u32,
+  parameterConnections: u32,
   padding0: u32,
+  padding1: u32,
+  padding2: u32,
 }
 
 @group(0) @binding(0) var<storage, read_write> heap: array<u32>;
@@ -342,10 +346,11 @@ fn updateParameters(@builtin(global_invocation_id) invocation: vec3<u32>) {
     return;
   }
   var gradient = 0.0;
-  for (var connection = 0u; connection < config.connectionCount; connection += 1u) {
-    if (heap[config.connectionParameter + connection] == parameter) {
-      gradient += readF32(config.connectionGradient, connection);
-    }
+  let start = heap[config.parameterOffsets + parameter];
+  let end = heap[config.parameterOffsets + parameter + 1u];
+  for (var cursor = start; cursor < end; cursor += 1u) {
+    let connection = heap[config.parameterConnections + cursor];
+    gradient += readF32(config.connectionGradient, connection);
   }
   let learningRate = readF32(config.learningRate, 0u);
   writeF32(
