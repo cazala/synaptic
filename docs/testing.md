@@ -119,11 +119,13 @@ The first four pages are polished interactive examples:
   targets, distractors, prompts, silence, and recall errors visible.
 - Learn to paint is inspired by the original gh-pages demo. A 180→48→3 neural
   field receives only a Fourier encoding of `(x, y)` coordinates and
-  continuously learns the bundled portrait at 64×64. Play/pause controls the
-  loop. Its UI reports error, elapsed time, and GPU submissions so batching is
-  observable: 4,096 online updates cross the queue in one training submission
-  per epoch, and all 4,096 preview pixels return through one inference
-  submission and readback.
+  continuously learns and displays the bundled portrait at its native 400×400.
+  Play/pause controls the loop. Its UI reports sampled error, elapsed time, and
+  GPU submissions so batching is observable: 4,096 distributed
+  full-resolution updates cross the queue in one training submission per
+  epoch, while 8,100 evenly distributed preview samples return through one
+  inference submission and readback. The network preview is smoothly resolved
+  into the native 400×400 output canvas every epoch.
 
 Browser console errors or non-pass smoke results fail the hardware check.
 
