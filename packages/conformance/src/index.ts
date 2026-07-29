@@ -10,6 +10,8 @@ import {
 } from "@synaptic/core";
 import { dense, input, lstm, sequential } from "@synaptic/layers";
 
+export * from "./learning.js";
+
 export interface ConformanceFixture {
   readonly definition: ModelDefinition;
   readonly snapshot: ModelSnapshot;

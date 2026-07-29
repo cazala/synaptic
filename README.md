@@ -171,7 +171,7 @@ lossless conversion.
 | `@synaptic/backend-wasm` | Persistent scalar/SIMD WebAssembly runtime |
 | `@synaptic/backend-webgpu` | WGSL compute runtime and fallbacks |
 | `@synaptic/compat-v1` | Synaptic v1 importer |
-| `@synaptic/conformance` | Shared backend fixtures and parity tests |
+| `@synaptic/conformance` | Shared parity fixtures and seeded learning workloads |
 
 ## Documentation
 

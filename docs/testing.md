@@ -26,6 +26,7 @@ The suite covers:
 - recurrent state, gates, eligibility traces, extended traces, and errors;
 - tied-parameter gradient reduction;
 - cross-backend checkpoint restoration;
+- seeded XOR, MNIST, and discrete sequence recall learning;
 - WebGPU heap offsets and uniform records;
 - fallback ordering, disabled fallback, ownership, and disposal;
 - Synaptic v1 fixture import and unsupported-format rejection;
@@ -46,6 +47,27 @@ compared at semantic boundaries rather than only final output:
 Paper is the reference. Production f32 comparisons use tolerances appropriate
 for differences in legal floating-point operation ordering.
 
+## Learning workloads
+
+`@synaptic/conformance` contains three deterministic functional workloads. The
+regular test suite runs each one from the same seeded initialization on Paper,
+CPU, and Wasm:
+
+- XOR trains a 2-3-1 perceptron and must classify all four inputs with outputs
+  beyond the `0.1`/`0.9` margins.
+- MNIST uses `mnist@1.1.0`, takes 15 training and 5 disjoint test images for
+  each of all ten classes, downsamples them from 28×28 to 7×7, and requires at
+  least 85% training and 80% held-out accuracy.
+- Discrete sequence recall reproduces the `gh-pages` demo vocabulary: targets
+  2 and 4, distractors 3 and 5, prompts 0 and 1, and length-10 sequences. A
+  seeded length curriculum trains a 6-4-2 LSTM; 100 separately seeded
+  validation sequences require at least 95% prompt and whole-sequence
+  accuracy.
+
+These are bounded regression tests, not representative accuracy benchmarks.
+The dataset split, ordering, initialization, and validation sequences are fixed
+so a backend regression cannot hide behind favorable random sampling.
+
 ## Browser WebGPU smoke tests
 
 WebGPU needs a real adapter; Node-only CI tests validate layout, support
@@ -63,10 +85,13 @@ Then open:
 - `http://localhost:4173/packages/backend-webgpu/test/shader-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/forward-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/training-parity.html`
+- `http://localhost:4173/packages/backend-webgpu/test/learning-workloads.html`
 
 The pages compile every WGSL entry point and compare forward, recurrent,
-training, trace, and shared-parameter behavior with CPU. Browser console errors
-or non-pass results fail the smoke check.
+training, trace, and shared-parameter behavior with CPU. The learning page runs
+the same XOR, MNIST, and sequence-recall helpers as the Node suite with fallback
+disabled, so its reported backend must be `webgpu`. Browser console errors or
+non-pass results fail the smoke check.
 
 ## Adding backend behavior
 

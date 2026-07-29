@@ -24,6 +24,10 @@ export interface LstmOptions {
   readonly units: number;
   readonly peepholes?: boolean;
   readonly bias?: boolean;
+  readonly inputBias?: number;
+  readonly forgetBias?: number;
+  readonly memoryBias?: number;
+  readonly outputBias?: number;
   readonly label?: string;
 }
 
@@ -164,10 +168,34 @@ export function lstm(options: LstmOptions): LayerMacro {
 
       if (options.bias ?? true) {
         const bias = graph.constant(1);
-        connectBias(graph, bias, inputGate, 0, `${prefix}.input-bias`);
-        connectBias(graph, bias, forgetGate, 1, `${prefix}.forget-bias`);
-        connectBias(graph, bias, memory, 0, `${prefix}.memory-bias`);
-        connectBias(graph, bias, outputGate, 0, `${prefix}.output-bias`);
+        connectBias(
+          graph,
+          bias,
+          inputGate,
+          options.inputBias ?? 0,
+          `${prefix}.input-bias`,
+        );
+        connectBias(
+          graph,
+          bias,
+          forgetGate,
+          options.forgetBias ?? 1,
+          `${prefix}.forget-bias`,
+        );
+        connectBias(
+          graph,
+          bias,
+          memory,
+          options.memoryBias ?? 0,
+          `${prefix}.memory-bias`,
+        );
+        connectBias(
+          graph,
+          bias,
+          outputGate,
+          options.outputBias ?? 0,
+          `${prefix}.output-bias`,
+        );
       }
 
       return {

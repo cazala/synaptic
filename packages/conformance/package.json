@@ -26,7 +26,8 @@
     "@synaptic/backend-cpu": "2.0.0-alpha.0",
     "@synaptic/backend-paper": "2.0.0-alpha.0",
     "@synaptic/backend-wasm": "2.0.0-alpha.0",
-    "@synaptic/backend-webgpu": "2.0.0-alpha.0"
+    "@synaptic/backend-webgpu": "2.0.0-alpha.0",
+    "mnist": "1.1.0"
   },
   "engines": {
     "node": ">=20"

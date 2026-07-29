@@ -47,4 +47,35 @@ describe("layer macros", () => {
       }),
     ).toBe(true);
   });
+
+  it("allows each LSTM gate bias initializer to be tuned", () => {
+    const definition = sequential(
+      input({ size: 1 }),
+      lstm({
+        units: 1,
+        inputBias: -1,
+        forgetBias: 3,
+        memoryBias: 0.25,
+        outputBias: 2,
+      }),
+      dense({ units: 1 }),
+    );
+    const initializers = Object.fromEntries(
+      definition.topology.parameters
+        .filter((parameter) => parameter.label?.includes("-bias"))
+        .map((parameter) => [
+          parameter.label,
+          parameter.initializer.kind === "constant"
+            ? parameter.initializer.value
+            : undefined,
+        ]),
+    );
+
+    expect(initializers).toMatchObject({
+      "lstm.input-bias": -1,
+      "lstm.forget-bias": 3,
+      "lstm.memory-bias": 0.25,
+      "lstm.output-bias": 2,
+    });
+  });
 });
