@@ -1,8 +1,10 @@
 import {
   SynapticError,
   compilePlan,
+  copyOptimizerState,
   invariant,
   readTensor,
+  validateCheckpoint,
   validateSnapshot,
   type Backend,
   type CompileOptions,
@@ -137,6 +139,9 @@ export class WasmBackend implements Backend {
     options: CompileOptions = {},
   ): Promise<Session> {
     validateSnapshot(plan, snapshot);
+    if ("runtime" in snapshot) {
+      validateCheckpoint(plan, snapshot as ModelCheckpoint);
+    }
     const report = this.inspect(plan, options);
     if (!report.supported) {
       throw new SynapticError("The WebAssembly backend cannot compile this plan", "UNSUPPORTED_PLAN", {
@@ -145,12 +150,16 @@ export class WasmBackend implements Backend {
     }
     invariant(snapshot.parameters instanceof Float32Array, "Wasm parameters must use f32 storage", "PRECISION_MISMATCH");
     const runtime = await instantiateBestRuntime();
-    return new WasmSession(
+    const session = new WasmSession(
       plan,
       { definition: snapshot.definition, parameters: snapshot.parameters },
       runtime.exports,
       runtime.variant,
     );
+    if ("runtime" in snapshot) {
+      await session.restore(snapshot as ModelCheckpoint);
+    }
+    return session;
   }
 }
 
@@ -163,6 +172,9 @@ export class WasmSession implements Session {
   readonly #targetView: Float32Array;
   readonly #outputView: Float32Array;
   #runtime: RuntimeExports | undefined;
+  #optimizer: ModelCheckpoint["optimizer"];
+  #randomSeed = 0;
+  #randomCounter = 0;
 
   constructor(
     plan: ExecutionPlan,
@@ -267,6 +279,36 @@ export class WasmSession implements Session {
 
   async resetState(): Promise<void> {
     this.#assertActive().resetState();
+    this.#randomCounter = 0;
+  }
+
+  async restore(checkpoint: ModelCheckpoint): Promise<void> {
+    const runtime = this.#assertActive();
+    validateCheckpoint(this.#plan, checkpoint);
+    invariant(
+      checkpoint.parameters instanceof Float32Array,
+      "Wasm checkpoints must use f32 storage",
+      "PRECISION_MISMATCH",
+    );
+    const state = checkpoint.runtime;
+    runtime.restoreState(
+      checkpoint.parameters,
+      state.state as Float32Array,
+      state.activation as Float32Array,
+      state.previousActivation as Float32Array,
+      state.derivative as Float32Array,
+      state.eligibilityTrace as Float32Array,
+      state.extendedEligibilityTrace as Float32Array,
+      state.projectedError as Float32Array,
+      state.gatedError as Float32Array,
+      state.error as Float32Array,
+      state.step,
+    );
+    this.#randomSeed = state.randomSeed;
+    this.#randomCounter = state.randomCounter;
+    this.#optimizer = checkpoint.optimizer === undefined
+      ? undefined
+      : copyOptimizerState(checkpoint.optimizer);
   }
 
   async snapshot(): Promise<ModelSnapshot> {
@@ -283,6 +325,9 @@ export class WasmSession implements Session {
       definition: this.#definition,
       parameters: runtime.getParameters(),
       runtime: this.#runtimeState(runtime),
+      ...(this.#optimizer === undefined
+        ? {}
+        : { optimizer: copyOptimizerState(this.#optimizer) }),
     };
   }
 
@@ -302,8 +347,8 @@ export class WasmSession implements Session {
       gatedError: runtime.getGatedError(),
       error: runtime.getError(),
       step: runtime.getStep(),
-      randomSeed: 0,
-      randomCounter: 0,
+      randomSeed: this.#randomSeed,
+      randomCounter: this.#randomCounter,
     };
   }
 

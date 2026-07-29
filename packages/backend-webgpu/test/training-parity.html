@@ -60,6 +60,18 @@
       gpu.checkpoint(),
       cpu.checkpoint(),
     ]);
+    const restoredGpu = await new WebGpuBackend({
+      fallbackBackends: [],
+    }).compile(plan, cpuCheckpoint, { training: true });
+    const restoredCpu = await new CpuBackend().compile(
+      plan,
+      cpuCheckpoint,
+      { training: true },
+    );
+    const [restoredGpuOutput, restoredCpuOutput] = await Promise.all([
+      restoredGpu.forward(fixture.sequence[0].input),
+      restoredCpu.forward(fixture.sequence[0].input),
+    ]);
     const sharedFixture = sharedParameterFixture();
     const sharedPlan = compilePlan(sharedFixture.definition);
     const sharedGpu = await new WebGpuBackend({
@@ -101,6 +113,10 @@
         gpuCheckpoint.runtime.error,
         cpuCheckpoint.runtime.error,
       ),
+      restoredOutputDifference: maxDifference(
+        restoredGpuOutput.data,
+        restoredCpuOutput.data,
+      ),
       sharedParameterDifference: maxDifference(
         sharedGpuSnapshot.parameters,
         sharedCpuSnapshot.parameters,
@@ -109,6 +125,8 @@
     });
     gpu.dispose();
     cpu.dispose();
+    restoredGpu.dispose();
+    restoredCpu.dispose();
     sharedGpu.dispose();
     sharedCpu.dispose();
   } catch (error) {

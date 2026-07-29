@@ -3,17 +3,17 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "tsBuildInfoFile": "dist/.tsbuildinfo"
+    "tsBuildInfoFile": "../../.cache/typescript/compat-v1.tsbuildinfo"
   },
   "references": [
     {
       "path": "../core"
-    },
-    {
-      "path": "../backend-cpu"
     }
   ],
   "include": [
     "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.test.ts"
   ]
 }

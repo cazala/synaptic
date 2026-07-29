@@ -107,6 +107,32 @@ export async function instantiate(module, imports = {}) {
         __release(input);
       }
     },
+    restoreState(nextParameters, nextState, nextActivation, nextPreviousActivation, nextDerivative, nextEligibilityTrace, nextExtendedEligibilityTrace, nextProjectedError, nextGatedError, nextError, nextStep) {
+      // packages/backend-wasm/assembly/runtime/restoreState(~lib/typedarray/Float32Array, ~lib/typedarray/Float32Array, ~lib/typedarray/Float32Array, ~lib/typedarray/Float32Array, ~lib/typedarray/Float32Array, ~lib/typedarray/Float32Array, ~lib/typedarray/Float32Array, ~lib/typedarray/Float32Array, ~lib/typedarray/Float32Array, ~lib/typedarray/Float32Array, i32) => void
+      nextParameters = __retain(__lowerTypedArray(Float32Array, 4, 2, nextParameters) || __notnull());
+      nextState = __retain(__lowerTypedArray(Float32Array, 4, 2, nextState) || __notnull());
+      nextActivation = __retain(__lowerTypedArray(Float32Array, 4, 2, nextActivation) || __notnull());
+      nextPreviousActivation = __retain(__lowerTypedArray(Float32Array, 4, 2, nextPreviousActivation) || __notnull());
+      nextDerivative = __retain(__lowerTypedArray(Float32Array, 4, 2, nextDerivative) || __notnull());
+      nextEligibilityTrace = __retain(__lowerTypedArray(Float32Array, 4, 2, nextEligibilityTrace) || __notnull());
+      nextExtendedEligibilityTrace = __retain(__lowerTypedArray(Float32Array, 4, 2, nextExtendedEligibilityTrace) || __notnull());
+      nextProjectedError = __retain(__lowerTypedArray(Float32Array, 4, 2, nextProjectedError) || __notnull());
+      nextGatedError = __retain(__lowerTypedArray(Float32Array, 4, 2, nextGatedError) || __notnull());
+      nextError = __lowerTypedArray(Float32Array, 4, 2, nextError) || __notnull();
+      try {
+        exports.restoreState(nextParameters, nextState, nextActivation, nextPreviousActivation, nextDerivative, nextEligibilityTrace, nextExtendedEligibilityTrace, nextProjectedError, nextGatedError, nextError, nextStep);
+      } finally {
+        __release(nextParameters);
+        __release(nextState);
+        __release(nextActivation);
+        __release(nextPreviousActivation);
+        __release(nextDerivative);
+        __release(nextEligibilityTrace);
+        __release(nextExtendedEligibilityTrace);
+        __release(nextProjectedError);
+        __release(nextGatedError);
+      }
+    },
     getParameters() {
       // packages/backend-wasm/assembly/runtime/getParameters() => ~lib/typedarray/Float32Array
       return __liftTypedArray(Float32Array, exports.getParameters() >>> 0);

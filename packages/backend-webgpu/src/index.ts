@@ -2,8 +2,10 @@ import { CpuBackend } from "@synaptic/backend-cpu";
 import { WasmBackend } from "@synaptic/backend-wasm";
 import {
   SynapticError,
+  copyOptimizerState,
   invariant,
   readTensor,
+  validateCheckpoint,
   validateSnapshot,
   type Backend,
   type CompileOptions,
@@ -108,6 +110,9 @@ export class WebGpuBackend implements Backend {
     options: CompileOptions = {},
   ): Promise<Session> {
     validateSnapshot(plan, snapshot);
+    if ("runtime" in snapshot) {
+      validateCheckpoint(plan, snapshot as ModelCheckpoint);
+    }
     const report = this.inspect(plan, options);
     if (report.supported && this.#gpu !== undefined) {
       try {
@@ -118,7 +123,16 @@ export class WebGpuBackend implements Backend {
         });
         invariant(adapter !== null, "No suitable WebGPU adapter is available", "WEBGPU_ADAPTER_UNAVAILABLE");
         const device = await adapter.requestDevice();
-        return await WebGpuSession.create(plan, snapshot, device);
+        const session = await WebGpuSession.create(plan, snapshot, device);
+        try {
+          if ("runtime" in snapshot) {
+            await session.restore(snapshot as ModelCheckpoint);
+          }
+          return session;
+        } catch (error) {
+          session.dispose();
+          throw error;
+        }
       } catch (error) {
         return this.#compileFallback(plan, snapshot, options, [
           ...report.issues,
@@ -188,6 +202,9 @@ export class WebGpuSession implements Session {
   readonly #pipelines: WebGpuPipelines;
   readonly #uncapturedErrorHandler: EventListener;
   #step = 0;
+  #randomSeed = 0;
+  #randomCounter = 0;
+  #optimizer: ModelCheckpoint["optimizer"];
   #busy = false;
   #disposed = false;
   #lostError: SynapticError | undefined;
@@ -542,6 +559,45 @@ export class WebGpuSession implements Session {
       );
     }
     this.#step = 0;
+    this.#randomCounter = 0;
+  }
+
+  async restore(checkpoint: ModelCheckpoint): Promise<void> {
+    this.#assertAvailable();
+    invariant(!this.#busy, "WebGPU session operations must be awaited", "SESSION_BUSY");
+    validateCheckpoint(this.#plan, checkpoint);
+    invariant(
+      checkpoint.parameters instanceof Float32Array,
+      "WebGPU checkpoints must use f32 storage",
+      "PRECISION_MISMATCH",
+    );
+    const values = {
+      parameters: checkpoint.parameters,
+      state: checkpoint.runtime.state,
+      activation: checkpoint.runtime.activation,
+      previousActivation: checkpoint.runtime.previousActivation,
+      derivative: checkpoint.runtime.derivative,
+      eligibilityTrace: checkpoint.runtime.eligibilityTrace,
+      extendedEligibilityTrace: checkpoint.runtime.extendedEligibilityTrace,
+      projectedError: checkpoint.runtime.projectedError,
+      gatedError: checkpoint.runtime.gatedError,
+      error: checkpoint.runtime.error,
+    } as const;
+    for (const [name, data] of Object.entries(values) as [
+      keyof typeof values,
+      Float32Array,
+    ][]) {
+      const section = this.#heap.layout.sections[name];
+      if (section.byteLength > 0) {
+        this.#device.queue.writeBuffer(this.#heapBuffer, section.offset, data);
+      }
+    }
+    this.#step = checkpoint.runtime.step;
+    this.#randomSeed = checkpoint.runtime.randomSeed;
+    this.#randomCounter = checkpoint.runtime.randomCounter;
+    this.#optimizer = checkpoint.optimizer === undefined
+      ? undefined
+      : copyOptimizerState(checkpoint.optimizer);
   }
 
   async snapshot(): Promise<ModelSnapshot> {
@@ -613,13 +669,16 @@ export class WebGpuSession implements Session {
         gatedError: copySection("gatedError"),
         error: copySection("error"),
         step: this.#step,
-        randomSeed: 0,
-        randomCounter: 0,
+        randomSeed: this.#randomSeed,
+        randomCounter: this.#randomCounter,
       };
       return {
         definition: this.#definition,
         parameters: copySection("parameters"),
         runtime,
+        ...(this.#optimizer === undefined
+          ? {}
+          : { optimizer: copyOptimizerState(this.#optimizer) }),
       };
     } finally {
       readback.destroy();

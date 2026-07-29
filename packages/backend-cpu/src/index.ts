@@ -1,10 +1,13 @@
 import {
   SynapticError,
   compilePlan,
+  copyOptimizerState,
   createCheckpoint,
   createRuntimeState,
   invariant,
   readTensor,
+  restoreRuntimeState,
+  validateCheckpoint,
   validateSnapshot,
   type Backend,
   type CompileOptions,
@@ -58,6 +61,9 @@ export class CpuBackend implements Backend {
     options: CompileOptions = {},
   ): Promise<Session> {
     validateSnapshot(plan, snapshot);
+    if ("runtime" in snapshot) {
+      validateCheckpoint(plan, snapshot as ModelCheckpoint);
+    }
     const report = this.inspect(plan, options);
     if (!report.supported) {
       throw new SynapticError("The CPU backend cannot compile this plan", "UNSUPPORTED_PLAN", {
@@ -65,7 +71,11 @@ export class CpuBackend implements Backend {
       });
     }
     invariant(snapshot.parameters instanceof Float32Array, "CPU parameters must use f32 storage", "PRECISION_MISMATCH");
-    return new CpuSession(plan, snapshot);
+    const session = new CpuSession(plan, snapshot);
+    if ("runtime" in snapshot) {
+      await session.restore(snapshot as ModelCheckpoint);
+    }
+    return session;
   }
 }
 
@@ -78,6 +88,7 @@ export class CpuSession implements Session {
   readonly #inputSlot: Int32Array;
   readonly #outputSlot: Int32Array;
   readonly #denseStages: ReadonlyMap<number, DenseStageSpecialization>;
+  #optimizer: ModelCheckpoint["optimizer"];
   #disposed = false;
 
   constructor(plan: ExecutionPlan, snapshot: ModelSnapshot) {
@@ -184,6 +195,16 @@ export class CpuSession implements Session {
     runtime.randomCounter = 0;
   }
 
+  async restore(checkpoint: ModelCheckpoint): Promise<void> {
+    this.#assertActive();
+    validateCheckpoint(this.#plan, checkpoint);
+    this.#parameters.set(checkpoint.parameters);
+    restoreRuntimeState(this.#runtime, checkpoint.runtime);
+    this.#optimizer = checkpoint.optimizer === undefined
+      ? undefined
+      : copyOptimizerState(checkpoint.optimizer);
+  }
+
   async snapshot(): Promise<ModelSnapshot> {
     this.#assertActive();
     return { definition: this.#definition, parameters: this.#parameters.slice() };
@@ -194,6 +215,7 @@ export class CpuSession implements Session {
     return createCheckpoint(
       { definition: this.#definition, parameters: this.#parameters },
       this.#runtime,
+      this.#optimizer,
     );
   }
 

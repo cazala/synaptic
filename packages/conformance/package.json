@@ -3,18 +3,33 @@
   "version": "2.0.0-alpha.0",
   "private": true,
   "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js"
     }
   },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b"
+  },
   "dependencies": {
+    "@synaptic/core": "2.0.0-alpha.0",
+    "@synaptic/layers": "2.0.0-alpha.0"
+  },
+  "devDependencies": {
     "@synaptic/backend-cpu": "2.0.0-alpha.0",
     "@synaptic/backend-paper": "2.0.0-alpha.0",
     "@synaptic/backend-wasm": "2.0.0-alpha.0",
-    "@synaptic/backend-webgpu": "2.0.0-alpha.0",
-    "@synaptic/core": "2.0.0-alpha.0",
-    "@synaptic/layers": "2.0.0-alpha.0"
-  }
+    "@synaptic/backend-webgpu": "2.0.0-alpha.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
 }

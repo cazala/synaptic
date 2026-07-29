@@ -71,12 +71,24 @@ export function copyRuntimeState(runtime: MutableRuntimeState): RuntimeState {
 export function createCheckpoint(
   snapshot: ModelSnapshot,
   runtime: MutableRuntimeState,
+  optimizer?: ModelCheckpoint["optimizer"],
 ): ModelCheckpoint {
   return {
     definition: snapshot.definition,
     parameters: snapshot.parameters.slice(),
     runtime: copyRuntimeState(runtime),
+    ...(optimizer === undefined
+      ? {}
+      : { optimizer: copyOptimizerState(optimizer) }),
   };
+}
+
+export function copyOptimizerState(
+  optimizer: NonNullable<ModelCheckpoint["optimizer"]>,
+): Readonly<Record<string, NumericArray>> {
+  return Object.fromEntries(
+    Object.entries(optimizer).map(([name, values]) => [name, values.slice()]),
+  );
 }
 
 export function validateSnapshot(plan: ExecutionPlan, snapshot: ModelSnapshot): void {
@@ -98,6 +110,105 @@ export function validateSnapshot(plan: ExecutionPlan, snapshot: ModelSnapshot): 
     "Snapshot parameter storage does not match its declared precision",
     "PRECISION_MISMATCH",
   );
+}
+
+export function validateCheckpoint(
+  plan: ExecutionPlan,
+  checkpoint: ModelCheckpoint,
+): void {
+  validateSnapshot(plan, checkpoint);
+  const expectedLengths: Readonly<Record<keyof Omit<RuntimeState, "step" | "randomSeed" | "randomCounter">, number>> = {
+    state: plan.unitCount,
+    activation: plan.unitCount,
+    previousActivation: plan.unitCount,
+    derivative: plan.unitCount,
+    eligibilityTrace: plan.connectionCount,
+    extendedEligibilityTrace: plan.extendedTraceTarget.length,
+    projectedError: plan.unitCount,
+    gatedError: plan.unitCount,
+    error: plan.unitCount,
+  };
+  for (const [name, expected] of Object.entries(expectedLengths)) {
+    const values = checkpoint.runtime[
+      name as keyof typeof expectedLengths
+    ];
+    invariant(
+      values.length === expected,
+      `Checkpoint runtime field ${name} has the wrong length`,
+      "CHECKPOINT_SIZE_MISMATCH",
+      { actual: values.length, expected, name },
+    );
+    invariant(
+      checkpoint.definition.precision === "f32"
+        ? values instanceof Float32Array
+        : values instanceof Float64Array,
+      `Checkpoint runtime field ${name} has the wrong precision`,
+      "PRECISION_MISMATCH",
+      { name },
+    );
+    for (let index = 0; index < values.length; index += 1) {
+      invariant(
+        Number.isFinite(values[index]),
+        `Checkpoint runtime field ${name} contains a non-finite value`,
+        "NON_FINITE_CHECKPOINT",
+        { index, name },
+      );
+    }
+  }
+  invariant(
+    Number.isSafeInteger(checkpoint.runtime.step) && checkpoint.runtime.step >= 0,
+    "Checkpoint step must be a non-negative safe integer",
+    "INVALID_CHECKPOINT_COUNTER",
+  );
+  invariant(
+    Number.isSafeInteger(checkpoint.runtime.randomSeed)
+      && checkpoint.runtime.randomSeed >= 0
+      && checkpoint.runtime.randomSeed <= 0xffff_ffff,
+    "Checkpoint random seed must be an unsigned 32-bit integer",
+    "INVALID_CHECKPOINT_COUNTER",
+  );
+  invariant(
+    Number.isSafeInteger(checkpoint.runtime.randomCounter)
+      && checkpoint.runtime.randomCounter >= 0,
+    "Checkpoint random counter must be a non-negative safe integer",
+    "INVALID_CHECKPOINT_COUNTER",
+  );
+  for (const [name, values] of Object.entries(checkpoint.optimizer ?? {})) {
+    invariant(name.length > 0, "Optimizer buffer names cannot be empty", "INVALID_BUFFER_NAME");
+    invariant(
+      checkpoint.definition.precision === "f32"
+        ? values instanceof Float32Array
+        : values instanceof Float64Array,
+      `Optimizer buffer ${name} has the wrong precision`,
+      "PRECISION_MISMATCH",
+    );
+    for (let index = 0; index < values.length; index += 1) {
+      invariant(
+        Number.isFinite(values[index]),
+        `Optimizer buffer ${name} contains a non-finite value`,
+        "NON_FINITE_CHECKPOINT",
+        { index, name },
+      );
+    }
+  }
+}
+
+export function restoreRuntimeState(
+  target: MutableRuntimeState,
+  source: RuntimeState,
+): void {
+  target.state.set(source.state);
+  target.activation.set(source.activation);
+  target.previousActivation.set(source.previousActivation);
+  target.derivative.set(source.derivative);
+  target.eligibilityTrace.set(source.eligibilityTrace);
+  target.extendedEligibilityTrace.set(source.extendedEligibilityTrace);
+  target.projectedError.set(source.projectedError);
+  target.gatedError.set(source.gatedError);
+  target.error.set(source.error);
+  target.step = source.step;
+  target.randomSeed = source.randomSeed >>> 0;
+  target.randomCounter = source.randomCounter;
 }
 
 export function readTensor(values: TensorLike, expectedLength: number, name: string): Float32Array {

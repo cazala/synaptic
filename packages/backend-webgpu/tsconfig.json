@@ -3,12 +3,12 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "tsBuildInfoFile": "dist/.tsbuildinfo"
+    "tsBuildInfoFile": "../../.cache/typescript/backend-webgpu.tsbuildinfo"
   },
   "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"],
   "references": [
     { "path": "../core" },
-    { "path": "../layers" },
     { "path": "../backend-cpu" },
     { "path": "../backend-wasm" }
   ]

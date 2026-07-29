@@ -106,3 +106,75 @@ describe("shared parameter conformance", () => {
     expect(results[0]?.checkpoint.parameters[0]).toBeCloseTo(-1, 6);
   });
 });
+
+describe("portable checkpoint restoration", () => {
+  it("resumes recurrent execution identically across production and oracle backends", async () => {
+    const fixture = recurrentFixture();
+    const plan = compilePlan(fixture.definition);
+    const source = await new CpuBackend().compile(
+      plan,
+      fixture.snapshot,
+      { training: true },
+    );
+    await source.trainStep(
+      fixture.sequence[0]!,
+      { learningRate: 0.04 },
+    );
+    await source.trainStep(
+      fixture.sequence[1]!,
+      { learningRate: 0.04 },
+    );
+    const checkpoint = {
+      ...await source.checkpoint(),
+      optimizer: {
+        momentum: new Float32Array(plan.parameterCount).fill(0.125),
+      },
+    };
+    source.dispose();
+
+    const sessions = await Promise.all([
+      new PaperBackend().compile(plan, checkpoint, { training: true }),
+      new CpuBackend().compile(plan, checkpoint, { training: true }),
+      new WasmBackend().compile(plan, checkpoint, { training: true }),
+    ]);
+    const outputs = await Promise.all(
+      sessions.map((session) => session.forward(fixture.sequence[2]!.input)),
+    );
+    expectArrayClose(outputs[1]!.data, outputs[0]!.data, 5);
+    expectArrayClose(outputs[2]!.data, outputs[0]!.data, 5);
+
+    const restored = await Promise.all(
+      sessions.map((session) => session.checkpoint()),
+    );
+    expectResultClose(
+      { backend: "cpu", outputs: [], losses: [], checkpoint: restored[1]! },
+      { backend: "paper", outputs: [], losses: [], checkpoint: restored[0]! },
+    );
+    expectResultClose(
+      { backend: "wasm", outputs: [], losses: [], checkpoint: restored[2]! },
+      { backend: "paper", outputs: [], losses: [], checkpoint: restored[0]! },
+    );
+    expect(restored[0]!.runtime.step).toBe(checkpoint.runtime.step + 1);
+    restored.forEach((value) => {
+      expect(value.optimizer?.momentum).toEqual(checkpoint.optimizer.momentum);
+      expect(value.optimizer?.momentum).not.toBe(checkpoint.optimizer.momentum);
+    });
+    sessions.forEach((session) => session.dispose());
+  });
+
+  it("restores an existing session after reset", async () => {
+    const fixture = recurrentFixture();
+    const session = await new CpuBackend().compile(
+      compilePlan(fixture.definition),
+      fixture.snapshot,
+    );
+    await session.forward(fixture.sequence[0]!.input);
+    const checkpoint = await session.checkpoint();
+    const expected = await session.forward(fixture.sequence[1]!.input);
+    await session.resetState();
+    await session.restore(checkpoint);
+    const actual = await session.forward(fixture.sequence[1]!.input);
+    expectArrayClose(actual.data, expected.data, 7);
+    session.dispose();
+  });
+});

@@ -18,8 +18,13 @@
     "build": "tsc -b"
   },
   "dependencies": {
-    "@synaptic/backend-cpu": "2.0.0-alpha.0",
     "@synaptic/core": "2.0.0-alpha.0"
+  },
+  "devDependencies": {
+    "@synaptic/backend-cpu": "2.0.0-alpha.0"
+  },
+  "engines": {
+    "node": ">=20"
   },
   "license": "MIT"
 }

@@ -32,6 +32,7 @@ export interface Session {
   forward(input: TensorLike): Promise<Tensor>;
   trainStep(batch: TrainingBatch, options?: TrainStepOptions): Promise<Metrics>;
   resetState(): Promise<void>;
+  restore(checkpoint: ModelCheckpoint): Promise<void>;
   snapshot(): Promise<ModelSnapshot>;
   checkpoint(): Promise<ModelCheckpoint>;
   dispose(): void;

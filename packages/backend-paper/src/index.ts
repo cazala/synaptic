@@ -2,11 +2,14 @@ import {
   SynapticError,
   activate,
   compilePlan,
+  copyOptimizerState,
   createCheckpoint,
   createRuntimeState,
   derivative,
   invariant,
   readTensor,
+  restoreRuntimeState,
+  validateCheckpoint,
   validateSnapshot,
   type Backend,
   type CompileOptions,
@@ -61,13 +64,20 @@ export class PaperBackend implements Backend {
     options: CompileOptions = {},
   ): Promise<Session> {
     validateSnapshot(plan, snapshot);
+    if ("runtime" in snapshot) {
+      validateCheckpoint(plan, snapshot as ModelCheckpoint);
+    }
     const report = this.inspect(plan, options);
     if (!report.supported) {
       throw new SynapticError("The Paper backend cannot compile this plan", "UNSUPPORTED_PLAN", {
         issues: report.issues,
       });
     }
-    return new PaperSession(plan, snapshot);
+    const session = new PaperSession(plan, snapshot);
+    if ("runtime" in snapshot) {
+      await session.restore(snapshot as ModelCheckpoint);
+    }
+    return session;
   }
 }
 
@@ -80,6 +90,7 @@ export class PaperSession implements Session {
   readonly #inputSlot: Int32Array;
   readonly #outputSlot: Int32Array;
   readonly #gatedTargets: readonly number[][];
+  #optimizer: ModelCheckpoint["optimizer"];
   #disposed = false;
 
   constructor(plan: ExecutionPlan, snapshot: ModelSnapshot) {
@@ -185,6 +196,16 @@ export class PaperSession implements Session {
     runtime.randomCounter = 0;
   }
 
+  async restore(checkpoint: ModelCheckpoint): Promise<void> {
+    this.#assertActive();
+    validateCheckpoint(this.#plan, checkpoint);
+    this.#parameters.set(checkpoint.parameters);
+    restoreRuntimeState(this.#runtime, checkpoint.runtime);
+    this.#optimizer = checkpoint.optimizer === undefined
+      ? undefined
+      : copyOptimizerState(checkpoint.optimizer);
+  }
+
   async snapshot(): Promise<ModelSnapshot> {
     this.#assertActive();
     return {
@@ -201,6 +222,7 @@ export class PaperSession implements Session {
         parameters: this.#parameters,
       },
       this.#runtime,
+      this.#optimizer,
     );
   }
 

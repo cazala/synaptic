@@ -5,6 +5,7 @@
 node_modules
 coverage
 packages/*/dist
+.cache
 *.tsbuildinfo
 
 # Tmp files.

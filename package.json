@@ -4,6 +4,7 @@
   "private": true,
   "description": "Architecture-free neural networks with portable CPU, WebAssembly, and WebGPU backends",
   "type": "module",
+  "packageManager": "npm@10.9.2",
   "workspaces": [
     "packages/*"
   ],
@@ -11,10 +12,12 @@
     "build": "npm run build:wasm && tsc -b",
     "build:wasm": "node packages/backend-wasm/scripts/build.mjs",
     "benchmark:wasm": "node packages/backend-wasm/bench/compare.mjs",
-    "clean": "tsc -b --clean",
+    "clean": "node scripts/clean.mjs",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
-    "typecheck": "tsc -b --pretty false",
+    "typecheck": "tsc -b --pretty false && npm run typecheck:test",
+    "typecheck:test": "tsc -p tsconfig.test.json --pretty false",
     "check": "npm run typecheck && npm test"
   },
   "engines": {
@@ -22,6 +25,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@vitest/coverage-v8": "4.1.10",
     "@webgpu/types": "0.1.71",
     "assemblyscript": "0.28.20",
     "typescript": "7.0.2",

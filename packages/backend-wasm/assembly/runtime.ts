@@ -373,6 +373,32 @@ export function resetState(): void {
   step = 0;
 }
 
+export function restoreState(
+  nextParameters: Float32Array,
+  nextState: Float32Array,
+  nextActivation: Float32Array,
+  nextPreviousActivation: Float32Array,
+  nextDerivative: Float32Array,
+  nextEligibilityTrace: Float32Array,
+  nextExtendedEligibilityTrace: Float32Array,
+  nextProjectedError: Float32Array,
+  nextGatedError: Float32Array,
+  nextError: Float32Array,
+  nextStep: i32,
+): void {
+  parameters = nextParameters;
+  state = nextState;
+  activation = nextActivation;
+  previousActivation = nextPreviousActivation;
+  derivative = nextDerivative;
+  eligibilityTrace = nextEligibilityTrace;
+  extendedEligibilityTrace = nextExtendedEligibilityTrace;
+  projectedError = nextProjectedError;
+  gatedError = nextGatedError;
+  error = nextError;
+  step = nextStep;
+}
+
 export function getParameters(): Float32Array { return parameters; }
 export function getState(): Float32Array { return state; }
 export function getActivation(): Float32Array { return activation; }

@@ -1,6 +1,12 @@
 # Synaptic v2 architecture proposal
 
-Status: research proposal
+Status: implemented baseline; retained as the research and decision record
+
+Implementation summary: [v2 implementation status](implementation-status.md)
+
+The final baseline omits ASM.js, keeps Wasm explicit rather than auto-selecting
+it until specialization wins benchmarks, and implements portable checkpoint
+restoration across backends.
 
 Branch: `v2`
 

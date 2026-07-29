@@ -1,0 +1,39 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true,
+    "paths": {
+      "@synaptic/backend-cpu": [
+        "./packages/backend-cpu/src/index.ts"
+      ],
+      "@synaptic/backend-paper": [
+        "./packages/backend-paper/src/index.ts"
+      ],
+      "@synaptic/backend-wasm": [
+        "./packages/backend-wasm/src/index.ts"
+      ],
+      "@synaptic/backend-webgpu": [
+        "./packages/backend-webgpu/src/index.ts"
+      ],
+      "@synaptic/compat-v1": [
+        "./packages/compat-v1/src/index.ts"
+      ],
+      "@synaptic/core": [
+        "./packages/core/src/index.ts"
+      ],
+      "@synaptic/layers": [
+        "./packages/layers/src/index.ts"
+      ]
+    },
+    "types": [
+      "vitest/globals",
+      "@webgpu/types"
+    ]
+  },
+  "include": [
+    "packages/**/*.test.ts"
+  ]
+}

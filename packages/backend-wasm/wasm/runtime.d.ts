@@ -82,6 +82,21 @@ declare namespace __AdaptedExports {
    */
   export function resetState(): void;
   /**
+   * packages/backend-wasm/assembly/runtime/restoreState
+   * @param nextParameters `~lib/typedarray/Float32Array`
+   * @param nextState `~lib/typedarray/Float32Array`
+   * @param nextActivation `~lib/typedarray/Float32Array`
+   * @param nextPreviousActivation `~lib/typedarray/Float32Array`
+   * @param nextDerivative `~lib/typedarray/Float32Array`
+   * @param nextEligibilityTrace `~lib/typedarray/Float32Array`
+   * @param nextExtendedEligibilityTrace `~lib/typedarray/Float32Array`
+   * @param nextProjectedError `~lib/typedarray/Float32Array`
+   * @param nextGatedError `~lib/typedarray/Float32Array`
+   * @param nextError `~lib/typedarray/Float32Array`
+   * @param nextStep `i32`
+   */
+  export function restoreState(nextParameters: Float32Array, nextState: Float32Array, nextActivation: Float32Array, nextPreviousActivation: Float32Array, nextDerivative: Float32Array, nextEligibilityTrace: Float32Array, nextExtendedEligibilityTrace: Float32Array, nextProjectedError: Float32Array, nextGatedError: Float32Array, nextError: Float32Array, nextStep: number): void;
+  /**
    * packages/backend-wasm/assembly/runtime/getParameters
    * @returns `~lib/typedarray/Float32Array`
    */
