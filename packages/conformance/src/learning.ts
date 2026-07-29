@@ -169,8 +169,15 @@ async function evaluateMnist(
   examples: readonly MnistExample[],
 ): Promise<number> {
   let correct = 0;
-  for (const example of examples) {
-    const output = await session.forward(example.input);
+  const outputs = await session.forwardSequence(
+    examples.map(({ input }) => input),
+  );
+  for (let index = 0; index < examples.length; index += 1) {
+    const example = examples[index];
+    const output = outputs[index];
+    if (example === undefined || output === undefined) {
+      continue;
+    }
     correct += argmax(output.data) === example.label ? 1 : 0;
   }
   return correct / examples.length;
@@ -281,22 +288,29 @@ export async function runXorLearning(
   );
   try {
     for (let epoch = 0; epoch < epochs; epoch += 1) {
-      for (let offset = 0; offset < XOR_SAMPLES.length; offset += 1) {
-        const sample = XOR_SAMPLES[(epoch + offset) % XOR_SAMPLES.length];
-        if (sample !== undefined) {
-          await session.trainStep(sample, { learningRate });
-        }
-      }
+      const sequence = XOR_SAMPLES.map(
+        (_, offset) => XOR_SAMPLES[(epoch + offset) % XOR_SAMPLES.length],
+      ).filter((sample) => sample !== undefined);
+      await session.trainSequence(sequence, {
+        learningRate,
+        metrics: "none",
+      });
       if ((epoch + 1) % 100 === 0 || epoch + 1 === epochs) {
         notify(options.onProgress, "xor", "train", epoch + 1, epochs);
       }
     }
 
-    const outputs: number[] = [];
+    const predicted = await session.forwardSequence(
+      XOR_SAMPLES.map(({ input }) => input),
+    );
+    const outputs = predicted.map((output) => output.data[0] ?? 0);
     let correct = 0;
-    for (const sample of XOR_SAMPLES) {
-      const value = (await session.forward(sample.input)).data[0] ?? 0;
-      outputs.push(value);
+    for (let index = 0; index < XOR_SAMPLES.length; index += 1) {
+      const sample = XOR_SAMPLES[index];
+      const value = outputs[index] ?? 0;
+      if (sample === undefined) {
+        continue;
+      }
       correct += Math.round(value) === sample.target[0] ? 1 : 0;
     }
     notify(
@@ -344,13 +358,18 @@ export async function runMnistLearning(
     const stride = coprimeStride(dataset.training.length);
     for (let epoch = 0; epoch < epochs; epoch += 1) {
       const start = (epoch * 13) % dataset.training.length;
+      const sequence: MnistExample[] = [];
       for (let offset = 0; offset < dataset.training.length; offset += 1) {
         const index = (start + offset * stride) % dataset.training.length;
         const example = dataset.training[index];
         if (example !== undefined) {
-          await session.trainStep(example, { learningRate });
+          sequence.push(example);
         }
       }
+      await session.trainSequence(sequence, {
+        learningRate,
+        metrics: "none",
+      });
       notify(options.onProgress, "mnist", "train", epoch + 1, epochs);
     }
     const trainingAccuracy = await evaluateMnist(session, dataset.training);
@@ -492,17 +511,16 @@ export async function runDsrLearning(
           Math.floor(trial / curriculumTrialsPerLength),
         );
       const sequence = createDsrSequence(trainingRandom, currentLength);
-      for (let step = 0; step < sequence.length; step += 1) {
-        const sample = sequence[step];
-        if (sample !== undefined) {
-          await session.trainStep(sample, {
-            learningRate:
-              step < currentLength - DSR_PROMPTS.length
-                ? distractorLearningRate
-                : learningRate,
-          });
-        }
-      }
+      await session.trainSequence(
+        sequence.map((sample, step) => ({
+          ...sample,
+          learningRate:
+            step < currentLength - DSR_PROMPTS.length
+              ? distractorLearningRate
+              : learningRate,
+        })),
+        { metrics: "none" },
+      );
       if ((trial + 1) % 250 === 0 || trial + 1 === trainingTrials) {
         notify(
           options.onProgress,
@@ -525,12 +543,15 @@ export async function runDsrLearning(
       await session.resetState();
       let sequenceCorrect = true;
       const sequence = createDsrSequence(validationRandom, sequenceLength);
+      const outputs = await session.forwardSequence(
+        sequence.map(({ input }) => input),
+      );
       for (let step = 0; step < sequence.length; step += 1) {
         const sample = sequence[step];
-        if (sample === undefined) {
+        const output = outputs[step]?.data;
+        if (sample === undefined || output === undefined) {
           continue;
         }
-        const output = (await session.forward(sample.input)).data;
         const correct = isRoundedMatch(output, sample.target);
         correctSteps += correct ? 1 : 0;
         sequenceCorrect &&= correct;
