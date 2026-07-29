@@ -88,6 +88,7 @@ Then open `http://127.0.0.1:4173/` and choose a test:
 
 - `http://localhost:4173/packages/backend-webgpu/test/xor.html`
 - `http://localhost:4173/packages/backend-webgpu/test/mnist.html`
+- `http://localhost:4173/packages/backend-webgpu/test/mnist-automata.html`
 - `http://localhost:4173/packages/backend-webgpu/test/dsr.html`
 - `http://localhost:4173/packages/backend-webgpu/test/learn-to-paint.html`
 - `http://localhost:4173/packages/backend-webgpu/test/shader-smoke.html`
@@ -107,13 +108,26 @@ learning page runs the same XOR, MNIST, and sequence-recall helpers as the Node
 suite with fallback disabled, so its reported backend must be `webgpu`; it
 reports end-to-end time for each workload, including model compilation.
 
-The first four pages are polished interactive examples:
+The first five pages are polished interactive examples:
 
 - XOR shows the 2→3→1 topology and all four predictions as training converges.
 - MNIST trains a 196→128→10 classifier on 300 MNIST samples plus 80
   drawing-oriented examples, evaluates 100 held-out MNIST samples, and lets
   you draw a digit. Strokes are centered, scaled to 28×28, and averaged to the
   same 14×14 input representation used for training.
+- MNIST to Neural CA trains a direct 196→196→10 classifier whose middle stage
+  is a wrapped, symmetric 3×3 convolution with only three tied parameters:
+  corner, edge, and center. After a frozen-kernel readout warm-up, WebGPU
+  fine-tunes the kernel and copies those three values unchanged into
+  `@cazala/automata` direct Neural mode. Synaptic `tanh` and Automata activation
+  `1` implement the same activation. The page visualizes the learned kernel,
+  classifies one held-out sample per digit, and can seed the live three-channel
+  CA with any sample or independent color noise. The 10-way classifier readout
+  is deliberately not transferred because it is not part of the local CA rule.
+  This experiment uses direct mode because `@cazala/automata@0.1.0` does not
+  expose a public setter for the private MLP weights in Neural network mode. A
+  hidden Neural CA experiment would first require an injectable network-weight
+  artifact API in Automata (or a custom Automaton descriptor).
 - Sequence recall trains the length 4→10 DSR curriculum, then animates random
   length-10 sequences one symbol at a time. Colored inputs and outputs make
   targets, distractors, prompts, silence, and recall errors visible.

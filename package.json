@@ -26,6 +26,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@cazala/automata": "0.1.0",
     "@vitest/coverage-v8": "4.1.10",
     "@webgpu/types": "0.1.71",
     "assemblyscript": "0.28.20",

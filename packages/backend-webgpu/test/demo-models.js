@@ -1,5 +1,9 @@
 import { WebGpuBackend } from "@synaptic/backend-webgpu";
-import { compilePlan, createSnapshot } from "@synaptic/core";
+import {
+  compilePlan,
+  createSnapshot,
+  GraphBuilder,
+} from "@synaptic/core";
 import { dense, input, lstm, sequential } from "@synaptic/layers";
 
 const createBackend = () => new WebGpuBackend({ fallbackBackends: [] });
@@ -115,6 +119,210 @@ export async function trainMnistDemo(dataset, onProgress) {
   } catch (error) {
     session.dispose();
     throw error;
+  }
+}
+
+export const AUTOMATA_TANH_ACTIVATION = 1;
+export const AUTOMATA_KERNEL_INITIAL = Object.freeze({
+  center: 1,
+  edge: -.125,
+  corner: .0625,
+});
+
+export function createAutomataConvolutionDefinition(
+  imageSize,
+  { trainKernel = true } = {},
+) {
+  if (!Number.isInteger(imageSize) || imageSize < 3) {
+    throw new RangeError("The convolution image size must be an integer of at least 3");
+  }
+
+  const graph = new GraphBuilder();
+  const inputs = graph.input(
+    imageSize * imageSize,
+    [imageSize, imageSize],
+  );
+  const kernelParameters = {
+    center: graph.parameter({
+      trainable: trainKernel,
+      initializer: {
+        kind: "constant",
+        value: AUTOMATA_KERNEL_INITIAL.center,
+      },
+      label: "mnist-ca.kernel.center",
+    }),
+    edge: graph.parameter({
+      trainable: trainKernel,
+      initializer: {
+        kind: "constant",
+        value: AUTOMATA_KERNEL_INITIAL.edge,
+      },
+      label: "mnist-ca.kernel.edge",
+    }),
+    corner: graph.parameter({
+      trainable: trainKernel,
+      initializer: {
+        kind: "constant",
+        value: AUTOMATA_KERNEL_INITIAL.corner,
+      },
+      label: "mnist-ca.kernel.corner",
+    }),
+  };
+
+  graph.stage(1);
+  const convolution = graph.units(imageSize * imageSize, {
+    activation: "tanh",
+    label: "mnist-ca.convolution",
+  });
+  const taps = [
+    [-1, -1, kernelParameters.corner],
+    [0, -1, kernelParameters.edge],
+    [1, -1, kernelParameters.corner],
+    [-1, 0, kernelParameters.edge],
+    [0, 0, kernelParameters.center],
+    [1, 0, kernelParameters.edge],
+    [-1, 1, kernelParameters.corner],
+    [0, 1, kernelParameters.edge],
+    [1, 1, kernelParameters.corner],
+  ];
+  for (let y = 0; y < imageSize; y += 1) {
+    for (let x = 0; x < imageSize; x += 1) {
+      const target = convolution[y * imageSize + x];
+      for (const [offsetX, offsetY, parameter] of taps) {
+        const sourceX = (x + offsetX + imageSize) % imageSize;
+        const sourceY = (y + offsetY + imageSize) % imageSize;
+        graph.connect(
+          [inputs.units[sourceY * imageSize + sourceX]],
+          [target],
+          "one-to-one",
+          { delay: 0, parameter },
+        );
+      }
+    }
+  }
+
+  graph.stage(2);
+  const outputs = graph.units(10, {
+    activation: "logistic",
+    label: "mnist-ca.output",
+  });
+  graph.connect(convolution, outputs, "all-to-all", {
+    initializer: { kind: "uniform", min: -.1, max: .1 },
+    label: "mnist-ca.readout",
+  });
+  const bias = graph.constant(1, 0);
+  graph.connect([bias], outputs, "all-to-all", {
+    initializer: { kind: "constant", value: 0 },
+    label: "mnist-ca.output-bias",
+  });
+
+  return {
+    definition: graph.build({
+      inputs,
+      outputs,
+      metadata: {
+        activation: "tanh",
+        automataMode: "direct",
+        convolution: {
+          kernel: "symmetric-3x3",
+          padding: "wrap",
+          stride: 1,
+        },
+        name: "MNIST → Neural CA",
+      },
+    }),
+    kernelParameters,
+  };
+}
+
+export async function trainAutomataConvolutionDemo(dataset, onProgress) {
+  const warmupEpochs = 30;
+  const fineTuneEpochs = 12;
+  const totalEpochs = warmupEpochs + fineTuneEpochs;
+  const stride = 7;
+  const started = performance.now();
+  const orderedEpoch = (epoch) => {
+    const start = (epoch * 13) % dataset.training.length;
+    return Array.from(
+      { length: dataset.training.length },
+      (_, offset) =>
+        dataset.training[(start + offset * stride) % dataset.training.length],
+    );
+  };
+
+  const warmup = createAutomataConvolutionDefinition(
+    dataset.imageSize,
+    { trainKernel: false },
+  );
+  const warmupSession = await createBackend().compile(
+    compilePlan(warmup.definition),
+    createSnapshot(warmup.definition, 0xca20_12ca),
+    { training: true },
+  );
+  let warmupSnapshot;
+  try {
+    for (let epoch = 0; epoch < warmupEpochs; epoch += 1) {
+      await warmupSession.trainSequence(orderedEpoch(epoch), {
+        learningRate: .08,
+        metrics: "none",
+      });
+      onProgress?.(epoch + 1, totalEpochs, "readout");
+    }
+    warmupSnapshot = await warmupSession.snapshot();
+  } finally {
+    warmupSession.dispose();
+  }
+
+  const fineTune = createAutomataConvolutionDefinition(dataset.imageSize);
+  const initial = createSnapshot(fineTune.definition, 0xca20_12ca);
+  initial.parameters.set(warmupSnapshot.parameters);
+  const session = await createBackend().compile(
+    compilePlan(fineTune.definition),
+    initial,
+    { training: true },
+  );
+  try {
+    for (let epoch = 0; epoch < fineTuneEpochs; epoch += 1) {
+      await session.trainSequence(orderedEpoch(warmupEpochs + epoch), {
+        learningRate: .00035,
+        metrics: "none",
+      });
+      onProgress?.(
+        warmupEpochs + epoch + 1,
+        totalEpochs,
+        "kernel + readout",
+      );
+    }
+    const trainingAccuracy = await evaluateMnist(session, dataset.training);
+    const testAccuracy = await evaluateMnist(session, dataset.test);
+    const snapshot = await session.snapshot();
+    const kernel = Object.fromEntries(
+      Object.entries(fineTune.kernelParameters).map(([name, parameter]) => [
+        name,
+        snapshot.parameters[parameter] ?? 0,
+      ]),
+    );
+    const examples = Array.from(
+      { length: 10 },
+      (_, label) => dataset.test.find((example) => example.label === label),
+    ).filter(Boolean);
+    const predictions = await session.forwardSequence(
+      examples.map(({ input: values }) => values),
+    );
+    return {
+      backend: session.backend,
+      durationMs: Math.round(performance.now() - started),
+      epochs: totalEpochs,
+      examples: examples.map((example, index) => ({
+        ...example,
+        prediction: argmax(predictions[index]?.data ?? []),
+      })),
+      kernel,
+      testAccuracy,
+      trainingAccuracy,
+    };
+  } finally {
+    session.dispose();
   }
 }
 

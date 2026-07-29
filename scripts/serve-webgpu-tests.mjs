@@ -20,6 +20,12 @@ const tests = [
     path: "/packages/backend-webgpu/test/mnist.html",
   },
   {
+    description: "Learn a tied 3×3 MNIST convolution, transfer it exactly, and run it as a Neural CA.",
+    kind: "Interactive demo",
+    name: "MNIST to Neural CA",
+    path: "/packages/backend-webgpu/test/mnist-automata.html",
+  },
+  {
     description: "Train a four-cell LSTM, then animate random length-10 recall challenges.",
     kind: "Interactive demo",
     name: "Sequence recall",
@@ -171,6 +177,7 @@ function safeFile(pathname) {
   const localPath = decodeURIComponent(pathname).replace(/^\/+/, "");
   if (
     !localPath.startsWith("packages/")
+    && !localPath.startsWith("node_modules/@cazala/automata/")
     && !localPath.startsWith("node_modules/mnist/")
   ) {
     return undefined;
