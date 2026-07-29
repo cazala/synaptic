@@ -330,7 +330,7 @@
         <p class="caveat" id="caveat">
           The 10-way readout learns to name digits, but is not part of the CA.
           The highlighted convolution is the complete local rule being run at
-          right, recurrently and across three color channels.
+          right. Its three internal channels are rendered as one grayscale field.
         </p>
       </div>
     </article>
@@ -349,7 +349,7 @@
       <div class="automata-wrap">
         <canvas id="automata" width="720" height="540"
           aria-label="Neural cellular automaton using a learned MNIST rule"></canvas>
-        <span class="canvas-chip" id="canvas-chip">Direct Neural CA · wrap enabled</span>
+        <span class="canvas-chip" id="canvas-chip">Direct Neural CA · grayscale</span>
       </div>
     </article>
   </section>
@@ -372,7 +372,7 @@
     <div class="actions">
       <button class="primary" id="play" disabled>Pause</button>
       <button id="reset" disabled>Reset</button>
-      <button id="noise" disabled>Color noise</button>
+      <button id="noise" disabled>Noise</button>
     </div>
   </section>
   <div class="progress" aria-hidden="true"><span id="progress"></span></div>
@@ -525,11 +525,12 @@
       copy.caveat.textContent =
         "The 10-way readout learns to name digits, but is not part of the CA. " +
         "The displayed convolution is the complete transferred local rule, " +
-        "reapplied recurrently across three color channels.";
+        "reapplied recurrently. Its three internal channels receive the same " +
+        "MNIST seed and channel 0 is rendered in grayscale.";
       copy.automata.textContent =
         "Every generation reapplies the learned MNIST convolution; digit " +
         "seeds keep evolving until you reset them.";
-      copy.chip.textContent = "Direct Neural CA · wrap enabled";
+      copy.chip.textContent = "Direct Neural CA · grayscale";
     } else {
       matrixWrap.hidden = false;
       renderMatrices(result.weights);
@@ -560,7 +561,7 @@
       copy.automata.textContent =
         "Each generation perceives identity, Sobel-x, Sobel-y, and the learned " +
         "kernel before applying the transferred shared MLP as a residual update.";
-      copy.chip.textContent = "Network Neural CA · 12 → 8 → 3";
+      copy.chip.textContent = "Network Neural CA · grayscale · 12 → 8 → 3";
     }
   };
 
@@ -590,9 +591,7 @@
     for (let y = 0; y < 14; y += 1) {
       for (let x = 0; x < 14; x += 1) {
         for (let channel = 0; channel < channels; channel += 1) {
-          const shift = activeMode === "direct" ? channel - 1 : 0;
-          const shiftedX = (x + shift + 14) % 14;
-          const value = example.input[y * 14 + shiftedX] ?? 0;
+          const value = example.input[y * 14 + x] ?? 0;
           const destination =
             ((originY + y) * width + originX + x) * channels + channel;
           cells[destination] = value;
@@ -693,9 +692,10 @@
       grid: { ...grid, wrap: true, maxCells: 128 },
       stepsPerSecond: 16,
       render: {
-        colorOff: { r: .025, g: .035, b: .06, a: 1 },
-        colorOn: { r: .3, g: .92, b: 1, a: 1 },
-        colorBg: { r: .012, g: .018, b: .03, a: 1 },
+        colorMode: 0,
+        colorOff: { r: 0, g: 0, b: 0, a: 1 },
+        colorOn: { r: 1, g: 1, b: 1, a: 1 },
+        colorBg: { r: 0, g: 0, b: 0, a: 1 },
         showGrid: false,
       },
       onError(error) {
@@ -744,7 +744,7 @@
     }
     engine.reset({ mode: "noise", density: .24 });
     generationStart = engine.getFrame();
-    caState.textContent = `${activeMode} · fresh color noise · generation 0`;
+    caState.textContent = `${activeMode} · fresh noise · generation 0`;
   });
 
   noiseButton.addEventListener("click", () => {
@@ -756,7 +756,7 @@
     for (const sample of samples.children) {
       sample.setAttribute("aria-pressed", "false");
     }
-    caState.textContent = `${activeMode} · color noise`;
+    caState.textContent = `${activeMode} · noise`;
   });
 
   window.addEventListener("pagehide", () => {

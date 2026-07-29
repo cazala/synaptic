@@ -124,7 +124,7 @@ The first five pages are polished interactive examples:
   switch injects either the three direct weights or the network kernel plus its
   row-major matrices and biases into a live three-channel Neural CA. Synaptic
   `tanh` and Automata activation `1` are equivalent. Matrix heatmaps make the
-  network artifact visible, and held-out digit seeds or independent color noise
+  network artifact visible, and held-out digit seeds or independent noise
   reveal each rule's recurrent dynamics. The 10-way classifier readout is
   deliberately not transferred because it is not part of either local CA rule.
 - Sequence recall trains the length 4→10 DSR curriculum, then animates random
