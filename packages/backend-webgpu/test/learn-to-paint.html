@@ -3,6 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Synaptic WebGPU — learn to paint</title>
+<link rel="stylesheet" href="./demo.css">
 <script type="importmap">
 {
   "imports": {
@@ -15,55 +16,6 @@
 }
 </script>
 <style>
-  :root {
-    color-scheme: dark;
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-    background: #080b12;
-    color: #edf4ff;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-height: 100vh;
-    background:
-      radial-gradient(circle at 15% 10%, #163650 0, transparent 30rem),
-      radial-gradient(circle at 85% 90%, #3b1738 0, transparent 32rem),
-      #080b12;
-  }
-  main {
-    width: min(72rem, 100%);
-    margin: auto;
-    padding: clamp(1.5rem, 5vw, 4rem);
-  }
-  header {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 2rem;
-    align-items: end;
-    margin-bottom: 2rem;
-  }
-  h1 {
-    max-width: 12ch;
-    margin: 0;
-    font-size: clamp(2.5rem, 7vw, 5.5rem);
-    letter-spacing: -.065em;
-    line-height: .9;
-  }
-  header p {
-    max-width: 34rem;
-    margin: 1.25rem 0 0;
-    color: #a8b4c7;
-    line-height: 1.6;
-  }
-  .badge {
-    border: 1px solid #5d718c;
-    border-radius: 999px;
-    padding: .55rem .85rem;
-    color: #c9ddfa;
-    font: 600 .72rem ui-monospace, monospace;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
   .canvases {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -73,10 +25,6 @@
     position: relative;
     margin: 0;
     overflow: hidden;
-    border: 1px solid #28384e;
-    border-radius: 1.25rem;
-    background: #0e1520;
-    box-shadow: 0 1.5rem 4rem #0008;
   }
   canvas.painting {
     display: block;
@@ -93,91 +41,51 @@
     border-radius: .6rem;
     background: #080b12b8;
     backdrop-filter: blur(12px);
-    font: 600 .68rem ui-monospace, monospace;
+    font: 650 .68rem ui-monospace, monospace;
     letter-spacing: .08em;
     text-transform: uppercase;
   }
-  .controls {
-    display: grid;
-    grid-template-columns: minmax(16rem, 1fr) auto;
-    gap: 1.25rem;
-    align-items: center;
-    margin-top: 1.5rem;
-    padding: 1.25rem;
-    border: 1px solid #28384e;
-    border-radius: 1rem;
-    background: #0e1520dd;
+  .source {
+    color: #a9cfff;
+    text-underline-offset: .18em;
   }
-  .metrics {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1rem;
-  }
-  .metric small {
-    display: block;
-    margin-bottom: .3rem;
-    color: #7f8da3;
-    font: 600 .65rem ui-monospace, monospace;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-  .metric output {
-    font: 600 clamp(.95rem, 2vw, 1.2rem) ui-monospace, monospace;
-  }
-  .actions { display: flex; gap: .65rem; }
-  button {
-    min-width: 7.5rem;
-    border: 1px solid #50647f;
-    border-radius: .7rem;
-    padding: .8rem 1rem;
-    background: #172236;
-    color: #edf4ff;
-    font: 700 .78rem ui-monospace, monospace;
-    cursor: pointer;
-  }
-  button.primary {
-    border-color: #ff8585;
-    background: #ff6b6b;
-    color: #24090d;
-  }
-  button:disabled { cursor: wait; opacity: .55; }
-  .explain {
-    margin: 1rem 0 0;
-    color: #7f8da3;
-    font: .72rem/1.6 ui-monospace, monospace;
-  }
-  .error { color: #ff9f9f; }
-  @media (max-width: 760px) {
-    header, .controls { grid-template-columns: 1fr; }
-    .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .actions { flex-wrap: wrap; }
+  @media (max-width: 640px) {
+    .canvases { grid-template-columns: 1fr; }
   }
 </style>
 <main>
-  <header>
+  <nav class="demo-nav" aria-label="WebGPU learning demos">
+    <a href="./xor.html">XOR</a>
+    <a href="./mnist.html">Draw a digit</a>
+    <a href="./dsr.html">Sequence recall</a>
+    <a href="./learn-to-paint.html" aria-current="page">Learn to paint</a>
+  </nav>
+
+  <header class="hero">
     <div>
       <h1>Learn to paint.</h1>
       <p>
-        A neural network receives only normalized <em>x</em> and <em>y</em>
-        coordinates. WebGPU trains it to reproduce the RGB target—an updated,
-        dependency-free take on Synaptic’s original paint-an-image demo.
+        A neural field receives a Fourier encoding derived only from normalized
+        <em>x</em> and <em>y</em> coordinates. WebGPU continuously trains it to reproduce
+        <a class="source" href="https://avatars.githubusercontent.com/u/2781777"
+          target="_blank" rel="noreferrer">this RGB portrait</a>.
       </p>
     </div>
-    <span class="badge" id="backend">initializing WebGPU</span>
+    <span class="badge" id="backend">loading target</span>
   </header>
 
   <section class="canvases" aria-label="Neural painting comparison">
-    <figure>
+    <figure class="panel">
       <canvas class="painting" id="target" width="48" height="48"></canvas>
-      <figcaption>Target</figcaption>
+      <figcaption>Target portrait</figcaption>
     </figure>
-    <figure>
+    <figure class="panel">
       <canvas class="painting" id="learned" width="48" height="48"></canvas>
       <figcaption>Network output</figcaption>
     </figure>
   </section>
 
-  <section class="controls">
+  <section class="controls panel">
     <div class="metrics">
       <div class="metric">
         <small>Epoch</small>
@@ -188,7 +96,7 @@
         <output id="loss">—</output>
       </div>
       <div class="metric">
-        <small>Train time</small>
+        <small>Last epoch</small>
         <output id="time">—</output>
       </div>
       <div class="metric">
@@ -197,14 +105,11 @@
       </div>
     </div>
     <div class="actions">
-      <button id="reset">Reset</button>
-      <button id="one">+1 epoch</button>
-      <button class="primary" id="ten">+10 epochs</button>
+      <button class="primary" id="play" aria-pressed="true">Pause</button>
     </div>
   </section>
-  <p class="explain" id="status">
-    2,304 online training steps are encoded into one WebGPU submission per
-    epoch. Rendering all pixels uses one further submission and one readback.
+  <p class="status" id="status">
+    Loading the portrait and compiling the WebGPU model…
   </p>
 </main>
 
@@ -213,8 +118,18 @@
   import { compilePlan, createSnapshot } from "@synaptic/core";
   import { dense, input, sequential } from "@synaptic/layers";
 
+  const AVATAR_URL = "https://avatars.githubusercontent.com/u/2781777";
   const SIZE = 48;
   const PIXELS = SIZE * SIZE;
+  const FREQUENCIES = [];
+  for (let frequencyY = 0; frequencyY <= 4; frequencyY += 1) {
+    for (let frequencyX = -4; frequencyX <= 4; frequencyX += 1) {
+      if (frequencyX !== 0 || frequencyY !== 0) {
+        FREQUENCIES.push([frequencyX, frequencyY]);
+      }
+    }
+  }
+  const INPUT_SIZE = FREQUENCIES.length * 2;
   const TARGET_CANVAS = document.querySelector("#target");
   const LEARNED_CANVAS = document.querySelector("#learned");
   const backendOutput = document.querySelector("#backend");
@@ -223,44 +138,24 @@
   const timeOutput = document.querySelector("#time");
   const submitsOutput = document.querySelector("#submits");
   const status = document.querySelector("#status");
-  const buttons = [...document.querySelectorAll("button")];
-  const oneButton = document.querySelector("#one");
-  const tenButton = document.querySelector("#ten");
-  const resetButton = document.querySelector("#reset");
+  const playButton = document.querySelector("#play");
 
   let session;
+  let samples = [];
   let epoch = 0;
   let submissions = 0;
-  let busy = false;
+  let playing = true;
+  let running = false;
+  let resumeWhenVisible = false;
 
   const clamp = (value) => Math.max(0, Math.min(1, value));
-  const smoothstep = (edge0, edge1, value) => {
-    const t = clamp((value - edge0) / (edge1 - edge0));
-    return t * t * (3 - 2 * t);
-  };
-  const targetColor = (x, y) => {
-    const horizon = smoothstep(.36, .7, y);
-    const sun = smoothstep(.28, .02, Math.hypot(x - .72, y - .27));
-    const ribbon = smoothstep(.12, .015, Math.abs(y - (.78 - .34 * x)));
-    const glow = smoothstep(.55, .04, Math.hypot(x - .25, y - .62));
-    return [
-      clamp(.08 + .54 * x + .32 * horizon + .58 * sun - .3 * ribbon),
-      clamp(.09 + .46 * y + .18 * glow + .2 * sun - .15 * ribbon),
-      clamp(.2 + .48 * (1 - x) + .32 * glow + .36 * ribbon - .2 * horizon),
-    ];
-  };
 
-  const samples = [];
-  for (let y = 0; y < SIZE; y += 1) {
-    for (let x = 0; x < SIZE; x += 1) {
-      const normalizedX = x / (SIZE - 1);
-      const normalizedY = y / (SIZE - 1);
-      samples.push({
-        input: [normalizedX * 2 - 1, normalizedY * 2 - 1],
-        target: targetColor(normalizedX, normalizedY),
-      });
-    }
-  }
+  const encodePosition = (x, y) => FREQUENCIES.flatMap(
+    ([frequencyX, frequencyY]) => {
+      const phase = Math.PI * (frequencyX * x + frequencyY * y);
+      return [Math.sin(phase), Math.cos(phase)];
+    },
+  );
 
   const paint = (canvas, colors) => {
     const context = canvas.getContext("2d");
@@ -276,13 +171,50 @@
     context.putImageData(image, 0, 0);
   };
 
-  paint(TARGET_CANVAS, samples.map(({ target }) => target));
-  paint(LEARNED_CANVAS, Array.from({ length: PIXELS }, () => [.5, .5, .5]));
+  const loadTarget = async () => {
+    const response = await fetch(AVATAR_URL, { mode: "cors" });
+    if (!response.ok) {
+      throw new Error(`Unable to load target portrait (${response.status})`);
+    }
+    const bitmap = await createImageBitmap(await response.blob());
+    const crop = Math.min(bitmap.width, bitmap.height);
+    const sourceX = (bitmap.width - crop) / 2;
+    const sourceY = (bitmap.height - crop) / 2;
+    const context = TARGET_CANVAS.getContext("2d", { willReadFrequently: true });
+    context.drawImage(
+      bitmap,
+      sourceX,
+      sourceY,
+      crop,
+      crop,
+      0,
+      0,
+      SIZE,
+      SIZE,
+    );
+    bitmap.close();
+    const pixels = context.getImageData(0, 0, SIZE, SIZE).data;
+    samples = [];
+    for (let y = 0; y < SIZE; y += 1) {
+      for (let x = 0; x < SIZE; x += 1) {
+        const offset = (y * SIZE + x) * 4;
+        const normalizedX = x / (SIZE - 1) * 2 - 1;
+        const normalizedY = y / (SIZE - 1) * 2 - 1;
+        samples.push({
+          input: encodePosition(normalizedX, normalizedY),
+          target: [
+            (pixels[offset] ?? 0) / 255,
+            (pixels[offset + 1] ?? 0) / 255,
+            (pixels[offset + 2] ?? 0) / 255,
+          ],
+        });
+      }
+    }
+  };
 
   const createSession = async () => {
     const definition = sequential(
-      input({ size: 2 }),
-      dense({ units: 32, activation: "tanh", label: "paint.hidden" }),
+      input({ size: INPUT_SIZE }),
       dense({ units: 3, activation: "logistic", label: "paint.rgb" }),
     );
     return new WebGpuBackend({ fallbackBackends: [] }).compile(
@@ -292,16 +224,9 @@
     );
   };
 
-  const setBusy = (value) => {
-    busy = value;
-    for (const button of buttons) {
-      button.disabled = value;
-    }
-  };
-
   const renderNetwork = async () => {
     const outputs = await session.forwardSequence(
-      samples.map(({ input }) => input),
+      samples.map(({ input: values }) => values),
     );
     submissions += 1;
     const colors = outputs.map(({ data }) => data);
@@ -319,14 +244,25 @@
     submitsOutput.value = String(submissions);
   };
 
-  const train = async (count) => {
-    if (busy || !session) return;
-    setBusy(true);
-    status.classList.remove("error");
-    const start = performance.now();
+  const setPlaying = (value) => {
+    playing = value;
+    playButton.textContent = value ? "Pause" : "Play";
+    playButton.setAttribute("aria-pressed", String(value));
+    if (value) {
+      status.textContent = "Training continuously; pause whenever you want to inspect the result.";
+      void runLoop();
+    } else {
+      status.textContent = "Paused. The current epoch finishes before the GPU loop stops.";
+    }
+  };
+
+  const runLoop = async () => {
+    if (running || !session) return;
+    running = true;
     try {
-      for (let iteration = 0; iteration < count; iteration += 1) {
-        const learningRate = .08 / (1 + epoch * .025);
+      while (playing) {
+        const started = performance.now();
+        const learningRate = .01 / Math.sqrt(1 + epoch * .01);
         const stride = 109;
         const startIndex = (epoch * 53) % PIXELS;
         const sequence = Array.from(
@@ -340,48 +276,54 @@
         submissions += 1;
         epoch += 1;
         epochOutput.value = String(epoch);
-        status.textContent = `Training epoch ${epoch}; GPU work is synchronized only when the preview is read back.`;
         await renderNetwork();
+        timeOutput.value = `${Math.round(performance.now() - started)} ms`;
         await new Promise((resolve) => requestAnimationFrame(resolve));
       }
-      timeOutput.value = `${Math.round(performance.now() - start)} ms`;
-      status.textContent =
-        `${PIXELS.toLocaleString()} online steps → 1 training submission; `
-        + `${PIXELS.toLocaleString()} predictions → 1 rendering submission + readback.`;
     } catch (error) {
+      playing = false;
+      playButton.textContent = "Play";
       status.classList.add("error");
       status.textContent = error instanceof Error ? error.message : String(error);
     } finally {
-      setBusy(false);
+      running = false;
     }
   };
 
-  const reset = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      session?.dispose();
-      session = await createSession();
-      epoch = 0;
-      submissions = 0;
-      epochOutput.value = "0";
-      timeOutput.value = "—";
-      backendOutput.textContent = session.backend;
-      await renderNetwork();
-      status.textContent =
-        "Ready. Train the coordinate-to-RGB network for one or ten epochs.";
-    } catch (error) {
-      backendOutput.textContent = "WebGPU unavailable";
-      status.classList.add("error");
-      status.textContent = error instanceof Error ? error.message : String(error);
-    } finally {
-      setBusy(false);
+  playButton.addEventListener("click", () => setPlaying(!playing));
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && playing) {
+      resumeWhenVisible = true;
+      setPlaying(false);
+    } else if (!document.hidden && resumeWhenVisible) {
+      resumeWhenVisible = false;
+      setPlaying(true);
     }
-  };
+  });
+  window.addEventListener("pagehide", () => {
+    playing = false;
+    session?.dispose();
+  });
 
-  oneButton.addEventListener("click", () => void train(1));
-  tenButton.addEventListener("click", () => void train(10));
-  resetButton.addEventListener("click", () => void reset());
-  await reset();
+  try {
+    paint(
+      LEARNED_CANVAS,
+      Array.from({ length: PIXELS }, () => [.5, .5, .5]),
+    );
+    await loadTarget();
+    session = await createSession();
+    backendOutput.textContent = session.backend;
+    await renderNetwork();
+    status.textContent =
+      `${PIXELS.toLocaleString()} online updates use one training submission; `
+      + "the full preview uses one submission and one readback.";
+    setPlaying(true);
+  } catch (error) {
+    playing = false;
+    playButton.disabled = true;
+    backendOutput.textContent = "unavailable";
+    status.classList.add("error");
+    status.textContent = error instanceof Error ? error.message : String(error);
+  }
 </script>
 </html>

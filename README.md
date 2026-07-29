@@ -161,8 +161,11 @@ WebGPU requires a browser with WebGPU in a secure context (`https:` or
 `localhost`). Explicit WebGPU compilation uses the declared fallback order when
 the API, adapter, plan feature, or device limit is unavailable.
 
-Run `npm run test:webgpu` to serve the hardware tests and interactive
-coordinate-to-RGB [learn-to-paint example](packages/backend-webgpu/test/learn-to-paint.html).
+Run `npm run test:webgpu` to serve the hardware checks and four interactive
+learning demos: [XOR](packages/backend-webgpu/test/xor.html),
+[MNIST digit drawing](packages/backend-webgpu/test/mnist.html),
+[discrete sequence recall](packages/backend-webgpu/test/dsr.html), and the
+coordinate-to-RGB [learn-to-paint portrait](packages/backend-webgpu/test/learn-to-paint.html).
 
 ## Legacy imports
 

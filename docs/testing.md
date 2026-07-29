@@ -86,11 +86,14 @@ npm run test:webgpu
 
 Then open `http://127.0.0.1:4173/` and choose a test:
 
+- `http://localhost:4173/packages/backend-webgpu/test/xor.html`
+- `http://localhost:4173/packages/backend-webgpu/test/mnist.html`
+- `http://localhost:4173/packages/backend-webgpu/test/dsr.html`
+- `http://localhost:4173/packages/backend-webgpu/test/learn-to-paint.html`
 - `http://localhost:4173/packages/backend-webgpu/test/shader-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/forward-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/training-parity.html`
 - `http://localhost:4173/packages/backend-webgpu/test/learning-workloads.html`
-- `http://localhost:4173/packages/backend-webgpu/test/learn-to-paint.html`
 
 The command builds every workspace first. To use another port:
 
@@ -104,12 +107,22 @@ learning page runs the same XOR, MNIST, and sequence-recall helpers as the Node
 suite with fallback disabled, so its reported backend must be `webgpu`; it
 reports end-to-end time for each workload, including model compilation.
 
-The learn-to-paint page is an interactive hardware example inspired by the
-original gh-pages demo. A 2→32→3 network receives only `(x, y)` coordinates and
-learns a procedural RGB target. Its UI reports error, elapsed time, and GPU
-submissions so the sequence optimization is observable: 2,304 online updates
-cross the queue in one training submission per epoch, and all 2,304 preview
-pixels return through one inference submission and readback.
+The first four pages are polished interactive examples:
+
+- XOR shows the 2→3→1 topology and all four predictions as training converges.
+- MNIST trains a 49→48→10 classifier on 300 samples, evaluates 100 held-out
+  samples, and lets you draw a digit. Strokes are centered, scaled to 28×28,
+  and averaged to the same 7×7 input representation used for training.
+- Sequence recall trains the length 4→10 DSR curriculum, then animates random
+  length-10 sequences one symbol at a time. Colored inputs and outputs make
+  targets, distractors, prompts, silence, and recall errors visible.
+- Learn to paint is inspired by the original gh-pages demo. An 88→3 neural
+  field receives only a Fourier encoding of `(x, y)` coordinates and
+  continuously learns the selected portrait. Play/pause controls the loop. Its
+  UI reports error, elapsed time, and GPU submissions so batching is
+  observable: 2,304 online updates cross the queue in one training submission
+  per epoch, and all 2,304 preview pixels return through one inference
+  submission and readback.
 
 Browser console errors or non-pass smoke results fail the hardware check.
 

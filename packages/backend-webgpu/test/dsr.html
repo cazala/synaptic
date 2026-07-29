@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synaptic WebGPU — discrete sequence recall</title>
+<link rel="stylesheet" href="./demo.css">
+<script type="importmap">
+{
+  "imports": {
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/layers": "/packages/layers/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<style>
+  .glossary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .7rem 1.25rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.2rem;
+  }
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    color: #9aa9bd;
+    font: 650 .65rem ui-monospace, monospace;
+    letter-spacing: .04em;
+  }
+  .legend-group {
+    display: flex;
+    gap: .3rem;
+  }
+  .symbol {
+    display: grid;
+    width: 2.75rem;
+    aspect-ratio: 1;
+    place-items: center;
+    flex: none;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    box-shadow: inset 0 0 1rem #0005, 0 0 1.5rem var(--glow, transparent);
+    color: #061018;
+    font: 750 .7rem ui-monospace, monospace;
+  }
+  .symbol.small { width: 1.25rem; border-width: 1px; }
+  .symbol.target-a { --glow: #42d6ff4d; background: #42d6ff; }
+  .symbol.target-b { --glow: #72e5ad4d; background: #72e5ad; }
+  .symbol.distractor-a { --glow: #ffd16638; background: #ffd166; }
+  .symbol.distractor-b { --glow: #ff6b8f38; background: #ff6b8f; }
+  .symbol.prompt-a {
+    border-color: #7489a4;
+    background: #a9b8cb;
+  }
+  .symbol.prompt-b {
+    border-color: #9fb0c6;
+    background: #1d2838;
+    color: #e8f1ff;
+  }
+  .symbol.empty {
+    border-color: #34465d;
+    background: transparent;
+    color: #5f6f83;
+    box-shadow: none;
+  }
+  .sequence-panel {
+    min-height: 24rem;
+    padding: clamp(1.1rem, 3vw, 2rem);
+  }
+  .sequence-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: baseline;
+    margin-bottom: 1.5rem;
+  }
+  .sequence-heading h2 { margin: 0; letter-spacing: -.03em; }
+  .sequence-heading span {
+    color: #718198;
+    font: 650 .63rem ui-monospace, monospace;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+  .sequence {
+    display: grid;
+    grid-template-columns: repeat(10, minmax(4.2rem, 1fr));
+    gap: .65rem;
+    overflow-x: auto;
+    padding-bottom: .5rem;
+  }
+  .step {
+    min-width: 4.2rem;
+    padding: .85rem .45rem;
+    border: 1px solid #26364b;
+    border-radius: .8rem;
+    background: #0a1019;
+    opacity: .22;
+    transform: translateY(.45rem);
+    transition: opacity .25s ease, transform .25s ease, border-color .25s ease;
+  }
+  .step.revealed {
+    opacity: 1;
+    transform: none;
+  }
+  .step.active {
+    border-color: #7893b5;
+    box-shadow: 0 0 1.8rem #4c88c52b;
+  }
+  .step.correct { border-color: #477a68; }
+  .step.incorrect { border-color: #b85169; }
+  .step-index {
+    display: block;
+    margin-bottom: .85rem;
+    color: #607188;
+    font: 650 .58rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-align: center;
+  }
+  .step-row {
+    display: grid;
+    justify-items: center;
+    gap: .32rem;
+    margin-top: .75rem;
+  }
+  .step-row small {
+    color: #627187;
+    font: 650 .52rem ui-monospace, monospace;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+  .step .symbol { width: 2.35rem; }
+  .equals {
+    margin-top: .3rem;
+    color: #516175;
+    font: 700 .7rem ui-monospace, monospace;
+    text-align: center;
+  }
+  .waiting {
+    display: grid;
+    min-height: 15rem;
+    place-items: center;
+    color: #697a91;
+    font: .76rem/1.65 ui-monospace, monospace;
+    text-align: center;
+  }
+  @media (max-width: 760px) {
+    .sequence { grid-template-columns: repeat(10, 4.6rem); }
+  }
+</style>
+<main>
+  <nav class="demo-nav" aria-label="WebGPU learning demos">
+    <a href="./xor.html">XOR</a>
+    <a href="./mnist.html">Draw a digit</a>
+    <a href="./dsr.html" aria-current="page">Sequence recall</a>
+    <a href="./learn-to-paint.html">Learn to paint</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Recall a sequence.</h1>
+      <p>
+        Two targets hide among six distractors. When the two prompts arrive,
+        a four-cell LSTM must reproduce the targets in their original order.
+        Watch the network receive and answer one symbol at a time.
+      </p>
+    </div>
+    <span class="badge" id="backend">training WebGPU</span>
+  </header>
+
+  <section class="glossary panel" aria-label="Sequence symbol glossary">
+    <span class="legend">
+      <i class="symbol small target-a"></i><i class="symbol small target-b"></i>
+      targets to remember
+    </span>
+    <span class="legend">
+      <i class="symbol small distractor-a"></i>
+      <i class="symbol small distractor-b"></i>
+      distractors
+    </span>
+    <span class="legend">
+      <i class="symbol small prompt-a"></i><i class="symbol small prompt-b"></i>
+      recall prompts
+    </span>
+    <span class="legend">
+      <i class="symbol small empty"></i>
+      no output expected
+    </span>
+  </section>
+
+  <section class="sequence-panel panel">
+    <header class="sequence-heading">
+      <h2>Live sequence</h2>
+      <span id="sequence-score">waiting for training</span>
+    </header>
+    <div id="sequence" class="waiting">
+      Training a length 4→10 curriculum.<br>
+      The sequence player will unlock when the model is ready.
+    </div>
+  </section>
+
+  <section class="controls panel">
+    <div class="metrics">
+      <div class="metric"><small>Trial</small><output id="trial">0 / 9,625</output></div>
+      <div class="metric"><small>Curriculum</small><output id="length">length 4</output></div>
+      <div class="metric"><small>Train time</small><output id="time">—</output></div>
+      <div class="metric"><small>Last sequence</small><output id="score">—</output></div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="generate" disabled>Generate sequence</button>
+    </div>
+  </section>
+  <div class="progress" aria-hidden="true"><span id="progress"></span></div>
+  <p class="status" id="status">
+    Building recurrent memory through progressively longer sequences…
+  </p>
+</main>
+
+<script type="module">
+  import {
+    createDsrSequence,
+    DSR_TARGETS,
+    trainDsrDemo,
+  } from "./demo-models.js";
+
+  const backend = document.querySelector("#backend");
+  const trial = document.querySelector("#trial");
+  const lengthOutput = document.querySelector("#length");
+  const time = document.querySelector("#time");
+  const score = document.querySelector("#score");
+  const progress = document.querySelector("#progress");
+  const status = document.querySelector("#status");
+  const generate = document.querySelector("#generate");
+  const sequenceElement = document.querySelector("#sequence");
+  const sequenceScore = document.querySelector("#sequence-score");
+
+  const classes = new Map([
+    [0, "prompt-a"],
+    [1, "prompt-b"],
+    [2, "target-a"],
+    [3, "distractor-a"],
+    [4, "target-b"],
+    [5, "distractor-b"],
+  ]);
+  const labels = new Map([
+    [0, "P1"],
+    [1, "P2"],
+    [2, "A"],
+    [3, "·"],
+    [4, "B"],
+    [5, "·"],
+  ]);
+
+  let session;
+  let animation = 0;
+
+  const circle = (symbol) => symbol === undefined
+    ? '<i class="symbol empty">—</i>'
+    : `<i class="symbol ${classes.get(symbol)}">${labels.get(symbol)}</i>`;
+
+  const delay = (duration) =>
+    new Promise((resolve) => setTimeout(resolve, duration));
+
+  const generateSequence = async () => {
+    if (!session) return;
+    animation += 1;
+    const run = animation;
+    generate.disabled = true;
+    score.value = "running";
+    sequenceScore.textContent = "reading symbols";
+    status.textContent =
+      "Targets must be stored silently; outputs appear only for the final prompts.";
+    await session.resetState();
+    const samples = createDsrSequence(Math.random, 10);
+    sequenceElement.className = "sequence";
+    sequenceElement.innerHTML = samples.map((sample, index) => `
+      <article class="step" data-step="${index}">
+        <span class="step-index">STEP ${index + 1}</span>
+        <div class="step-row">
+          <small>Input</small>
+          ${circle(sample.symbol)}
+        </div>
+        <div class="equals">↓</div>
+        <div class="step-row">
+          <small>Network</small>
+          <span class="network-output">${circle(undefined)}</span>
+        </div>
+      </article>
+    `).join("");
+
+    let correct = 0;
+    for (let index = 0; index < samples.length; index += 1) {
+      if (run !== animation) return;
+      const sample = samples[index];
+      const step = sequenceElement.querySelector(`[data-step="${index}"]`);
+      const previous = sequenceElement.querySelector(".active");
+      previous?.classList.remove("active");
+      step.classList.add("revealed", "active");
+      step.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      const output = await session.forward(sample.input);
+      const values = Array.from(output.data);
+      const bestIndex = values[1] > values[0] ? 1 : 0;
+      const predicted = Math.max(...values) >= .5
+        ? DSR_TARGETS[bestIndex]
+        : undefined;
+      const isCorrect = predicted === sample.expectedSymbol;
+      correct += isCorrect ? 1 : 0;
+      step.querySelector(".network-output").innerHTML = circle(predicted);
+      step.classList.add(isCorrect ? "correct" : "incorrect");
+      sequenceScore.textContent = `${correct} / ${index + 1} correct`;
+      await delay(520);
+    }
+    sequenceElement.querySelector(".active")?.classList.remove("active");
+    score.value = `${correct} / ${samples.length}`;
+    sequenceScore.textContent =
+      correct === samples.length ? "perfect recall" : `${correct} / ${samples.length}`;
+    status.textContent = correct === samples.length
+      ? "Perfect recall. Generate another random sequence to challenge it again."
+      : "This sequence exposed a mistake. Generate another to observe the model.";
+    document.body.dataset.pass = String(correct === samples.length);
+    generate.disabled = false;
+  };
+
+  generate.addEventListener("click", () => void generateSequence());
+  window.addEventListener("pagehide", () => {
+    animation += 1;
+    session?.dispose();
+  });
+
+  try {
+    const result = await trainDsrDemo((completed, total, currentLength) => {
+      trial.value = `${completed.toLocaleString()} / ${total.toLocaleString()}`;
+      lengthOutput.value = `length ${currentLength}`;
+      progress.style.width = `${completed / total * 100}%`;
+    });
+    session = result.session;
+    backend.textContent = result.backend;
+    time.value = `${result.durationMs.toLocaleString()} ms`;
+    lengthOutput.value = "length 10";
+    generate.disabled = false;
+    status.textContent =
+      "Ready. Generate a random length-10 sequence and watch recall unfold.";
+    sequenceElement.innerHTML =
+      "Training complete.<br>Choose “Generate sequence” to start the animation.";
+    document.body.dataset.pass = "ready";
+  } catch (error) {
+    backend.textContent = "unavailable";
+    status.classList.add("error");
+    status.textContent = error instanceof Error ? error.message : String(error);
+    document.body.dataset.pass = "false";
+  }
+</script>
+</html>
