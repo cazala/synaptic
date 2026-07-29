@@ -109,5 +109,9 @@ describe("cross-backend learning workloads", () => {
   afterAll(() => {
     console.log("\nCross-backend learning workload timings:");
     console.table(timings);
+    console.log(
+      "WebGPU runs separately, with fallback disabled, in "
+      + "packages/backend-webgpu/test/learning-workloads.html.",
+    );
   });
 });

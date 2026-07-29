@@ -25,17 +25,35 @@
 
   const result = document.querySelector("#result");
   const backend = () => new WebGpuBackend({ fallbackBackends: [] });
+  const timings = [];
   const progress = ({ workload, phase, completed, total }) => {
     result.textContent = `${workload} ${phase}: ${completed}/${total}`;
+  };
+  const timed = async (workload, run) => {
+    const start = performance.now();
+    const value = await run();
+    timings.push({
+      backend: value.backend,
+      workload,
+      durationMs: Math.round(performance.now() - start),
+    });
+    return value;
   };
 
   try {
     const dataset = createMnistDataset(window.mnist);
-    const xor = await runXorLearning(backend(), { onProgress: progress });
-    const mnist = await runMnistLearning(backend(), dataset, {
-      onProgress: progress,
-    });
-    const dsr = await runDsrLearning(backend(), { onProgress: progress });
+    const xor = await timed(
+      "XOR",
+      () => runXorLearning(backend(), { onProgress: progress }),
+    );
+    const mnist = await timed(
+      "MNIST",
+      () => runMnistLearning(backend(), dataset, { onProgress: progress }),
+    );
+    const dsr = await timed(
+      "DSR",
+      () => runDsrLearning(backend(), { onProgress: progress }),
+    );
     const pass =
       xor.backend === "webgpu" &&
       xor.accuracy === 1 &&
@@ -51,6 +69,7 @@
       xor,
       mnist,
       dsr,
+      timings,
     });
   } catch (error) {
     result.textContent = JSON.stringify({

@@ -68,7 +68,9 @@ These are bounded regression tests, not representative accuracy benchmarks.
 The dataset split, ordering, initialization, and validation sequences are fixed
 so a backend regression cannot hide behind favorable random sampling.
 The default test reporter names the backend in every learning test and prints a
-summary table with per-workload elapsed time and achieved accuracy.
+summary table with per-workload elapsed time and achieved accuracy. WebGPU is
+intentionally absent from that Node table: its no-fallback browser page reports
+its own per-workload timings alongside the hardware results.
 
 ## Browser WebGPU smoke tests
 
