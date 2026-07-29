@@ -541,7 +541,13 @@
       copy.heading.textContent = "The learned local network";
       copy.description.textContent =
         "The 3×3 kernel and both MLP matrices are shared at every grid cell.";
-      copy.count.textContent = "137 values";
+      const transferredValues =
+        Object.keys(result.kernel).length +
+        result.weights.inputToHidden.length +
+        result.weights.hiddenBias.length +
+        result.weights.hiddenToOutput.length +
+        result.weights.outputBias.length;
+      copy.count.textContent = `${transferredValues} values`;
       copy.source.innerHTML = "<strong>Synaptic</strong>12 → 8 tanh → 3";
       copy.target.innerHTML = "<strong>Automata 0.2</strong>network weights";
       copy.caveat.textContent =
