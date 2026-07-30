@@ -159,11 +159,11 @@ The first six pages are polished interactive examples:
   automatically reseeds inference when hidden values run away, the grid
   saturates, or a formed organism collapses.
   A three-stage curriculum indicator shows confidence percentages for seed
-  growth, persistence, and regeneration. Damage controls and click-or-drag
-  canvas erasing unlock only after growth and stability qualify. A bundled
-  Twemoji picker and local image upload path convert alternate targets into
-  centered 24×24 premultiplied pixel art, then restart training with fresh
-  weights.
+  growth, persistence, and regeneration. Click-or-drag canvas erasing unlocks
+  only after growth and stability qualify; an icon-only reset control remains
+  available without interrupting training. A bundled Twemoji picker and local
+  image upload path convert alternate targets into centered 24×24 premultiplied
+  pixel art, then restart training with fresh weights.
   The adjacent smoke page verifies numerical loss descent, varying rollout
   horizons, and that Automata accepts the exported artifact.
 

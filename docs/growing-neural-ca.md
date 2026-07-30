@@ -198,11 +198,12 @@ The demo continues its bounded health readbacks during the fifteen-second
 manual-damage grace period. Numerical divergence can still trigger a reset,
 but normal target-loss drift cannot interrupt repair. Once the visible loss
 returns near its pre-damage value, the page reports that regeneration
-succeeded. Once the regeneration phase starts, the centered Damage button and
-click-or-drag erasing on the live Automata canvas use the same four-cell-radius
-cut that appears in training. Pointer coordinates are transformed through
-Automata's camera and zoom, and drag segments are interpolated so fast movement
-does not leave gaps.
+succeeded. Once the regeneration phase starts, click-or-drag erasing on the
+live Automata canvas uses the same four-cell-radius cut that appears in
+training. Pointer coordinates are transformed through Automata's camera and
+zoom, and drag segments are interpolated so fast movement does not leave gaps.
+An icon-only reset control in the canvas corner returns inference to its center
+seed; training itself continues uninterrupted.
 
 ## Custom targets
 

@@ -306,6 +306,41 @@
     cursor: crosshair;
     touch-action: none;
   }
+  .reset-organism {
+    position: absolute;
+    z-index: 3;
+    top: 1rem;
+    right: 1rem;
+    min-width: 0;
+    width: 2.4rem;
+    height: 2.4rem;
+    display: grid;
+    place-items: center;
+    border: 1px solid #9ca8b5aa;
+    border-radius: 50%;
+    padding: 0;
+    color: #49596a;
+    background: #fffffff0;
+    box-shadow: 0 .4rem 1.4rem #2134481f;
+  }
+  .reset-organism:hover:not(:disabled) {
+    border-color: #62758a;
+    color: #18293b;
+    background: #fff;
+  }
+  .reset-organism:disabled {
+    cursor: wait;
+    opacity: .4;
+  }
+  .reset-organism svg {
+    width: 1.05rem;
+    height: 1.05rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
   .metrics {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -333,20 +368,16 @@
     font: 700 .85rem ui-monospace, monospace;
     text-overflow: ellipsis;
   }
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .65rem;
-    padding: 1rem 1.1rem;
+  .caption-bar {
+    display: grid;
+    min-height: 3rem;
+    place-items: center;
+    padding: .8rem 1.1rem;
     border-top: 1px solid #263649;
     background: #090f18;
+    text-align: center;
   }
-  .toolbar button { min-width: 8rem; }
-  .toolbar .secondary { border-color: #394a5d; background: #101822; }
-  .toolbar button:disabled { cursor: not-allowed; }
   .status {
-    margin-left: auto;
-    align-self: center;
     color: #82e8ce;
     font: 650 .66rem ui-monospace, monospace;
   }
@@ -371,8 +402,6 @@
   @media (max-width: 520px) {
     .architecture, .metrics { grid-template-columns: 1fr 1fr; }
     .stage::after { display: none; }
-    .toolbar button { flex: 1 1 8rem; }
-    .status { width: 100%; margin: .25rem 0 0; }
     .panel-head { flex-wrap: wrap; }
     .target-controls {
       width: 100%;
@@ -461,8 +490,8 @@
         <div>
           <h2>Automata inference</h2>
           <p id="inference-meta">
-            Responsive live grid · exact artifact handoff · interaction
-            unlocks with regeneration
+            Responsive live grid · exact artifact handoff · click or drag to
+            damage after regeneration
           </p>
         </div>
       </header>
@@ -470,6 +499,13 @@
         data-damage-enabled="false">
         <canvas id="organism" width="720" height="540"
           aria-label="Growing neural cellular automaton"></canvas>
+        <button id="reset" class="reset-organism" type="button"
+          aria-label="Reset organism" title="Reset organism" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20 6v5h-5"></path>
+            <path d="M18.2 16.5a8 8 0 1 1 1.5-7.9"></path>
+          </svg>
+        </button>
         <output id="phase-badge" class="phase-badge" aria-live="polite">
           Phase 1 · growth · 0%
         </output>
@@ -511,13 +547,7 @@
         <div class="metric"><span>damaged samples</span><strong id="damage-count">0</strong></div>
         <div class="metric"><span>auto resets</span><strong id="reset-count">0</strong></div>
       </div>
-      <div class="toolbar">
-        <button id="toggle" type="button">Pause training</button>
-        <button id="damage" class="secondary" type="button" disabled>
-          Damage locked
-        </button>
-        <button id="reset" class="secondary" type="button">Reset organism</button>
-        <button id="download" class="secondary" type="button">Download artifact</button>
+      <div class="caption-bar">
         <output id="status" class="status">initializing WebGPU…</output>
       </div>
     </article>
@@ -599,10 +629,7 @@
   const targetMeta = document.querySelector("#target-meta");
   const targetPreset = document.querySelector("#target-preset");
   const targetUpload = document.querySelector("#target-upload");
-  const toggleButton = document.querySelector("#toggle");
-  const damageButton = document.querySelector("#damage");
   const resetButton = document.querySelector("#reset");
-  const downloadButton = document.querySelector("#download");
   const fields = {
     iteration: document.querySelector("#iteration"),
     loss: document.querySelector("#loss"),
@@ -613,7 +640,7 @@
   };
   inferenceMeta.textContent =
     `${INFERENCE_SIZE} × ${INFERENCE_SIZE} live grid · ` +
-    "exact artifact handoff · interaction unlocks with regeneration";
+    "exact artifact handoff · click or drag to damage after regeneration";
   organismCanvas.setAttribute(
     "aria-label",
     `${INFERENCE_SIZE} by ${INFERENCE_SIZE} growing neural ` +
@@ -781,18 +808,8 @@
     damageEnabled =
       pendingTarget === undefined &&
       snapshot.key === "regeneration";
-    damageButton.disabled = !damageEnabled;
-    damageButton.textContent = damageEnabled
-      ? "Damage organism"
-      : "Damage locked";
     organismWrap.dataset.damageEnabled = String(damageEnabled);
     organismCanvas.classList.toggle("damage-enabled", damageEnabled);
-    if (damageEnabled) {
-      damageButton.title = "Erase the center of the organism";
-    } else {
-      damageButton.title =
-        "Damage unlocks when regeneration training starts";
-    }
   }
 
   function updatePhaseIndicator(snapshot = curriculum.snapshot()) {
@@ -997,7 +1014,6 @@
     });
     engine.reset({ mode: "center" });
     training = true;
-    toggleButton.textContent = "Pause training";
     targetPreset.value = targetKey;
     targetPreset.disabled = false;
     targetUpload.disabled = false;
@@ -1129,6 +1145,7 @@
     engine.reset({ mode: "center" });
     stopDamageInteraction = bindDamageInteraction();
     engine.play();
+    resetButton.disabled = false;
     updatePhaseIndicator();
     status.textContent = "training flower growth from one cell…";
   }
@@ -1142,7 +1159,6 @@
         training = false;
         targetPreset.disabled = false;
         targetUpload.disabled = false;
-        toggleButton.textContent = "Resume training";
         status.textContent =
           error instanceof Error ? error.message : String(error);
         status.dataset.error = "true";
@@ -1202,7 +1218,6 @@
       }
     } catch (error) {
       training = false;
-      toggleButton.textContent = "Resume training";
       updatePhaseIndicator();
       status.textContent = error instanceof Error ? error.message : String(error);
       status.dataset.error = "true";
@@ -1210,42 +1225,9 @@
     requestAnimationFrame(trainLoop);
   }
 
-  toggleButton.addEventListener("click", (event) => {
-    training = !training;
-    event.currentTarget.textContent =
-      training ? "Pause training" : "Resume training";
-    if (training) {
-      status.textContent = "training resumed";
-      delete status.dataset.error;
-    } else {
-      status.textContent = "training paused · organism still running";
-    }
-    updatePhaseIndicator();
-  });
-  damageButton.addEventListener("click", () => {
-    if (!beginRepair()) return;
-    engine.fillCircle(
-      INFERENCE_SIZE / 2,
-      INFERENCE_SIZE / 2,
-      DAMAGE_RADIUS,
-      [],
-    );
-  });
   resetButton.addEventListener("click", () => {
+    if (!engine) return;
     resetInference("organism reset to one cell");
-  });
-  downloadButton.addEventListener("click", async () => {
-    const artifact = await trainer.artifact();
-    const blob = new Blob([JSON.stringify(artifact)], {
-      type: "application/json",
-    });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    const slug = targetName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-    link.download =
-      `synaptic-growing-nca-${slug}-${trainer.iteration}.json`;
-    link.click();
-    URL.revokeObjectURL(link.href);
   });
 
   targetPreset.addEventListener("change", async () => {
