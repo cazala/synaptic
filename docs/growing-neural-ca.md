@@ -150,10 +150,3 @@ closer to the paper but cost proportionally more GPU work.
 The trainer requires WebGPU and has no fallback. This is deliberate: the
 generation tape and spatial reverse kernels are a GPU specialization, not the
 generic `Session` graph contract.
-
-## Development dependency
-
-The v2 branch temporarily vendors the `npm pack` output from Automata PR
-[#9](https://github.com/cazala/automata/pull/9). Replace that file dependency
-with the released package version and remove `vendor/` after the Automata API
-is published.

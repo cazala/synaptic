@@ -120,7 +120,7 @@ The first six pages are polished interactive examples:
   you draw a digit. Strokes are centered, scaled to 28×28, and averaged to the
   same 14×14 input representation used for training.
 - MNIST to Neural CA trains and compares both Neural substrates from
-  `@cazala/automata@0.2.0`. Direct mode uses a wrapped, symmetric 3×3
+  `@cazala/automata@0.3.0`. Direct mode uses a wrapped, symmetric 3×3
   convolution with only three tied parameters: corner, edge, and center.
   Network mode reproduces Automata's exact identity/Sobel-x/Sobel-y/symmetric
   perception order and trains a spatially shared 12→8→3 MLP. After frozen-rule

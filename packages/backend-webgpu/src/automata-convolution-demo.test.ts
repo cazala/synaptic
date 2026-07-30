@@ -240,7 +240,7 @@ describe("MNIST to Neural CA network-mode topology", () => {
     ]);
   });
 
-  it("exports a byte-for-byte network artifact accepted by Automata 0.2", () => {
+  it("exports a byte-for-byte network artifact accepted by Automata 0.3", () => {
     const { definition, kernelParameters, networkParameters } =
       createAutomataNetworkDefinition(14);
     const snapshot = createSnapshot(definition, 0x0ca2_0200);

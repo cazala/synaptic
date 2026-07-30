@@ -26,7 +26,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@cazala/automata": "file:vendor/cazala-automata-0.0.0-development.tgz",
+    "@cazala/automata": "0.3.0",
     "@vitest/coverage-v8": "4.1.10",
     "@webgpu/types": "0.1.71",
     "assemblyscript": "0.28.20",
