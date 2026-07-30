@@ -316,30 +316,35 @@
     height: 2.4rem;
     display: grid;
     place-items: center;
-    border: 1px solid #9ca8b5aa;
+    border: 1px solid #43556a;
     border-radius: 50%;
     padding: 0;
-    color: #49596a;
-    background: #fffffff0;
-    box-shadow: 0 .4rem 1.4rem #2134481f;
+    color: #b8c9dc;
+    background: #0b1420e8;
+    box-shadow: 0 .4rem 1.4rem #07101a66;
+    backdrop-filter: blur(.5rem);
   }
   .reset-organism:hover:not(:disabled) {
-    border-color: #62758a;
-    color: #18293b;
-    background: #fff;
+    border-color: #63809d;
+    color: #f1f7ff;
+    background: #111d2a;
+  }
+  .reset-organism:focus-visible {
+    outline: 2px solid #82e8ce;
+    outline-offset: 2px;
   }
   .reset-organism:disabled {
     cursor: wait;
     opacity: .4;
   }
   .reset-organism svg {
-    width: 1.05rem;
-    height: 1.05rem;
+    width: 1.1rem;
+    height: 1.1rem;
     fill: none;
     stroke: currentColor;
     stroke-linecap: round;
     stroke-linejoin: round;
-    stroke-width: 1.8;
+    stroke-width: 2;
   }
   .metrics {
     display: grid;
@@ -370,9 +375,8 @@
   }
   .caption-bar {
     display: grid;
-    min-height: 3rem;
     place-items: center;
-    padding: .8rem 1.1rem;
+    padding: .55rem 1.1rem;
     border-top: 1px solid #263649;
     background: #090f18;
     text-align: center;
@@ -501,9 +505,10 @@
           aria-label="Growing neural cellular automaton"></canvas>
         <button id="reset" class="reset-organism" type="button"
           aria-label="Reset organism" title="Reset organism" disabled>
+          <!-- Lucide rotate-ccw -->
           <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20 6v5h-5"></path>
-            <path d="M18.2 16.5a8 8 0 1 1 1.5-7.9"></path>
+            <path d="M3 12a9 9 0 1 0 3-7.7L3 7"></path>
+            <path d="M3 3v4h4"></path>
           </svg>
         </button>
         <output id="phase-badge" class="phase-badge" aria-live="polite">
@@ -781,6 +786,7 @@
   let latestArtifact;
   let damagedTotal = 0;
   let inferenceResets = 0;
+  let completedPhaseCheckpoints = 0;
   let lastHealthCheck = 0;
   let healthCheckPending = false;
   let healthGuardSuppressedUntil = 0;
@@ -840,6 +846,7 @@
   function resetTrainingMetrics() {
     damagedTotal = 0;
     inferenceResets = 0;
+    completedPhaseCheckpoints = 0;
     lastHealthCheck = 0;
     healthCheckPending = false;
     healthGuardSuppressedUntil = 0;
@@ -1198,8 +1205,25 @@
         await syncArtifact();
         autoReset = await checkInferenceHealth();
       }
+      const phaseCheckpoint = curriculumState.mastered
+        ? curriculumState.phases.length
+        : curriculumState.index;
+      const checkpointReached =
+        phaseCheckpoint > completedPhaseCheckpoints;
+      if (checkpointReached) {
+        completedPhaseCheckpoints = phaseCheckpoint;
+        if (!autoReset) {
+          const completedPhase =
+            curriculumState.phases[phaseCheckpoint - 1];
+          resetInference(
+            `${completedPhase.label} learned · organism reset at checkpoint`,
+            true,
+          );
+        }
+      }
       if (
         !autoReset &&
+        !checkpointReached &&
         training &&
         !repairing &&
         performance.now() >= repairMessageUntil

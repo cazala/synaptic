@@ -161,7 +161,8 @@ The first six pages are polished interactive examples:
   A three-stage curriculum indicator shows confidence percentages for seed
   growth, persistence, and regeneration. Click-or-drag canvas erasing unlocks
   only after growth and stability qualify; an icon-only reset control remains
-  available without interrupting training. A bundled Twemoji picker and local
+  available without interrupting training. Inference also resets once whenever
+  a curriculum phase qualifies. A bundled Twemoji picker and local
   image upload path convert alternate targets into centered 24×24 premultiplied
   pixel art, then restart training with fresh weights.
   The adjacent smoke page verifies numerical loss descent, varying rollout

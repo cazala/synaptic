@@ -203,7 +203,9 @@ live Automata canvas uses the same four-cell-radius cut that appears in
 training. Pointer coordinates are transformed through Automata's camera and
 zoom, and drag segments are interpolated so fast movement does not leave gaps.
 An icon-only reset control in the canvas corner returns inference to its center
-seed; training itself continues uninterrupted.
+seed; training itself continues uninterrupted. The demo also performs one
+automatic reset whenever a curriculum phase qualifies, giving the next phase a
+clean inference checkpoint.
 
 ## Custom targets
 
