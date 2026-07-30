@@ -53,12 +53,19 @@
     }
     const after = await trainer.trainStep(target, { learningRate: 0 });
     rolloutLengths.add(after.rolloutSteps);
+    const pooled = await trainer.trainStep(target, {
+      learningRate: 0,
+      useSamplePool: true,
+    });
     const artifact = await trainer.artifact();
     const automaton = GrowingNeural.fromArtifact(artifact);
     trainer.dispose();
     if (
       !(after.loss < baseline.loss) ||
       rolloutLengths.size < 2 ||
+      baseline.quality.seed?.samples !== 1 ||
+      baseline.quality.persistent !== undefined ||
+      pooled.quality.persistent?.samples !== 1 ||
       !artifact.weights.hiddenToOutput.every(Number.isFinite) ||
       automaton.getChannels() !== 4 ||
       automaton.getHidden() !== 4

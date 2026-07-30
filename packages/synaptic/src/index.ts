@@ -30,6 +30,7 @@ export {
 export {
   GROWING_NEURAL_CA_FORMAT,
   GROWING_NEURAL_CA_VERSION,
+  GrowingNeuralCaCurriculum,
   GrowingNeuralCaTrainer,
   WebGpuBackend,
   buildGrowingNeuralCaHeapLayout,
@@ -37,10 +38,16 @@ export {
 } from "@synaptic/backend-webgpu";
 export type {
   GrowingNeuralCaArtifact,
+  GrowingNeuralCaBatchQuality,
+  GrowingNeuralCaCurriculumPhase,
+  GrowingNeuralCaCurriculumPhaseKey,
+  GrowingNeuralCaCurriculumSnapshot,
+  GrowingNeuralCaCurriculumTrainingOptions,
   GrowingNeuralCaHeapLayout,
   GrowingNeuralCaHeapSection,
   GrowingNeuralCaHeapSectionName,
   GrowingNeuralCaMetrics,
+  GrowingNeuralCaQualityMetrics,
   GrowingNeuralCaTrainerOptions,
   GrowingNeuralCaTrainOptions,
 } from "@synaptic/backend-webgpu";

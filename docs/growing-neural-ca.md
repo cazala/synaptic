@@ -8,7 +8,10 @@ Automata runs for inference.
 ## Minimal training loop
 
 ```ts
-import { GrowingNeuralCaTrainer } from "@synaptic/backend-webgpu";
+import {
+  GrowingNeuralCaCurriculum,
+  GrowingNeuralCaTrainer,
+} from "@synaptic/backend-webgpu";
 
 const trainer = await GrowingNeuralCaTrainer.create({
   size: 24,
@@ -21,31 +24,25 @@ const trainer = await GrowingNeuralCaTrainer.create({
   fireRate: 0.5,
   learningRate: 0.002,
   poolSize: 128,
-  poolWarmupIterations: 128,
 });
 
 // Row-major 24 × 24 premultiplied RGBA, with values normally in [0, 1].
-const target = new Float32Array(24 * 24 * 4);
+const target = await loadPremultipliedTarget();
+const curriculum = new GrowingNeuralCaCurriculum(target);
 
 for (let iteration = 0; iteration < 20_000; iteration += 1) {
-  const persistence = iteration >= 128;
-  const regenerationProgress = Math.max(
-    0,
-    Math.min(1, (iteration - 512) / 512),
+  const metrics = await trainer.trainStep(
+    target,
+    curriculum.trainingOptions(),
   );
-  const metrics = await trainer.trainStep(target, {
-    learningRate: !persistence
-      ? 0.002
-      : iteration < 2_048
-      ? 0.0005
-      : 0.0003,
-    damageProbability: regenerationProgress,
-  });
+  const state = curriculum.update(metrics);
   console.log(
     metrics.iteration,
     metrics.rolloutSteps,
     metrics.loss,
     metrics.durationMs,
+    state.key,
+    state.progress,
   );
 }
 
@@ -148,16 +145,31 @@ organism to remain in its target basin. Recommended phases are:
 3. a gradual ramp from undamaged to several damaged healthy samples per batch.
 
 The demo uses the reference batch shape of eight samples: the worst sample is
-reseeded and the healthiest three are damage candidates. It begins the damage
-ramp at update 512, reaches three damaged samples per batch at update 1,024,
-and retains the persistence learning rate through update 2,048 before decaying
-it. This teaches repair during the same early window in which the flower first
-becomes stable instead of postponing regeneration for a separate long phase.
-The page presents those boundaries as three explicit curriculum states:
-growth (updates 0–127), stability (128–511), and regeneration (512 onward).
-Each state has its own progress indicator and live caption. Manual damage stays
-locked through the first two phases so an accidental cut cannot be mistaken
-for a regeneration test.
+reseeded and the healthiest three are damage candidates. Unlike a fixed
+iteration schedule, `GrowingNeuralCaCurriculum` advances from evidence in the
+final states already returned by each training step:
+
+1. growth measures fresh seed rollouts;
+2. stability measures retained sample-pool states after another randomized
+   64–96-generation rollout;
+3. regeneration measures states after a broad random cut.
+
+Every cohort reports mean visible loss and living-cell count. The curriculum
+normalizes loss by the selected target's own RGBA energy and cell coverage, so
+a sparse flower and a dense uploaded image are not judged against the same
+absolute error. It requires a rolling set of successful observations rather
+than accepting one lucky stochastic rollout. Regeneration confidence also
+includes current growth and stability confidence, preventing repair from
+passing after the model forgets an earlier skill.
+
+The percentage and progress bar in the demo show this measured confidence.
+Sample-pool training starts only after growth qualifies, damage probability
+ramps from 25% to 100% as repair confidence rises, and the maintenance learning
+rate begins only after regeneration is mastered. Manual damage stays locked
+through the first two phases so an accidental cut cannot be mistaken for a
+regeneration test. Mastery remains live rather than permanent: if the rolling
+quality window regresses, confidence drops below 100% and the stronger repair
+learning rate resumes until the organism qualifies again.
 
 Selected outputs replace the same pool entries they came from, allowing a state
 to accumulate a long trajectory over many short BPTT windows. After warm-up,
@@ -194,10 +206,9 @@ unrelated target. The live Automata instance is retained: only its learned
 weights and center seed are replaced.
 
 The task is iterative, not an instant classifier. The 24×24, 128-hidden demo
-begins forming the target within hundreds of iterations and becomes more
-stable over thousands. Its 64–96 generation rollouts match the reference
-training horizon but cost proportionally more GPU work than the compact
-defaults.
+may qualify different targets at very different iterations. Its 64–96
+generation rollouts match the reference training horizon but cost
+proportionally more GPU work than the compact defaults.
 
 ## Options
 
@@ -218,6 +229,11 @@ defaults.
 | `poolWarmupIterations` | 128 | 0–10,000 | seed-only updates |
 | `poolValueLimit` | 256 | 1–1,000 | runaway-state replacement bound |
 | `damageProbability` | 0.35 | 0–1 | chance to erase a healthy sampled state |
+
+`trainStep(...)` also accepts `useSamplePool` to let an adaptive controller
+choose when persistence begins. Its `quality` metrics group final rollout
+health into `seed`, `persistent`, and `damaged` cohorts without another GPU
+readback; those final states were already mapped to update the sample pool.
 
 The trainer requires WebGPU and has no fallback. This is deliberate: the
 generation tape and spatial reverse kernels are a GPU specialization, not the

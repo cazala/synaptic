@@ -148,18 +148,20 @@ The first six pages are polished interactive examples:
   atomics, applies per-tensor gradient normalization and Adam, and trains
   the last sixteen states of each rollout toward the target while learning
   growth, persistence, and damage repair from an in-place sample pool. The
-  eight-sample regeneration curriculum ramps up from updates 512–1,024 until
-  three healthy samples are damaged per batch. Its cuts include the demo
-  button's four-cell-radius hole, and the learning rate decays only after
-  update 2,048. Every
+  adaptive eight-sample curriculum advances only after seed-grown, retained,
+  and damaged final states repeatedly meet target-relative image-error and
+  living-cell-coverage criteria. Damage probability increases with measured
+  repair confidence rather than elapsed updates. Its cuts include the demo
+  button's four-cell-radius hole. Every
   eighth update streams its four tensors into Automata's live `GrowingNeural`
   simulation. A bounded health check automatically reseeds inference when
   hidden values run away, the grid saturates, or a formed organism collapses.
-  A three-stage curriculum indicator distinguishes seed growth, persistence,
-  and regeneration. Damage controls and click-or-drag canvas erasing unlock
-  only for the regeneration stage. A bundled Twemoji picker and local image
-  upload path convert alternate targets into centered 24×24 premultiplied
-  pixel art, then restart training with fresh weights.
+  A three-stage curriculum indicator shows confidence percentages for seed
+  growth, persistence, and regeneration. Damage controls and click-or-drag
+  canvas erasing unlock only after growth and stability qualify. A bundled
+  Twemoji picker and local image upload path convert alternate targets into
+  centered 24×24 premultiplied pixel art, then restart training with fresh
+  weights.
   The adjacent smoke page verifies numerical loss descent, varying rollout
   horizons, and that Automata accepts the exported artifact.
 

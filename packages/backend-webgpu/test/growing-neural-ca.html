@@ -104,7 +104,10 @@
     position: relative;
     min-width: 0;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "number title status"
+      "number subtitle status";
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
     gap: .25rem .7rem;
     align-items: center;
     padding: .9rem 1rem 1rem;
@@ -133,20 +136,33 @@
     transition: transform .2s ease;
   }
   .phase-number {
-    grid-row: 1 / span 2;
+    grid-area: number;
     color: var(--phase-color);
     font: 750 .62rem ui-monospace, monospace;
   }
-  .phase-step strong { font-size: .75rem; }
+  .phase-step > strong {
+    grid-area: title;
+    font-size: .75rem;
+  }
   .phase-step small {
+    grid-area: subtitle;
     overflow: hidden;
     color: #71839a;
     font: .58rem ui-monospace, monospace;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .phase-status {
+    grid-area: status;
+    display: grid;
+    gap: .15rem;
+    justify-items: end;
+  }
+  .phase-percent {
+    color: var(--phase-color);
+    font: 750 .72rem ui-monospace, monospace;
+  }
   .phase-state {
-    grid-row: 1 / span 2;
     color: #8293a8;
     font: 700 .53rem ui-monospace, monospace;
     font-style: normal;
@@ -213,11 +229,17 @@
   .target-controls {
     display: grid;
     gap: .45rem;
-    justify-items: end;
+    justify-items: stretch;
   }
+  .target-panel .panel-head { display: grid; }
+  .target-controls,
+  .target-controls label { min-width: 0; width: 100%; }
   .target-controls select,
   .upload-control {
-    min-width: 8.8rem;
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
     border: 1px solid #394a5d;
     border-radius: .62rem;
     padding: .58rem .7rem;
@@ -362,6 +384,11 @@
     .toolbar button { flex: 1 1 8rem; }
     .status { width: 100%; margin: .25rem 0 0; }
     .panel-head { flex-wrap: wrap; }
+    .curriculum-head {
+      align-items: start;
+      flex-wrap: wrap;
+    }
+    .curriculum-head > div { width: 100%; }
     .target-controls {
       width: 100%;
       grid-template-columns: 1fr 1fr;
@@ -417,28 +444,37 @@
     <header class="curriculum-head">
       <div>
         <strong>Training curriculum</strong>
-        <p id="phase-detail">Learning to grow from a single living cell.</p>
+        <p id="phase-detail">Testing fresh seed rollouts for shape and living-cell coverage.</p>
       </div>
-      <output id="phase-badge" class="phase-badge">Phase 1 · growth</output>
+      <output id="phase-badge" class="phase-badge">Phase 1 · growth · 0%</output>
     </header>
     <div class="phase-list">
       <article class="phase-step" data-phase="growth" data-state="active">
         <span class="phase-number">01</span>
         <strong>Growth</strong>
-        <small>seed → target · updates 0–127</small>
-        <i class="phase-state">active</i>
+        <small>seed → target · repeated quality checks</small>
+        <span class="phase-status">
+          <b class="phase-percent">0%</b>
+          <i class="phase-state">active</i>
+        </span>
       </article>
       <article class="phase-step" data-phase="stability" data-state="pending">
         <span class="phase-number">02</span>
         <strong>Stability</strong>
-        <small>sample pool · updates 128–511</small>
-        <i class="phase-state">waiting</i>
+        <small>retained states · repeated quality checks</small>
+        <span class="phase-status">
+          <b class="phase-percent">0%</b>
+          <i class="phase-state">waiting</i>
+        </span>
       </article>
       <article class="phase-step" data-phase="regeneration" data-state="pending">
         <span class="phase-number">03</span>
         <strong>Regeneration</strong>
-        <small>damage ramp · update 512+</small>
-        <i class="phase-state">waiting</i>
+        <small>damaged states · repeated quality checks</small>
+        <span class="phase-status">
+          <b class="phase-percent">0%</b>
+          <i class="phase-state">waiting</i>
+        </span>
       </article>
     </div>
   </section>
@@ -528,6 +564,7 @@
 <script type="module">
   import { Engine, GrowingNeural } from "@cazala/automata";
   import {
+    GrowingNeuralCaCurriculum,
     GrowingNeuralCaTrainer,
     measureGrowingNeuralCaState,
   } from "@synaptic/backend-webgpu";
@@ -538,10 +575,6 @@
   const MIN_ROLLOUT_STEPS = 64;
   const MAX_ROLLOUT_STEPS = 96;
   const STABILITY_STEPS = 16;
-  const PERSISTENCE_START_ITERATION = 128;
-  const REGENERATION_START_ITERATION = 512;
-  const REGENERATION_RAMP_ITERATIONS = 512;
-  const LEARNING_RATE_DECAY_ITERATION = 2_048;
   const HEALTH_CHECK_INTERVAL_MS = 1_200;
   const POOL_VALUE_LIMIT = 256;
   const INFERENCE_VALUE_LIMIT = 1_000;
@@ -577,6 +610,7 @@
     (element) => ({
       element,
       state: element.querySelector(".phase-state"),
+      percent: element.querySelector(".phase-percent"),
     }),
   );
   const targetMeta = document.querySelector("#target-meta");
@@ -680,6 +714,7 @@
   }
 
   let target = drawFlowerTarget();
+  let curriculum = new GrowingNeuralCaCurriculum(target);
   let targetName = "Flower";
   let targetKey = "flower";
   let targetAliveCells = 0;
@@ -719,47 +754,10 @@
     );
   }
 
-  function phaseForIteration(iteration) {
-    if (iteration < PERSISTENCE_START_ITERATION) {
-      return {
-        index: 0,
-        key: "growth",
-        label: "growth",
-        detail: "Learning to grow the target from a single living cell.",
-        progress: iteration / PERSISTENCE_START_ITERATION,
-      };
-    }
-    if (iteration < REGENERATION_START_ITERATION) {
-      return {
-        index: 1,
-        key: "stability",
-        label: "stability",
-        detail: "Turning the completed target into a persistent attractor.",
-        progress:
-          (iteration - PERSISTENCE_START_ITERATION) /
-          (REGENERATION_START_ITERATION - PERSISTENCE_START_ITERATION),
-      };
-    }
-    return {
-      index: 2,
-      key: "regeneration",
-      label: "regeneration",
-      detail:
-        iteration < REGENERATION_START_ITERATION + REGENERATION_RAMP_ITERATIONS
-          ? "Ramping up damage so the organism learns to repair itself."
-          : "Training growth, persistence, and repair together.",
-      progress: Math.min(
-        1,
-        (iteration - REGENERATION_START_ITERATION) /
-          REGENERATION_RAMP_ITERATIONS,
-      ),
-    };
-  }
-
-  function updateDamageAvailability(iteration) {
+  function updateDamageAvailability(snapshot = curriculum.snapshot()) {
     damageEnabled =
       pendingTarget === undefined &&
-      iteration >= REGENERATION_START_ITERATION;
+      snapshot.key === "regeneration";
     damageButton.disabled = !damageEnabled;
     damageButton.textContent = damageEnabled
       ? "Damage organism"
@@ -770,50 +768,39 @@
       damageButton.title = "Erase the center of the organism";
       damageHint.textContent = "Click or drag to damage";
     } else {
-      const remaining = Math.max(
-        0,
-        REGENERATION_START_ITERATION - iteration,
-      );
       damageButton.title =
         "Damage unlocks when regeneration training starts";
       damageHint.textContent = pendingTarget
         ? "Preparing the new target"
-        : `Damage unlocks with regeneration · ${remaining} updates`;
+        : "Damage unlocks after growth and stability qualify";
     }
   }
 
-  function updatePhaseIndicator(iteration) {
-    const phase = phaseForIteration(iteration);
+  function updatePhaseIndicator(snapshot = curriculum.snapshot()) {
+    const percentage = Math.round(snapshot.progress * 100);
     phaseBadge.textContent = training
-      ? `Phase ${phase.index + 1} · ${phase.label}`
-      : `Paused · ${phase.label}`;
-    phaseDetail.textContent = phase.detail;
-    liveBadge.textContent = `${training ? "training" : "paused"} · ${phase.label}`;
+      ? `Phase ${snapshot.index + 1} · ${snapshot.label} · ${percentage}%`
+      : `Paused · ${snapshot.label} · ${percentage}%`;
+    phaseDetail.textContent = snapshot.detail;
+    liveBadge.textContent =
+      `${training ? "training" : "paused"} · ${snapshot.label}`;
     liveBadge.dataset.training = String(training);
     for (let index = 0; index < phaseSteps.length; index++) {
       const step = phaseSteps[index];
-      const state =
-        index < phase.index
-          ? "complete"
-          : index === phase.index
-          ? "active"
-          : "pending";
-      const progress =
-        index < phase.index
-          ? 1
-          : index === phase.index
-          ? phase.progress
-          : 0;
-      step.element.dataset.state = state;
-      step.element.style.setProperty("--phase-progress", String(progress));
+      const phase = snapshot.phases[index];
+      if (phase === undefined) continue;
+      step.element.dataset.state = phase.state;
+      step.element.style.setProperty(
+        "--phase-progress",
+        String(phase.progress),
+      );
+      step.percent.textContent = `${Math.round(phase.progress * 100)}%`;
       step.state.textContent =
-        state === "complete"
-          ? "complete"
-          : state === "active"
-          ? (training ? "active" : "paused")
-          : "waiting";
+        phase.state === "active" && !training
+          ? "paused"
+          : phase.stateLabel;
     }
-    updateDamageAvailability(iteration);
+    updateDamageAvailability(snapshot);
   }
 
   function resetTrainingMetrics() {
@@ -850,7 +837,7 @@
       "aria-label",
       `${name} pixel-art training target`,
     );
-    updateDamageAvailability(trainer?.iteration ?? 0);
+    updateDamageAvailability();
     status.textContent = `preparing ${name.toLowerCase()} target…`;
     delete status.dataset.error;
   }
@@ -960,7 +947,6 @@
       learningRate: .002,
       damageProbability: 0,
       poolSize: 128,
-      poolWarmupIterations: 128,
       poolValueLimit: POOL_VALUE_LIMIT,
       seed: 0x6772_6f77,
     });
@@ -978,6 +964,7 @@
     targetName = next.name;
     targetKey = next.key;
     updateTargetGeometry();
+    curriculum = new GrowingNeuralCaCurriculum(target);
     resetTrainingMetrics();
     trainer = await createTrainer();
     latestArtifact = await trainer.artifact();
@@ -992,7 +979,7 @@
     targetPreset.value = targetKey;
     targetPreset.disabled = false;
     targetUpload.disabled = false;
-    updatePhaseIndicator(0);
+    updatePhaseIndicator();
     status.textContent =
       `training ${targetName.toLowerCase()} growth from one cell…`;
   }
@@ -1115,7 +1102,7 @@
     engine.reset({ mode: "center" });
     stopDamageInteraction = bindDamageInteraction();
     engine.play();
-    updatePhaseIndicator(0);
+    updatePhaseIndicator();
     status.textContent = "training flower growth from one cell…";
   }
 
@@ -1147,24 +1134,10 @@
       return;
     }
     try {
-      const persistencePhase =
-        trainer.iteration >= PERSISTENCE_START_ITERATION;
-      const regenerationProgress = Math.max(
-        0,
-        Math.min(
-          1,
-          (trainer.iteration - REGENERATION_START_ITERATION) /
-            REGENERATION_RAMP_ITERATIONS,
-        ),
+      const metrics = await trainer.trainStep(
+        target,
+        curriculum.trainingOptions(),
       );
-      const metrics = await trainer.trainStep(target, {
-        learningRate: !persistencePhase
-          ? .002
-          : trainer.iteration < LEARNING_RATE_DECAY_ITERATION
-          ? .0005
-          : .0003,
-        damageProbability: regenerationProgress,
-      });
       if (pendingTarget) {
         requestAnimationFrame(trainLoop);
         return;
@@ -1175,7 +1148,8 @@
       fields.rollout.textContent = `${metrics.rolloutSteps} gen`;
       fields.duration.textContent = `${metrics.durationMs.toFixed(0)} ms`;
       fields.damage.textContent = damagedTotal.toLocaleString();
-      updatePhaseIndicator(metrics.iteration);
+      const curriculumState = curriculum.update(metrics);
+      updatePhaseIndicator(curriculumState);
       let autoReset = false;
       if (metrics.iteration <= 8 || metrics.iteration % 8 === 0) {
         await syncArtifact();
@@ -1187,21 +1161,22 @@
         !repairing &&
         performance.now() >= repairMessageUntil
       ) {
+        const confidence = Math.round(curriculumState.progress * 100);
         status.textContent =
           metrics.iteration < 8
             ? "warming up final layer…"
-            : metrics.iteration < PERSISTENCE_START_ITERATION
-            ? "training growth from one cell…"
-            : metrics.iteration < REGENERATION_START_ITERATION
-            ? "training a stable attractor from the sample pool…"
-            : regenerationProgress < 1
-            ? "ramping up regeneration training…"
-            : "training regeneration with three damaged samples per batch…";
+            : curriculumState.key === "growth"
+            ? `measuring seed growth · ${confidence}% confidence`
+            : curriculumState.key === "stability"
+            ? `measuring retained-state stability · ${confidence}% confidence`
+            : curriculumState.mastered
+            ? "regeneration learned · continuing maintenance training…"
+            : `measuring damage repair · ${confidence}% confidence`;
       }
     } catch (error) {
       training = false;
       toggleButton.textContent = "Resume training";
-      updatePhaseIndicator(trainer.iteration);
+      updatePhaseIndicator();
       status.textContent = error instanceof Error ? error.message : String(error);
       status.dataset.error = "true";
     }
@@ -1218,7 +1193,7 @@
     } else {
       status.textContent = "training paused · organism still running";
     }
-    updatePhaseIndicator(trainer.iteration);
+    updatePhaseIndicator();
   });
   damageButton.addEventListener("click", () => {
     if (!beginRepair()) return;

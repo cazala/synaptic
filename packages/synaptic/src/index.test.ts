@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { dense, input, sequential } from "@synaptic/layers";
 import {
   GROWING_NEURAL_CA_FORMAT,
+  GrowingNeuralCaCurriculum,
   Model,
   compileModel,
   compilePlan,
@@ -42,5 +43,10 @@ describe("synaptic facade", () => {
     expect(
       createGrowingNeuralCaWeights({ channels: 4, hidden: 2 }),
     ).toHaveLength(2 * 12 + 2 + 4 * 2 + 4);
+    expect(
+      new GrowingNeuralCaCurriculum(
+        new Float32Array([0, 0, 0, 1]),
+      ).snapshot().key,
+    ).toBe("growth");
   });
 });

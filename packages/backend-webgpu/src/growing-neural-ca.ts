@@ -68,6 +68,24 @@ export interface GrowingNeuralCaTrainerOptions {
 export interface GrowingNeuralCaTrainOptions {
   readonly learningRate?: number;
   readonly damageProbability?: number;
+  /**
+   * Select evolved states from the sample pool. When omitted, the trainer
+   * follows `poolWarmupIterations`; callers with an adaptive curriculum can
+   * switch persistence on when seed growth is actually learned.
+   */
+  readonly useSamplePool?: boolean;
+}
+
+export interface GrowingNeuralCaBatchQuality {
+  readonly samples: number;
+  readonly meanLoss: number;
+  readonly meanAliveCells: number;
+}
+
+export interface GrowingNeuralCaQualityMetrics {
+  readonly seed: GrowingNeuralCaBatchQuality | undefined;
+  readonly persistent: GrowingNeuralCaBatchQuality | undefined;
+  readonly damaged: GrowingNeuralCaBatchQuality | undefined;
 }
 
 export interface GrowingNeuralCaMetrics {
@@ -76,6 +94,11 @@ export interface GrowingNeuralCaMetrics {
   readonly rolloutSteps: number;
   readonly durationMs: number;
   readonly damagedSamples: number;
+  /**
+   * Final-rollout quality grouped by how each batch sample was initialized.
+   * These values reuse the state already read back for the sample pool.
+   */
+  readonly quality: GrowingNeuralCaQualityMetrics;
 }
 
 export interface GrowingNeuralCaStateHealth {
@@ -119,6 +142,8 @@ export interface GrowingNeuralCaHeapLayout {
     Record<GrowingNeuralCaHeapSectionName, GrowingNeuralCaHeapSection>
   >;
 }
+
+type GrowingNeuralCaSampleKind = "seed" | "persistent" | "damaged";
 
 interface ResolvedOptions {
   readonly gpu: GPU;
@@ -321,6 +346,58 @@ export function measureGrowingNeuralCaState(
     maximumAbsoluteValue,
     aliveCells,
     nonFiniteValues,
+  });
+}
+
+function measureBatchQuality(
+  final: Float32Array,
+  target: Float32Array,
+  channels: number,
+  aliveThreshold: number,
+  sampleKinds: readonly GrowingNeuralCaSampleKind[],
+): GrowingNeuralCaQualityMetrics {
+  const stateLength = (target.length / 4) * channels;
+  const totals = new Map<
+    GrowingNeuralCaSampleKind,
+    { samples: number; loss: number; aliveCells: number }
+  >();
+  for (let batch = 0; batch < sampleKinds.length; batch += 1) {
+    const kind = sampleKinds[batch];
+    if (kind === undefined) {
+      continue;
+    }
+    const health = measureGrowingNeuralCaState(
+      final.subarray(batch * stateLength, (batch + 1) * stateLength),
+      target,
+      channels,
+      aliveThreshold,
+    );
+    const total = totals.get(kind) ?? {
+      samples: 0,
+      loss: 0,
+      aliveCells: 0,
+    };
+    total.samples += 1;
+    total.loss += health.loss;
+    total.aliveCells += health.aliveCells;
+    totals.set(kind, total);
+  }
+  const quality = (
+    kind: GrowingNeuralCaSampleKind,
+  ): GrowingNeuralCaBatchQuality | undefined => {
+    const total = totals.get(kind);
+    return total === undefined
+      ? undefined
+      : Object.freeze({
+          samples: total.samples,
+          meanLoss: total.loss / total.samples,
+          meanAliveCells: total.aliveCells / total.samples,
+        });
+  };
+  return Object.freeze({
+    seed: quality("seed"),
+    persistent: quality("persistent"),
+    damaged: quality("damaged"),
   });
 }
 
@@ -1336,12 +1413,15 @@ export class GrowingNeuralCaTrainer {
       0,
       1,
     );
+    const useSamplePool =
+      options.useSamplePool ??
+      this.#iteration >= this.#options.poolWarmupIterations;
     this.#busy = true;
     const started = performance.now();
     try {
       const activeRolloutSteps = this.#activeRolloutSteps();
-      const { initial, damagedSamples, poolIndices } =
-        this.#trainingBatch(target, damageProbability);
+      const { initial, damagedSamples, poolIndices, sampleKinds } =
+        this.#trainingBatch(target, damageProbability, useSamplePool);
       const sections = this.#layout.sections;
       this.#device.queue.writeBuffer(
         this.#heap,
@@ -1489,6 +1569,13 @@ export class GrowingNeuralCaTrainer {
         "Growing Neural CA training produced non-finite values",
         "NON_FINITE_TRAINING_STATE",
       );
+      const quality = measureBatchQuality(
+        final,
+        target,
+        this.channels,
+        this.#options.aliveThreshold,
+        sampleKinds,
+      );
       this.#updatePool(final, poolIndices);
       this.#iteration += 1;
       return {
@@ -1497,6 +1584,7 @@ export class GrowingNeuralCaTrainer {
         rolloutSteps: activeRolloutSteps,
         durationMs: performance.now() - started,
         damagedSamples,
+        quality,
       };
     } finally {
       this.#busy = false;
@@ -1663,10 +1751,12 @@ export class GrowingNeuralCaTrainer {
   #trainingBatch(
     target: Float32Array,
     damageProbability: number,
+    useSamplePool: boolean,
   ): {
     readonly initial: Float32Array;
     readonly damagedSamples: number;
     readonly poolIndices: readonly number[];
+    readonly sampleKinds: readonly GrowingNeuralCaSampleKind[];
   } {
     const stateLength = this.size * this.size * this.channels;
     const initial = new Float32Array(this.batchSize * stateLength);
@@ -1679,6 +1769,7 @@ export class GrowingNeuralCaTrainer {
     );
     const poolIndices: number[] = [];
     const samples: Float32Array[] = [];
+    const sampleKinds: GrowingNeuralCaSampleKind[] = [];
     for (let batch = 0; batch < this.batchSize; batch += 1) {
       const poolIndex = availablePoolIndices.length === 0
         ? Math.floor(random() * this.#pool.length)
@@ -1690,8 +1781,7 @@ export class GrowingNeuralCaTrainer {
       samples.push((this.#pool[poolIndex] ?? this.#seedState).slice());
     }
 
-    const warmingUp =
-      this.#iteration < this.#options.poolWarmupIterations;
+    const warmingUp = !useSamplePool;
     const ranked = samples
       .map((sample, batch) => ({
         batch,
@@ -1725,6 +1815,9 @@ export class GrowingNeuralCaTrainer {
       const sample = forceSeed
         ? this.#seedState.slice()
         : samples[batch]!;
+      let sampleKind: GrowingNeuralCaSampleKind = forceSeed
+        ? "seed"
+        : "persistent";
       if (
         !forceSeed &&
         damageCandidates.has(batch) &&
@@ -1760,10 +1853,12 @@ export class GrowingNeuralCaTrainer {
           }
         }
         damagedSamples += 1;
+        sampleKind = "damaged";
       }
+      sampleKinds.push(sampleKind);
       initial.set(sample, batch * stateLength);
     }
-    return { initial, damagedSamples, poolIndices };
+    return { initial, damagedSamples, poolIndices, sampleKinds };
   }
 
   #updatePool(
