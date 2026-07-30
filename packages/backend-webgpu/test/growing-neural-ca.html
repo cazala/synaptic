@@ -60,43 +60,33 @@
     background: var(--amber);
     box-shadow: 0 0 1rem var(--amber);
   }
-  .curriculum {
-    overflow: hidden;
-    margin: 1.4rem 0;
-  }
-  .curriculum-head {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: center;
-    padding: .9rem 1rem;
-    border-bottom: 1px solid #263649;
-  }
-  .curriculum-head strong {
-    display: block;
-    margin-bottom: .2rem;
-    font-size: .78rem;
-  }
-  .curriculum-head p {
-    margin: 0;
-    color: #75869c;
-    font: .62rem/1.45 ui-monospace, monospace;
-  }
   .phase-badge {
-    flex: none;
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    bottom: 1rem;
+    max-width: calc(100% - 2rem);
     border: 1px solid #315a55;
     border-radius: 999px;
     padding: .45rem .7rem;
     color: #9af0d9;
-    background: #0a1919;
+    background: #0a1919e8;
+    box-shadow: 0 .4rem 1.4rem #07101552;
     font: 700 .58rem ui-monospace, monospace;
     letter-spacing: .07em;
+    overflow: hidden;
+    pointer-events: none;
+    text-overflow: ellipsis;
     text-transform: uppercase;
+    transform: translateX(-50%);
+    white-space: nowrap;
   }
   .phase-list {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1px;
+    border-top: 1px solid #263649;
+    border-bottom: 1px solid #263649;
     background: #263649;
   }
   .phase-step {
@@ -247,7 +237,26 @@
     background: #101822;
     font: 700 .63rem ui-monospace, monospace;
   }
-  .target-controls select { cursor: pointer; }
+  .target-controls > label:first-child {
+    position: relative;
+  }
+  .target-controls > label:first-child::after {
+    position: absolute;
+    top: 50%;
+    right: .85rem;
+    width: .38rem;
+    height: .38rem;
+    border-right: 1px solid #98a9bc;
+    border-bottom: 1px solid #98a9bc;
+    content: "";
+    pointer-events: none;
+    transform: translateY(-70%) rotate(45deg);
+  }
+  .target-controls select {
+    padding-right: 2.2rem;
+    appearance: none;
+    cursor: pointer;
+  }
   .upload-control {
     position: relative;
     overflow: hidden;
@@ -285,25 +294,6 @@
     position: relative;
     min-height: 30rem;
     background: #fff;
-  }
-  .damage-hint {
-    position: absolute;
-    z-index: 2;
-    right: 1rem;
-    bottom: 1rem;
-    max-width: calc(100% - 2rem);
-    border: 1px solid #ff789599;
-    border-radius: 999px;
-    padding: .5rem .72rem;
-    color: #8e4658;
-    background: #fff9;
-    box-shadow: 0 .4rem 1.4rem #5d233626;
-    font: 750 .58rem ui-monospace, monospace;
-    pointer-events: none;
-  }
-  .organism-wrap[data-damage-enabled="false"] .damage-hint {
-    border-color: #9ca8b5aa;
-    color: #687483;
   }
   #organism {
     display: block;
@@ -384,11 +374,6 @@
     .toolbar button { flex: 1 1 8rem; }
     .status { width: 100%; margin: .25rem 0 0; }
     .panel-head { flex-wrap: wrap; }
-    .curriculum-head {
-      align-items: start;
-      flex-wrap: wrap;
-    }
-    .curriculum-head > div { width: 100%; }
     .target-controls {
       width: 100%;
       grid-template-columns: 1fr 1fr;
@@ -440,45 +425,6 @@
     </article>
   </section>
 
-  <section class="curriculum panel" aria-label="Training curriculum">
-    <header class="curriculum-head">
-      <div>
-        <strong>Training curriculum</strong>
-        <p id="phase-detail">Testing fresh seed rollouts for shape and living-cell coverage.</p>
-      </div>
-      <output id="phase-badge" class="phase-badge">Phase 1 · growth · 0%</output>
-    </header>
-    <div class="phase-list">
-      <article class="phase-step" data-phase="growth" data-state="active">
-        <span class="phase-number">01</span>
-        <strong>Growth</strong>
-        <small>seed → target · repeated quality checks</small>
-        <span class="phase-status">
-          <b class="phase-percent">0%</b>
-          <i class="phase-state">active</i>
-        </span>
-      </article>
-      <article class="phase-step" data-phase="stability" data-state="pending">
-        <span class="phase-number">02</span>
-        <strong>Stability</strong>
-        <small>retained states · repeated quality checks</small>
-        <span class="phase-status">
-          <b class="phase-percent">0%</b>
-          <i class="phase-state">waiting</i>
-        </span>
-      </article>
-      <article class="phase-step" data-phase="regeneration" data-state="pending">
-        <span class="phase-number">03</span>
-        <strong>Regeneration</strong>
-        <small>damaged states · repeated quality checks</small>
-        <span class="phase-status">
-          <b class="phase-percent">0%</b>
-          <i class="phase-state">waiting</i>
-        </span>
-      </article>
-    </div>
-  </section>
-
   <section class="experiment">
     <article class="target-panel panel">
       <header class="panel-head">
@@ -521,9 +467,38 @@
         data-damage-enabled="false">
         <canvas id="organism" width="720" height="540"
           aria-label="Growing neural cellular automaton"></canvas>
-        <div id="damage-hint" class="damage-hint">
-          Damage unlocks when regeneration training starts
-        </div>
+        <output id="phase-badge" class="phase-badge" aria-live="polite">
+          Phase 1 · growth · 0%
+        </output>
+      </div>
+      <div class="phase-list" aria-label="Training curriculum">
+        <article class="phase-step" data-phase="growth" data-state="active">
+          <span class="phase-number">01</span>
+          <strong>Growth</strong>
+          <small>seed → target · repeated quality checks</small>
+          <span class="phase-status">
+            <b class="phase-percent">0%</b>
+            <i class="phase-state">active</i>
+          </span>
+        </article>
+        <article class="phase-step" data-phase="stability" data-state="pending">
+          <span class="phase-number">02</span>
+          <strong>Stability</strong>
+          <small>retained states · repeated quality checks</small>
+          <span class="phase-status">
+            <b class="phase-percent">0%</b>
+            <i class="phase-state">waiting</i>
+          </span>
+        </article>
+        <article class="phase-step" data-phase="regeneration" data-state="pending">
+          <span class="phase-number">03</span>
+          <strong>Regeneration</strong>
+          <small>damaged states · repeated quality checks</small>
+          <span class="phase-status">
+            <b class="phase-percent">0%</b>
+            <i class="phase-state">waiting</i>
+          </span>
+        </article>
       </div>
       <div class="metrics" aria-live="polite">
         <div class="metric"><span>iteration</span><strong id="iteration">0</strong></div>
@@ -605,7 +580,6 @@
   const status = document.querySelector("#status");
   const liveBadge = document.querySelector(".live-badge");
   const phaseBadge = document.querySelector("#phase-badge");
-  const phaseDetail = document.querySelector("#phase-detail");
   const phaseSteps = [...document.querySelectorAll(".phase-step")].map(
     (element) => ({
       element,
@@ -620,7 +594,6 @@
   const damageButton = document.querySelector("#damage");
   const resetButton = document.querySelector("#reset");
   const downloadButton = document.querySelector("#download");
-  const damageHint = document.querySelector("#damage-hint");
   const fields = {
     iteration: document.querySelector("#iteration"),
     loss: document.querySelector("#loss"),
@@ -766,22 +739,16 @@
     organismCanvas.classList.toggle("damage-enabled", damageEnabled);
     if (damageEnabled) {
       damageButton.title = "Erase the center of the organism";
-      damageHint.textContent = "Click or drag to damage";
     } else {
       damageButton.title =
         "Damage unlocks when regeneration training starts";
-      damageHint.textContent = pendingTarget
-        ? "Preparing the new target"
-        : "Damage unlocks after growth and stability qualify";
     }
   }
 
   function updatePhaseIndicator(snapshot = curriculum.snapshot()) {
     const percentage = Math.round(snapshot.progress * 100);
-    phaseBadge.textContent = training
-      ? `Phase ${snapshot.index + 1} · ${snapshot.label} · ${percentage}%`
-      : `Paused · ${snapshot.label} · ${percentage}%`;
-    phaseDetail.textContent = snapshot.detail;
+    phaseBadge.textContent =
+      `Phase ${snapshot.index + 1} · ${snapshot.label} · ${percentage}%`;
     liveBadge.textContent =
       `${training ? "training" : "paused"} · ${snapshot.label}`;
     liveBadge.dataset.training = String(training);
