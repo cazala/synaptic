@@ -13,24 +13,33 @@ import { GrowingNeuralCaTrainer } from "@synaptic/backend-webgpu";
 const trainer = await GrowingNeuralCaTrainer.create({
   size: 24,
   channels: 16,
-  hidden: 32,
+  hidden: 128,
   batchSize: 4,
-  rolloutSteps: 48,
+  minRolloutSteps: 64,
+  rolloutSteps: 96,
+  stabilitySteps: 16,
   fireRate: 0.5,
-  learningRate: 0.001,
+  learningRate: 0.002,
+  poolSize: 128,
   poolWarmupIterations: 128,
 });
 
 // Row-major 24 × 24 premultiplied RGBA, with values normally in [0, 1].
 const target = new Float32Array(24 * 24 * 4);
 
-for (let iteration = 0; iteration < 8_000; iteration += 1) {
+for (let iteration = 0; iteration < 20_000; iteration += 1) {
   const persistence = iteration >= 128;
+  const regeneration = iteration >= 12_000;
   const metrics = await trainer.trainStep(target, {
-    learningRate: persistence ? 0.0002 : 0.001,
-    damageProbability: iteration >= 512 ? 0.4 : 0,
+    learningRate: regeneration ? 0.0002 : persistence ? 0.0005 : 0.002,
+    damageProbability: regeneration ? 0.3 : 0,
   });
-  console.log(metrics.iteration, metrics.loss, metrics.durationMs);
+  console.log(
+    metrics.iteration,
+    metrics.rolloutSteps,
+    metrics.loss,
+    metrics.durationMs,
+  );
 }
 
 const artifact = await trainer.artifact();
@@ -79,6 +88,14 @@ automaton.setWeights({
 });
 ```
 
+The browser demo also rate-limits a small `engine.getCells()` readback and
+passes it to `measureGrowingNeuralCaState(...)`. It uses a wider live-state
+limit than the training pool, then reseeds inference when values become
+non-finite, hidden channels exceed that range, living cells saturate the grid,
+or a previously formed organism collapses. This guard is intentionally outside
+the animation loop; production rendering should not perform a full state
+readback per frame.
+
 ## Exact model semantics
 
 Every cell contains premultiplied RGB, alpha/liveness, and latent channels.
@@ -113,21 +130,28 @@ the two kernels and two biases before Adam, as in the reference training loop.
 
 Training only from a seed can learn growth over the rollout horizon but usually
 does not learn persistence. The trainer therefore stores evolved states and
-uses them as later initial states. Recommended phases are:
+uses them as later initial states. Each update samples a horizon between
+`minRolloutSteps` and `rolloutSteps`, preventing the target from becoming a
+single transient checkpoint. `stabilitySteps` applies the target loss to
+consecutive states at the end of that horizon, directly training the completed
+organism to remain in its target basin. Recommended phases are:
 
 1. seed-only growth warm-up;
 2. persistent sample-pool rollouts at a lower learning rate;
 3. damaged pool samples for regeneration.
 
-One batch member regularly remains a fresh center seed. Rollouts whose absolute
-state exceeds `poolValueLimit` are replaced by a seed, the compact equivalent
-of replacing the worst-ranked sample in the reference pool. This prevents one
-numerically runaway state from dominating a small browser batch.
+Selected outputs replace the same pool entries they came from, allowing a state
+to accumulate a long trajectory over many short BPTT windows. After warm-up,
+the selected state with the highest target loss is replaced by a fresh center
+seed. Damage is sampled from the healthier selected states. Rollouts whose
+absolute state exceeds `poolValueLimit` are also replaced by a seed, preventing
+one numerically runaway state from poisoning the pool.
 
-The task is iterative, not an instant classifier. A small 24×24, 32-hidden
-demo begins forming the target within hundreds of iterations and becomes more
-stable over thousands. Larger hidden layers and 64–96 generation rollouts are
-closer to the paper but cost proportionally more GPU work.
+The task is iterative, not an instant classifier. The 24×24, 128-hidden demo
+begins forming the target within hundreds of iterations and becomes more
+stable over thousands. Its 64–96 generation rollouts match the reference
+training horizon but cost proportionally more GPU work than the compact
+defaults.
 
 ## Options
 
@@ -137,15 +161,17 @@ closer to the paper but cost proportionally more GPU work.
 | `channels` | 16 | 4–32 | cell state width; channel 3 is alpha |
 | `hidden` | 64 | 1–128 | shared MLP hidden width |
 | `batchSize` | 2 | 1–8 | independent rollouts per update |
-| `rolloutSteps` | 24 | 1–64 | BPTT generations |
+| `rolloutSteps` | 24 | 1–96 | maximum BPTT generations |
+| `minRolloutSteps` | `rolloutSteps` | 1–`rolloutSteps` | minimum sampled BPTT generations |
+| `stabilitySteps` | 1 | 1–`minRolloutSteps` | consecutive terminal states included in loss |
 | `fireRate` | 0.5 | 0–1 | per-cell update probability |
 | `stepSize` | 1 | 0–2 | residual multiplier |
 | `aliveThreshold` | 0.1 | 0–1 | alpha neighborhood threshold |
 | `learningRate` | 0.002 | 0–1 | Adam learning rate |
-| `poolSize` | max(8, batch × 4) | 1–64 | retained evolved states |
+| `poolSize` | max(8, batch × 4) | 1–256 | retained evolved states |
 | `poolWarmupIterations` | 128 | 0–10,000 | seed-only updates |
-| `poolValueLimit` | 8 | 1–1,000 | runaway-state replacement bound |
-| `damageProbability` | 0.35 | 0–1 | chance to erase a sampled state |
+| `poolValueLimit` | 256 | 1–1,000 | runaway-state replacement bound |
+| `damageProbability` | 0.35 | 0–1 | chance to erase a healthy sampled state |
 
 The trainer requires WebGPU and has no fallback. This is deliberate: the
 generation tape and spatial reverse kernels are a GPU specialization, not the

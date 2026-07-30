@@ -133,7 +133,7 @@ boundary, and life-mask semantics—while its disposable execution machinery is
 a WebGPU generation tape and reverse-time compute schedule.
 
 This preserves the architecture rule that artifacts describe meaning and
-devices own execution. It also avoids expanding a 2D, 48-generation shared
+devices own execution. It also avoids expanding a 2D, multi-generation shared
 local rule into millions of unit/connection records. Automata consumes the
 artifact for inference; it does not share Synaptic's training buffers or GPU
 device.

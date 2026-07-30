@@ -25,7 +25,9 @@
       channels: 4,
       hidden: 4,
       batchSize: 1,
+      minRolloutSteps: 2,
       rolloutSteps: 4,
+      stabilitySteps: 2,
       fireRate: 1,
       learningRate: .0002,
       damageProbability: 0,
@@ -42,16 +44,21 @@
         target[index + 3] = 1;
       }
     }
+    const rolloutLengths = new Set();
     const baseline = await trainer.trainStep(target, { learningRate: 0 });
+    rolloutLengths.add(baseline.rolloutSteps);
     for (let iteration = 0; iteration < 16; iteration++) {
-      await trainer.trainStep(target, { learningRate: .0002 });
+      const metrics = await trainer.trainStep(target, { learningRate: .0002 });
+      rolloutLengths.add(metrics.rolloutSteps);
     }
     const after = await trainer.trainStep(target, { learningRate: 0 });
+    rolloutLengths.add(after.rolloutSteps);
     const artifact = await trainer.artifact();
     const automaton = GrowingNeural.fromArtifact(artifact);
     trainer.dispose();
     if (
       !(after.loss < baseline.loss) ||
+      rolloutLengths.size < 2 ||
       !artifact.weights.hiddenToOutput.every(Number.isFinite) ||
       automaton.getChannels() !== 4 ||
       automaton.getHidden() !== 4
@@ -62,7 +69,8 @@
     }
     result.textContent =
       `passed · loss ${baseline.loss.toExponential(3)} → ` +
-      `${after.loss.toExponential(3)} · artifact accepted`;
+      `${after.loss.toExponential(3)} · ${rolloutLengths.size} horizons · ` +
+      "artifact accepted";
   } catch (error) {
     result.textContent = error instanceof Error ? error.stack : String(error);
   }

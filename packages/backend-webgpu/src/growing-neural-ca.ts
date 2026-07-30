@@ -47,7 +47,12 @@ export interface GrowingNeuralCaTrainerOptions {
   readonly channels?: number;
   readonly hidden?: number;
   readonly batchSize?: number;
+  /** Maximum BPTT horizon. */
   readonly rolloutSteps?: number;
+  /** Minimum sampled BPTT horizon; defaults to `rolloutSteps`. */
+  readonly minRolloutSteps?: number;
+  /** Number of consecutive terminal states included in the image loss. */
+  readonly stabilitySteps?: number;
   readonly fireRate?: number;
   readonly stepSize?: number;
   readonly aliveThreshold?: number;
@@ -71,6 +76,13 @@ export interface GrowingNeuralCaMetrics {
   readonly rolloutSteps: number;
   readonly durationMs: number;
   readonly damagedSamples: number;
+}
+
+export interface GrowingNeuralCaStateHealth {
+  readonly loss: number;
+  readonly maximumAbsoluteValue: number;
+  readonly aliveCells: number;
+  readonly nonFiniteValues: number;
 }
 
 export interface GrowingNeuralCaHeapSection {
@@ -116,6 +128,8 @@ interface ResolvedOptions {
   readonly hidden: number;
   readonly batchSize: number;
   readonly rolloutSteps: number;
+  readonly minRolloutSteps: number;
+  readonly stabilitySteps: number;
   readonly fireRate: number;
   readonly stepSize: number;
   readonly aliveThreshold: number;
@@ -132,6 +146,7 @@ interface GrowingNeuralCaPipelines {
   readonly forwardCandidate: GPUComputePipeline;
   readonly forwardLife: GPUComputePipeline;
   readonly initializeLoss: GPUComputePipeline;
+  readonly addStabilityLoss: GPUComputePipeline;
   readonly reduceLoss: GPUComputePipeline;
   readonly backwardMlp: GPUComputePipeline;
   readonly backwardPerception: GPUComputePipeline;
@@ -206,7 +221,7 @@ export function buildGrowingNeuralCaHeapLayout(options: {
   const channels = integer("channels", options.channels, 4, 32);
   const hidden = integer("hidden", options.hidden, 1, 128);
   const batch = integer("batchSize", options.batchSize, 1, 8);
-  const steps = integer("rolloutSteps", options.rolloutSteps, 1, 64);
+  const steps = integer("rolloutSteps", options.rolloutSteps, 1, 96);
   const cells = size * size;
   const batchCells = batch * cells;
   const parameters = parameterLayout(channels, hidden).count;
@@ -253,6 +268,59 @@ export function buildGrowingNeuralCaHeapLayout(options: {
     byteLength: align(cursor, 4),
     parameterCount: parameters,
     sections: Object.freeze(sections),
+  });
+}
+
+export function measureGrowingNeuralCaState(
+  state: ArrayLike<number>,
+  target: ArrayLike<number>,
+  channels: number,
+  aliveThreshold = 0.1,
+): GrowingNeuralCaStateHealth {
+  const channelCount = integer("channels", channels, 4, 32);
+  finiteRange("aliveThreshold", aliveThreshold, 0, 1);
+  invariant(
+    target.length % 4 === 0 &&
+      state.length === (target.length / 4) * channelCount,
+    `State and target dimensions do not match ${channelCount} channels`,
+    "INVALID_GROWING_CA_STATE",
+  );
+  let squaredError = 0;
+  let maximumAbsoluteValue = 0;
+  let aliveCells = 0;
+  let nonFiniteValues = 0;
+  for (let cell = 0; cell < target.length / 4; cell += 1) {
+    const stateOffset = cell * channelCount;
+    const targetOffset = cell * 4;
+    const alpha = state[stateOffset + 3];
+    if (alpha !== undefined && Number.isFinite(alpha) && alpha > aliveThreshold) {
+      aliveCells += 1;
+    }
+    for (let channel = 0; channel < channelCount; channel += 1) {
+      const value = state[stateOffset + channel];
+      if (value === undefined || !Number.isFinite(value)) {
+        nonFiniteValues += 1;
+        continue;
+      }
+      maximumAbsoluteValue = Math.max(maximumAbsoluteValue, Math.abs(value));
+      if (channel < 4) {
+        const expected = target[targetOffset + channel];
+        if (expected === undefined || !Number.isFinite(expected)) {
+          nonFiniteValues += 1;
+        } else {
+          const difference = value - expected;
+          squaredError += difference * difference;
+        }
+      }
+    }
+  }
+  return Object.freeze({
+    loss: nonFiniteValues === 0
+      ? squaredError / target.length
+      : Number.POSITIVE_INFINITY,
+    maximumAbsoluteValue,
+    aliveCells,
+    nonFiniteValues,
   });
 }
 
@@ -384,6 +452,24 @@ function resolveOptions(options: GrowingNeuralCaTrainerOptions): ResolvedOptions
     1,
     128,
   );
+  const rolloutSteps = integer(
+    "rolloutSteps",
+    options.rolloutSteps ?? 24,
+    1,
+    96,
+  );
+  const minRolloutSteps = integer(
+    "minRolloutSteps",
+    options.minRolloutSteps ?? rolloutSteps,
+    1,
+    rolloutSteps,
+  );
+  const stabilitySteps = integer(
+    "stabilitySteps",
+    options.stabilitySteps ?? 1,
+    1,
+    minRolloutSteps,
+  );
   return {
     gpu,
     powerPreference: options.powerPreference,
@@ -391,12 +477,9 @@ function resolveOptions(options: GrowingNeuralCaTrainerOptions): ResolvedOptions
     channels,
     hidden,
     batchSize: integer("batchSize", options.batchSize ?? 2, 1, 8),
-    rolloutSteps: integer(
-      "rolloutSteps",
-      options.rolloutSteps ?? 24,
-      1,
-      64,
-    ),
+    rolloutSteps,
+    minRolloutSteps,
+    stabilitySteps,
     fireRate: finiteRange(
       "fireRate",
       options.fireRate ?? artifact?.fireRate ?? 0.5,
@@ -426,7 +509,7 @@ function resolveOptions(options: GrowingNeuralCaTrainerOptions): ResolvedOptions
       "poolSize",
       options.poolSize ?? Math.max(8, (options.batchSize ?? 2) * 4),
       1,
-      64,
+      256,
     ),
     poolWarmupIterations: integer(
       "poolWarmupIterations",
@@ -436,7 +519,7 @@ function resolveOptions(options: GrowingNeuralCaTrainerOptions): ResolvedOptions
     ),
     poolValueLimit: finiteRange(
       "poolValueLimit",
-      options.poolValueLimit ?? 8,
+      options.poolValueLimit ?? 256,
       1,
       1_000,
     ),
@@ -467,7 +550,7 @@ function shader(
   options: ResolvedOptions,
   heap: GrowingNeuralCaHeapLayout,
 ): string {
-  const { size, channels, hidden, batchSize, rolloutSteps } = options;
+  const { size, channels, hidden, batchSize } = options;
   const cells = size * size;
   const batchCells = cells * batchSize;
   const perception = channels * 3;
@@ -478,8 +561,8 @@ function shader(
 struct Dispatch {
   time: u32,
   iteration: u32,
+  activeSteps: u32,
   learningRate: f32,
-  _pad: u32,
 };
 
 @group(0) @binding(0) var<uniform> dispatch: Dispatch;
@@ -492,8 +575,8 @@ const HIDDEN: u32 = ${hidden}u;
 const PERCEPTION: u32 = ${perception}u;
 const BATCH: u32 = ${batchSize}u;
 const BATCH_CELLS: u32 = ${batchCells}u;
-const STEPS: u32 = ${rolloutSteps}u;
 const PARAMS: u32 = ${parameters.count}u;
+const STABILITY_STEPS: u32 = ${options.stabilitySteps}u;
 const FIRE_RATE: f32 = ${options.fireRate};
 const STEP_SIZE: f32 = ${options.stepSize};
 const ALIVE_THRESHOLD: f32 = ${options.aliveThreshold};
@@ -592,12 +675,12 @@ fn fillPerception(
 }
 
 fn gradientInputBase() -> u32 {
-  let reverseIndex = STEPS - 1u - dispatch.time;
+  let reverseIndex = dispatch.activeSteps - 1u - dispatch.time;
   return select(GRADIENT_A, GRADIENT_B, (reverseIndex & 1u) == 1u);
 }
 
 fn gradientOutputBase() -> u32 {
-  let reverseIndex = STEPS - 1u - dispatch.time;
+  let reverseIndex = dispatch.activeSteps - 1u - dispatch.time;
   return select(GRADIENT_B, GRADIENT_A, (reverseIndex & 1u) == 1u);
 }
 
@@ -688,12 +771,35 @@ fn initializeLoss(@builtin(global_invocation_id) gid: vec3<u32>) {
   if (channel < 4u) {
     let cell = batchCell % CELLS;
     let difference =
-      heap[stateIndex(STEPS, batchCell, channel)] -
+      heap[stateIndex(dispatch.activeSteps, batchCell, channel)] -
       heap[TARGET + cell * 4u + channel];
-    let scale = 1.0 / f32(BATCH_CELLS * 4u);
+    let scale =
+      1.0 / f32(BATCH_CELLS * 4u * STABILITY_STEPS);
     heap[GRADIENT_A + index] = 2.0 * difference * scale;
-    heap[LOSS + batchCell * 4u + channel] = difference * difference;
+    heap[LOSS + batchCell * 4u + channel] =
+      difference * difference / f32(STABILITY_STEPS);
   }
+}
+
+@compute @workgroup_size(${WORKGROUP_SIZE})
+fn addStabilityLoss(@builtin(global_invocation_id) gid: vec3<u32>) {
+  let index = gid.x;
+  if (index >= BATCH_CELLS * 4u) {
+    return;
+  }
+  let channel = index % 4u;
+  let batchCell = index / 4u;
+  let cell = batchCell % CELLS;
+  let difference =
+    heap[stateIndex(dispatch.time, batchCell, channel)] -
+    heap[TARGET + cell * 4u + channel];
+  let scale =
+    1.0 / f32(BATCH_CELLS * 4u * STABILITY_STEPS);
+  let gradientIndex =
+    gradientOutputBase() + batchCell * CHANNELS + channel;
+  heap[gradientIndex] += 2.0 * difference * scale;
+  heap[LOSS + index] +=
+    difference * difference / f32(STABILITY_STEPS);
 }
 
 @compute @workgroup_size(1)
@@ -948,6 +1054,8 @@ export class GrowingNeuralCaTrainer {
   readonly hidden: number;
   readonly batchSize: number;
   readonly rolloutSteps: number;
+  readonly minRolloutSteps: number;
+  readonly stabilitySteps: number;
 
   readonly #options: ResolvedOptions;
   readonly #device: GPUDevice;
@@ -988,8 +1096,10 @@ export class GrowingNeuralCaTrainer {
     this.hidden = options.hidden;
     this.batchSize = options.batchSize;
     this.rolloutSteps = options.rolloutSteps;
+    this.minRolloutSteps = options.minRolloutSteps;
+    this.stabilitySteps = options.stabilitySteps;
     this.#seedState = seedState(options.size, options.channels);
-    this.#pool.push(this.#seedState.slice());
+    this.#fillPoolWithSeeds();
     this.#uncapturedErrorHandler = ((event: GPUUncapturedErrorEvent) => {
       this.#lostError = new SynapticError(
         event.error.message,
@@ -1119,6 +1229,7 @@ export class GrowingNeuralCaTrainer {
         "forwardCandidate",
         "forwardLife",
         "initializeLoss",
+        "addStabilityLoss",
         "reduceLoss",
         "backwardMlp",
         "backwardPerception",
@@ -1192,8 +1303,7 @@ export class GrowingNeuralCaTrainer {
 
   resetPool(): void {
     this.#assertAvailable();
-    this.#pool.length = 0;
-    this.#pool.push(this.#seedState.slice());
+    this.#fillPoolWithSeeds();
   }
 
   async trainStep(
@@ -1229,8 +1339,9 @@ export class GrowingNeuralCaTrainer {
     this.#busy = true;
     const started = performance.now();
     try {
-      const { initial, damagedSamples } =
-        this.#trainingBatch(damageProbability);
+      const activeRolloutSteps = this.#activeRolloutSteps();
+      const { initial, damagedSamples, poolIndices } =
+        this.#trainingBatch(target, damageProbability);
       const sections = this.#layout.sections;
       this.#device.queue.writeBuffer(
         this.#heap,
@@ -1252,12 +1363,12 @@ export class GrowingNeuralCaTrainer {
         sections.gradient.byteOffset,
         new Float32Array(sections.gradient.length),
       );
-      this.#writeUniforms(learningRate);
+      this.#writeUniforms(learningRate, activeRolloutSteps);
 
       const encoder = this.#device.createCommandEncoder({
         label: `synaptic growing neural ca iteration ${this.#iteration}`,
       });
-      for (let time = 0; time < this.rolloutSteps; time += 1) {
+      for (let time = 0; time < activeRolloutSteps; time += 1) {
         this.#pass(
           encoder,
           this.#pipelines.forwardCandidate,
@@ -1282,14 +1393,7 @@ export class GrowingNeuralCaTrainer {
         ),
         "initialize loss",
       );
-      this.#pass(
-        encoder,
-        this.#pipelines.reduceLoss,
-        0,
-        1,
-        "reduce loss",
-      );
-      for (let time = this.rolloutSteps - 1; time >= 0; time -= 1) {
+      for (let time = activeRolloutSteps - 1; time >= 0; time -= 1) {
         this.#pass(
           encoder,
           this.#pipelines.backwardMlp,
@@ -1313,7 +1417,26 @@ export class GrowingNeuralCaTrainer {
           ),
           `backward perception ${time}`,
         );
+        if (
+          time > 0 &&
+          time >= activeRolloutSteps - this.stabilitySteps + 1
+        ) {
+          this.#pass(
+            encoder,
+            this.#pipelines.addStabilityLoss,
+            time,
+            dispatchCount(this.batchSize * this.size * this.size * 4),
+            `stability loss ${time}`,
+          );
+        }
       }
+      this.#pass(
+        encoder,
+        this.#pipelines.reduceLoss,
+        0,
+        1,
+        "reduce loss",
+      );
       this.#pass(
         encoder,
         this.#pipelines.normalizeGradient,
@@ -1337,7 +1460,7 @@ export class GrowingNeuralCaTrainer {
       );
       const finalOffset =
         sections.stateTape.byteOffset +
-        this.rolloutSteps *
+        activeRolloutSteps *
           this.batchSize *
           this.size *
           this.size *
@@ -1366,12 +1489,12 @@ export class GrowingNeuralCaTrainer {
         "Growing Neural CA training produced non-finite values",
         "NON_FINITE_TRAINING_STATE",
       );
-      this.#updatePool(final);
+      this.#updatePool(final, poolIndices);
       this.#iteration += 1;
       return {
         iteration: this.#iteration,
         loss,
-        rolloutSteps: this.rolloutSteps,
+        rolloutSteps: activeRolloutSteps,
         durationMs: performance.now() - started,
         damagedSamples,
       };
@@ -1487,12 +1610,16 @@ export class GrowingNeuralCaTrainer {
     );
   }
 
-  #writeUniforms(learningRate: number): void {
+  #writeUniforms(learningRate: number, activeRolloutSteps: number): void {
     const records = new ArrayBuffer(this.rolloutSteps * UNIFORM_STRIDE);
     for (let time = 0; time < this.rolloutSteps; time += 1) {
       const offset = time * UNIFORM_STRIDE;
-      new Uint32Array(records, offset, 2).set([time, this.#iteration]);
-      new Float32Array(records, offset + 8, 1)[0] = learningRate;
+      new Uint32Array(records, offset, 3).set([
+        time,
+        this.#iteration,
+        activeRolloutSteps,
+      ]);
+      new Float32Array(records, offset + 12, 1)[0] = learningRate;
     }
     this.#device.queue.writeBuffer(this.#uniforms, 0, records);
   }
@@ -1511,28 +1638,96 @@ export class GrowingNeuralCaTrainer {
     pass.end();
   }
 
+  #activeRolloutSteps(): number {
+    if (this.minRolloutSteps === this.rolloutSteps) {
+      return this.rolloutSteps;
+    }
+    const random = mulberry32(
+      this.#options.seed ^
+        Math.imul(this.#iteration + 1, 0x7f4a_7c15) ^
+        0x726f_6c6c,
+    );
+    return this.minRolloutSteps +
+      Math.floor(
+        random() * (this.rolloutSteps - this.minRolloutSteps + 1),
+      );
+  }
+
+  #fillPoolWithSeeds(): void {
+    this.#pool.length = 0;
+    for (let index = 0; index < this.#options.poolSize; index += 1) {
+      this.#pool.push(this.#seedState.slice());
+    }
+  }
+
   #trainingBatch(
+    target: Float32Array,
     damageProbability: number,
-  ): { readonly initial: Float32Array; readonly damagedSamples: number } {
+  ): {
+    readonly initial: Float32Array;
+    readonly damagedSamples: number;
+    readonly poolIndices: readonly number[];
+  } {
     const stateLength = this.size * this.size * this.channels;
     const initial = new Float32Array(this.batchSize * stateLength);
     const random = mulberry32(
       this.#options.seed ^ Math.imul(this.#iteration + 1, 0x9e37_79b9),
     );
+    const availablePoolIndices = Array.from(
+      { length: this.#pool.length },
+      (_, index) => index,
+    );
+    const poolIndices: number[] = [];
+    const samples: Float32Array[] = [];
+    for (let batch = 0; batch < this.batchSize; batch += 1) {
+      const poolIndex = availablePoolIndices.length === 0
+        ? Math.floor(random() * this.#pool.length)
+        : availablePoolIndices.splice(
+            Math.floor(random() * availablePoolIndices.length),
+            1,
+          )[0]!;
+      poolIndices.push(poolIndex);
+      samples.push((this.#pool[poolIndex] ?? this.#seedState).slice());
+    }
+
+    const warmingUp =
+      this.#iteration < this.#options.poolWarmupIterations;
+    const ranked = samples
+      .map((sample, batch) => ({
+        batch,
+        loss: measureGrowingNeuralCaState(
+          sample,
+          target,
+          this.channels,
+          this.#options.aliveThreshold,
+        ).loss,
+      }))
+      .sort((left, right) => left.loss - right.loss);
+    const seedBatch = warmingUp
+      ? -1
+      : this.batchSize === 1
+      ? (this.#iteration % 4 === 0 ? 0 : -1)
+      : ranked.at(-1)!.batch;
+    const damageCandidateCount = Math.max(
+      1,
+      Math.floor((this.batchSize - (seedBatch >= 0 ? 1 : 0)) / 2),
+    );
+    const damageCandidates = new Set(
+      ranked
+        .filter(({ batch }) => batch !== seedBatch)
+        .slice(0, damageCandidateCount)
+        .map(({ batch }) => batch),
+    );
+
     let damagedSamples = 0;
     for (let batch = 0; batch < this.batchSize; batch += 1) {
-      const forceSeed =
-        this.#iteration < this.#options.poolWarmupIterations ||
-        (batch === 0 && this.#iteration % 4 === 0);
-      const source = forceSeed
-        ? this.#seedState
-        : (this.#pool[
-            (this.#iteration * this.batchSize + batch) % this.#pool.length
-          ] ?? this.#seedState);
-      const sample = source.slice();
+      const forceSeed = warmingUp || batch === seedBatch;
+      const sample = forceSeed
+        ? this.#seedState.slice()
+        : samples[batch]!;
       if (
         !forceSeed &&
-        this.#iteration >= this.#options.poolWarmupIterations &&
+        damageCandidates.has(batch) &&
         random() < damageProbability
       ) {
         const radius = Math.max(2, Math.floor(this.size * 0.14));
@@ -1558,10 +1753,13 @@ export class GrowingNeuralCaTrainer {
       }
       initial.set(sample, batch * stateLength);
     }
-    return { initial, damagedSamples };
+    return { initial, damagedSamples, poolIndices };
   }
 
-  #updatePool(final: Float32Array): void {
+  #updatePool(
+    final: Float32Array,
+    poolIndices: readonly number[],
+  ): void {
     const stateLength = this.size * this.size * this.channels;
     for (let batch = 0; batch < this.batchSize; batch += 1) {
       const sample = final.slice(
@@ -1569,24 +1767,21 @@ export class GrowingNeuralCaTrainer {
         (batch + 1) * stateLength,
       );
       let maximum = 0;
+      let finite = true;
       for (const value of sample) {
+        finite &&= Number.isFinite(value);
         maximum = Math.max(maximum, Math.abs(value));
       }
-      // The reference curriculum always replaces its worst sample with a
-      // seed. Rejecting a numerically runaway rollout is the equivalent
-      // bounded-memory policy for this compact FIFO pool.
-      this.#pool.push(
-        maximum <= this.#options.poolValueLimit
-          ? sample
-          : this.#seedState.slice(),
+      const poolIndex = poolIndices[batch];
+      invariant(
+        poolIndex !== undefined,
+        "Growing Neural CA pool selection is incomplete",
+        "INVALID_GROWING_CA_POOL",
       );
-    }
-    while (this.#pool.length > this.#options.poolSize) {
-      this.#pool.shift();
-    }
-    if (!this.#pool.some((state) => state === this.#seedState)) {
-      // Retain a fresh seed in the pool even after old evolved samples rotate.
-      this.#pool[0] = this.#seedState.slice();
+      this.#pool[poolIndex] =
+        finite && maximum <= this.#options.poolValueLimit
+          ? sample
+          : this.#seedState.slice();
     }
   }
 

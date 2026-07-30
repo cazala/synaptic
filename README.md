@@ -174,8 +174,9 @@ remote image at runtime.
 The Growing Neural CA demo is a specialized differentiable simulation rather
 than a flattened generic graph. `GrowingNeuralCaTrainer` keeps the full
 generation tape and Adam state in one WebGPU heap, differentiates the
-identity/Sobel → ReLU MLP → stochastic residual rule through 48 generations,
-and trains persistence and repair from a bounded sample pool. Its
+identity/Sobel → ReLU MLP → stochastic residual rule through randomized
+rollout horizons, scores consecutive terminal states to form an attractor, and
+trains persistence and repair from an in-place sample pool. Its
 `artifact()` result is the versioned JSON shape consumed directly by
 `GrowingNeural.fromArtifact(...)` in `@cazala/automata`.
 

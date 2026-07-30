@@ -4,6 +4,7 @@ import {
   GROWING_NEURAL_CA_VERSION,
   buildGrowingNeuralCaHeapLayout,
   createGrowingNeuralCaWeights,
+  measureGrowingNeuralCaState,
 } from "./growing-neural-ca.js";
 
 describe("Growing Neural CA trainer substrate", () => {
@@ -81,5 +82,39 @@ describe("Growing Neural CA trainer substrate", () => {
     expect(() =>
       createGrowingNeuralCaWeights({ channels: 3 }),
     ).toThrow(/channels must be an integer between 4 and 32/);
+    expect(() =>
+      buildGrowingNeuralCaHeapLayout({
+        size: 24,
+        channels: 16,
+        hidden: 32,
+        batchSize: 4,
+        rolloutSteps: 97,
+      }),
+    ).toThrow(/rolloutSteps must be an integer between 1 and 96/);
+  });
+
+  it("measures visible error and hidden-state divergence", () => {
+    const target = new Float32Array([
+      0.5, 0.25, 0, 1,
+      0, 0, 0, 0,
+    ]);
+    const state = new Float32Array([
+      0.25, 0.25, 0, 0.8, 4, -3,
+      0, 0, 0, 0, 0, 0,
+    ]);
+
+    const health = measureGrowingNeuralCaState(state, target, 6);
+    expect(health).toMatchObject({
+      maximumAbsoluteValue: 4,
+      aliveCells: 1,
+      nonFiniteValues: 0,
+    });
+    expect(health.loss).toBeCloseTo((0.25 ** 2 + 0.2 ** 2) / 8);
+
+    state[11] = Number.NaN;
+    expect(measureGrowingNeuralCaState(state, target, 6)).toMatchObject({
+      loss: Number.POSITIVE_INFINITY,
+      nonFiniteValues: 1,
+    });
   });
 });

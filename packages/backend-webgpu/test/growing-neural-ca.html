@@ -138,7 +138,7 @@
   }
   .metrics {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 1px;
     background: #263649;
     border-top: 1px solid #263649;
@@ -193,6 +193,7 @@
     .architecture { grid-template-columns: 1fr 1fr; }
     .stage:nth-child(2)::after { display: none; }
     .notes { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .organism-wrap, #organism { min-height: 24rem; }
   }
   @media (max-width: 520px) {
@@ -232,12 +233,12 @@
       <small>identity · Sobel x · Sobel y<br>zero padded</small>
     </article>
     <article class="stage">
-      <strong>48 → 32 → 16</strong>
+      <strong>48 → 128 → 16</strong>
       <small>shared pointwise MLP<br>ReLU activation</small>
     </article>
     <article class="stage">
       <strong>Residual update</strong>
-      <small>50% stochastic fire mask<br>48-step BPTT tape</small>
+      <small>50% stochastic fire mask<br>random 64–96-step tape</small>
     </article>
     <article class="stage">
       <strong>Life mask</strong>
@@ -273,8 +274,10 @@
       <div class="metrics" aria-live="polite">
         <div class="metric"><span>iteration</span><strong id="iteration">0</strong></div>
         <div class="metric"><span>loss</span><strong id="loss">—</strong></div>
+        <div class="metric"><span>rollout</span><strong id="rollout">—</strong></div>
         <div class="metric"><span>train step</span><strong id="duration">—</strong></div>
         <div class="metric"><span>damaged batch</span><strong id="damage-count">0</strong></div>
+        <div class="metric"><span>auto resets</span><strong id="reset-count">0</strong></div>
       </div>
       <div class="toolbar">
         <button id="toggle" type="button">Pause training</button>
@@ -289,11 +292,11 @@
   <section class="notes">
     <article class="note panel">
       <strong>Real BPTT</strong>
-      <p>Every update is differentiated across all 48 CA generations. Perception gradients gather from neighboring cells without float atomics.</p>
+      <p>Each update samples a 64–96 generation horizon, then scores its last sixteen states and differentiates through the whole trajectory. Consecutive targets turn the flower into an attractor instead of one transient frame.</p>
     </article>
     <article class="note panel">
       <strong>Regeneration curriculum</strong>
-      <p>Evolved states return to a sample pool. Training periodically cuts holes into them so persistence and repair are part of the objective.</p>
+      <p>Evolved states return to their slots in a persistent sample pool. The worst sample is reseeded, while healthy samples are later damaged to widen the target's basin of attraction.</p>
     </article>
     <article class="note panel">
       <strong>Portable result</strong>
@@ -304,11 +307,20 @@
 
 <script type="module">
   import { Engine, GrowingNeural } from "@cazala/automata";
-  import { GrowingNeuralCaTrainer } from "@synaptic/backend-webgpu";
+  import {
+    GrowingNeuralCaTrainer,
+    measureGrowingNeuralCaState,
+  } from "@synaptic/backend-webgpu";
 
   const SIZE = 24;
   const CHANNELS = 16;
-  const HIDDEN = 32;
+  const HIDDEN = 128;
+  const MIN_ROLLOUT_STEPS = 64;
+  const MAX_ROLLOUT_STEPS = 96;
+  const STABILITY_STEPS = 16;
+  const HEALTH_CHECK_INTERVAL_MS = 1_200;
+  const POOL_VALUE_LIMIT = 256;
+  const INFERENCE_VALUE_LIMIT = 1_000;
   const targetCanvas = document.querySelector("#target");
   const targetContext = targetCanvas.getContext("2d", { willReadFrequently: true });
   const organismCanvas = document.querySelector("#organism");
@@ -316,8 +328,10 @@
   const fields = {
     iteration: document.querySelector("#iteration"),
     loss: document.querySelector("#loss"),
+    rollout: document.querySelector("#rollout"),
     duration: document.querySelector("#duration"),
     damage: document.querySelector("#damage-count"),
+    resets: document.querySelector("#reset-count"),
   };
 
   function drawTarget() {
@@ -367,6 +381,95 @@
   let disposed = false;
   let latestArtifact;
   let damagedTotal = 0;
+  let inferenceResets = 0;
+  let lastHealthCheck = 0;
+  let healthCheckPending = false;
+  let healthGuardSuppressedUntil = 0;
+  let bestInferenceLoss = Number.POSITIVE_INFINITY;
+  let formedSinceReset = false;
+
+  const targetAliveCells = (() => {
+    let count = 0;
+    for (let cell = 0; cell < SIZE * SIZE; cell++) {
+      if (target[cell * 4 + 3] > .1) count++;
+    }
+    return count;
+  })();
+  const saturationCellLimit = Math.min(
+    Math.floor(SIZE * SIZE * .65),
+    Math.max(targetAliveCells * 3, targetAliveCells + 48),
+  );
+
+  function resetInference(message, automatic = false) {
+    engine.reset({ mode: "center" });
+    bestInferenceLoss = Number.POSITIVE_INFINITY;
+    formedSinceReset = false;
+    healthGuardSuppressedUntil = performance.now() + 2_000;
+    if (automatic) {
+      inferenceResets++;
+      fields.resets.textContent = inferenceResets.toLocaleString();
+      fields.resets.title = message;
+    }
+    status.textContent = message;
+  }
+
+  async function checkInferenceHealth() {
+    const now = performance.now();
+    if (
+      healthCheckPending ||
+      now < healthGuardSuppressedUntil ||
+      now - lastHealthCheck < HEALTH_CHECK_INTERVAL_MS
+    ) {
+      return false;
+    }
+    healthCheckPending = true;
+    lastHealthCheck = now;
+    try {
+      // This is a bounded 24×24 diagnostic readback, rate-limited well outside
+      // the animation loop so the canvas never performs per-frame GPU stalls.
+      const cells = await engine.getCells();
+      const health = measureGrowingNeuralCaState(
+        cells,
+        target,
+        CHANNELS,
+        latestArtifact.life.threshold,
+      );
+      bestInferenceLoss = Math.min(bestInferenceLoss, health.loss);
+      if (
+        health.loss < .025 &&
+        health.aliveCells > targetAliveCells * .4 &&
+        health.aliveCells < targetAliveCells * 1.8
+      ) {
+        formedSinceReset = true;
+      }
+
+      let reason = "";
+      if (health.nonFiniteValues > 0) {
+        reason = "non-finite cell state";
+      } else if (health.maximumAbsoluteValue > INFERENCE_VALUE_LIMIT) {
+        reason = "hidden state exceeded its safe range";
+      } else if (health.aliveCells > saturationCellLimit) {
+        reason = "growth saturated the grid";
+      } else if (
+        formedSinceReset &&
+        health.aliveCells < Math.max(1, targetAliveCells * .12)
+      ) {
+        reason = "the formed organism collapsed";
+      } else if (
+        formedSinceReset &&
+        health.loss > Math.max(.04, bestInferenceLoss * 5)
+      ) {
+        reason = "the formed organism drifted away";
+      }
+      if (reason) {
+        resetInference(`auto-reset · ${reason}`, true);
+        return true;
+      }
+      return false;
+    } finally {
+      healthCheckPending = false;
+    }
+  }
 
   async function syncArtifact() {
     latestArtifact = await trainer.artifact();
@@ -383,10 +486,14 @@
       channels: CHANNELS,
       hidden: HIDDEN,
       batchSize: 4,
-      rolloutSteps: 48,
-      learningRate: .001,
+      minRolloutSteps: MIN_ROLLOUT_STEPS,
+      rolloutSteps: MAX_ROLLOUT_STEPS,
+      stabilitySteps: STABILITY_STEPS,
+      learningRate: .002,
       damageProbability: 0,
+      poolSize: 128,
       poolWarmupIterations: 128,
+      poolValueLimit: POOL_VALUE_LIMIT,
       seed: 0x6772_6f77,
     });
     latestArtifact = await trainer.artifact();
@@ -412,33 +519,49 @@
   async function trainLoop() {
     if (disposed) return;
     if (!training) {
+      try {
+        await checkInferenceHealth();
+      } catch (error) {
+        status.textContent = error instanceof Error ? error.message : String(error);
+        status.dataset.error = "true";
+      }
       requestAnimationFrame(trainLoop);
       return;
     }
     try {
       const persistencePhase = trainer.iteration >= 128;
+      const regenerationPhase = trainer.iteration >= 12_000;
       const metrics = await trainer.trainStep(target, {
-        learningRate: persistencePhase ? .0002 : .001,
-        damageProbability: persistencePhase && trainer.iteration >= 512
-          ? .4
+        learningRate: regenerationPhase
+          ? .0002
+          : persistencePhase
+          ? .0005
+          : .002,
+        damageProbability: regenerationPhase
+          ? .3
           : 0,
       });
       damagedTotal += metrics.damagedSamples;
       fields.iteration.textContent = metrics.iteration.toLocaleString();
       fields.loss.textContent = metrics.loss.toExponential(3);
+      fields.rollout.textContent = `${metrics.rolloutSteps} gen`;
       fields.duration.textContent = `${metrics.durationMs.toFixed(0)} ms`;
       fields.damage.textContent = damagedTotal.toLocaleString();
-      if (metrics.iteration <= 8 || metrics.iteration % 4 === 0) {
+      let autoReset = false;
+      if (metrics.iteration <= 8 || metrics.iteration % 8 === 0) {
         await syncArtifact();
+        autoReset = await checkInferenceHealth();
       }
-      status.textContent =
-        metrics.iteration < 8
-          ? "warming up final layer…"
-          : metrics.iteration < 128
-          ? "training growth from one cell…"
-          : metrics.iteration < 512
-          ? "training persistence from the sample pool…"
-          : "training regeneration with damaged samples…";
+      if (!autoReset && training) {
+        status.textContent =
+          metrics.iteration < 8
+            ? "warming up final layer…"
+            : metrics.iteration < 128
+            ? "training growth from one cell…"
+            : metrics.iteration < 12_000
+            ? "training a stable attractor from the sample pool…"
+            : "training regeneration with damaged samples…";
+      }
     } catch (error) {
       training = false;
       document.querySelector("#toggle").textContent = "Resume training";
@@ -461,11 +584,11 @@
   });
   document.querySelector("#damage").addEventListener("click", () => {
     engine.fillCircle(SIZE / 2, SIZE / 2, 4, []);
+    healthGuardSuppressedUntil = performance.now() + 8_000;
     status.textContent = "organism damaged · watching repair";
   });
   document.querySelector("#reset").addEventListener("click", () => {
-    engine.reset({ mode: "center" });
-    status.textContent = "organism reset to one cell";
+    resetInference("organism reset to one cell");
   });
   document.querySelector("#download").addEventListener("click", async () => {
     const artifact = await trainer.artifact();

@@ -143,13 +143,16 @@ The first six pages are polished interactive examples:
   epoch, while 8,100 evenly distributed preview samples return through one
   inference submission and readback. The network preview is smoothly resolved
   into the native 400×400 output canvas every epoch.
-- Growing Neural CA unrolls an exact 16-channel local rule through a
-  48-generation WebGPU tape, backpropagates the image loss without f32
+- Growing Neural CA unrolls an exact 16-channel local rule through a randomized
+  64–96-generation WebGPU tape, backpropagates the image loss without f32
   atomics, applies per-tensor gradient normalization and Adam, and trains
-  growth, persistence, and damage repair from a bounded sample pool. Every
-  fourth update streams its four tensors into Automata's live
-  `GrowingNeural` simulation. The adjacent smoke page verifies numerical loss
-  descent and that Automata accepts the exported artifact.
+  the last sixteen states of each rollout toward the target while learning
+  growth, persistence, and damage repair from an in-place sample pool. Every
+  eighth update streams its four tensors into Automata's live `GrowingNeural`
+  simulation. A bounded health check automatically reseeds inference when
+  hidden values run away, the grid saturates, or a formed organism collapses.
+  The adjacent smoke page verifies numerical loss descent, varying rollout
+  horizons, and that Automata accepts the exported artifact.
 
 Browser console errors or non-pass smoke results fail the hardware check.
 
