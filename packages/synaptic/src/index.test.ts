@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { dense, input, sequential } from "@synaptic/layers";
-import { Model, compileModel, selectBackend, compilePlan } from "./index.js";
+import {
+  GROWING_NEURAL_CA_FORMAT,
+  Model,
+  compileModel,
+  compilePlan,
+  createGrowingNeuralCaWeights,
+  selectBackend,
+} from "./index.js";
 
 describe("synaptic facade", () => {
   const definition = sequential(
@@ -26,5 +33,14 @@ describe("synaptic facade", () => {
     expect((await automatic.forward([1, 0])).data).toHaveLength(1);
     explicit.dispose();
     automatic.dispose();
+  });
+
+  it("re-exports the portable Growing Neural CA authoring boundary", () => {
+    expect(GROWING_NEURAL_CA_FORMAT).toBe(
+      "@cazala/automata/growing-neural-ca",
+    );
+    expect(
+      createGrowingNeuralCaWeights({ channels: 4, hidden: 2 }),
+    ).toHaveLength(2 * 12 + 2 + 4 * 2 + 4);
   });
 });

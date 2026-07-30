@@ -37,6 +37,7 @@ import { FORWARD_WGSL } from "./forward-shader.js";
 
 export * from "./layout.js";
 export * from "./forward-shader.js";
+export * from "./growing-neural-ca.js";
 
 const WORKGROUP_SIZE = 64;
 const BUFFER_USAGE = {

@@ -27,7 +27,23 @@ export {
   WasmBackend,
   prefersWasm,
 } from "@synaptic/backend-wasm";
-export { WebGpuBackend } from "@synaptic/backend-webgpu";
+export {
+  GROWING_NEURAL_CA_FORMAT,
+  GROWING_NEURAL_CA_VERSION,
+  GrowingNeuralCaTrainer,
+  WebGpuBackend,
+  buildGrowingNeuralCaHeapLayout,
+  createGrowingNeuralCaWeights,
+} from "@synaptic/backend-webgpu";
+export type {
+  GrowingNeuralCaArtifact,
+  GrowingNeuralCaHeapLayout,
+  GrowingNeuralCaHeapSection,
+  GrowingNeuralCaHeapSectionName,
+  GrowingNeuralCaMetrics,
+  GrowingNeuralCaTrainerOptions,
+  GrowingNeuralCaTrainOptions,
+} from "@synaptic/backend-webgpu";
 
 export type BackendId = "auto" | "paper" | "cpu" | "wasm" | "webgpu";
 
