@@ -26,7 +26,7 @@ const tests = [
     path: "/packages/backend-webgpu/test/mnist-automata.html",
   },
   {
-    description: "Train growth, persistence, and repair through a 48-generation tape, then stream the artifact into Automata.",
+    description: "Train growth, persistence, and repair through a 64–96-generation tape, then stream the artifact into Automata.",
     kind: "Interactive demo",
     name: "Growing Neural CA",
     path: "/packages/backend-webgpu/test/growing-neural-ca.html",
@@ -82,6 +82,7 @@ const contentTypes = new Map([
   [".js", "text/javascript; charset=utf-8"],
   [".json", "application/json; charset=utf-8"],
   [".map", "application/json; charset=utf-8"],
+  [".svg", "image/svg+xml; charset=utf-8"],
   [".wasm", "application/wasm"],
 ]);
 

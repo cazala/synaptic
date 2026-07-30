@@ -155,6 +155,11 @@ The first six pages are polished interactive examples:
   eighth update streams its four tensors into Automata's live `GrowingNeural`
   simulation. A bounded health check automatically reseeds inference when
   hidden values run away, the grid saturates, or a formed organism collapses.
+  A three-stage curriculum indicator distinguishes seed growth, persistence,
+  and regeneration. Damage controls and click-or-drag canvas erasing unlock
+  only for the regeneration stage. A bundled Twemoji picker and local image
+  upload path convert alternate targets into centered 24×24 premultiplied
+  pixel art, then restart training with fresh weights.
   The adjacent smoke page verifies numerical loss descent, varying rollout
   horizons, and that Automata accepts the exported artifact.
 

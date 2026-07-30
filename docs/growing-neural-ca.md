@@ -153,6 +153,11 @@ ramp at update 512, reaches three damaged samples per batch at update 1,024,
 and retains the persistence learning rate through update 2,048 before decaying
 it. This teaches repair during the same early window in which the flower first
 becomes stable instead of postponing regeneration for a separate long phase.
+The page presents those boundaries as three explicit curriculum states:
+growth (updates 0–127), stability (128–511), and regeneration (512 onward).
+Each state has its own progress indicator and live caption. Manual damage stays
+locked through the first two phases so an accidental cut cannot be mistaken
+for a regeneration test.
 
 Selected outputs replace the same pool entries they came from, allowing a state
 to accumulate a long trajectory over many short BPTT windows. After warm-up,
@@ -167,7 +172,26 @@ The demo continues its bounded health readbacks during the fifteen-second
 manual-damage grace period. Numerical divergence can still trigger a reset,
 but normal target-loss drift cannot interrupt repair. Once the visible loss
 returns near its pre-damage value, the page reports that regeneration
-succeeded.
+succeeded. Once the regeneration phase starts, the centered Damage button and
+click-or-drag erasing on the live Automata canvas use the same four-cell-radius
+cut that appears in training. Pointer coordinates are transformed through
+Automata's camera and zoom, and drag segments are interpolated so fast movement
+does not leave gaps.
+
+## Custom targets
+
+The demo includes a flower plus a small locally bundled set of
+[Twemoji](https://github.com/twitter/twemoji) targets. The artwork is converted
+in the browser to a centered 24×24 image, then its straight-alpha canvas pixels
+are converted to the premultiplied RGBA tensor expected by the trainer. Twemoji
+is licensed under CC BY 4.0; its bundled attribution is next to the demo assets.
+
+The Upload image control accepts a PNG, JPEG, WebP, GIF, or SVG up to 12 MB.
+The file is decoded and downsampled entirely in the browser and is never sent
+to a server. Both a preset change and an upload create a fresh trainer because
+an organism trained for one target is not a useful continuation point for an
+unrelated target. The live Automata instance is retained: only its learned
+weights and center seed are replaced.
 
 The task is iterative, not an instant classifier. The 24×24, 128-hidden demo
 begins forming the target within hundreds of iterations and becomes more
