@@ -461,7 +461,7 @@
         <div>
           <h2>Automata inference</h2>
           <p>
-            48 × 48 live grid · exact artifact handoff · interaction unlocks
+            96 × 96 live grid · exact artifact handoff · interaction unlocks
             with regeneration
           </p>
         </div>
@@ -469,7 +469,7 @@
       <div id="organism-wrap" class="organism-wrap"
         data-damage-enabled="false">
         <canvas id="organism" width="720" height="540"
-          aria-label="48 by 48 growing neural cellular automaton"></canvas>
+          aria-label="96 by 96 growing neural cellular automaton"></canvas>
         <output id="phase-badge" class="phase-badge" aria-live="polite">
           Phase 1 · growth · 0%
         </output>
@@ -548,9 +548,11 @@
   } from "@synaptic/backend-webgpu";
 
   const TRAINING_SIZE = 24;
-  const INFERENCE_SCALE = 2;
+  const INFERENCE_SCALE = 4;
   const INFERENCE_SIZE = TRAINING_SIZE * INFERENCE_SCALE;
   const INFERENCE_LOSS_SCALE = INFERENCE_SCALE * INFERENCE_SCALE;
+  const TRAINING_INFERENCE_RATE = 4;
+  const OBSERVATION_INFERENCE_RATE = 60;
   const CHANNELS = 16;
   const HIDDEN = 128;
   const MIN_ROLLOUT_STEPS = 64;
@@ -752,6 +754,14 @@
   let repairTargetLoss = Number.POSITIVE_INFINITY;
   let repairMessageUntil = 0;
 
+  function updateInferenceRate() {
+    engine?.setStepsPerSecond(
+      training
+        ? TRAINING_INFERENCE_RATE
+        : OBSERVATION_INFERENCE_RATE,
+    );
+  }
+
   function updateTargetGeometry() {
     inferenceTarget = centerTargetForInference(target);
     targetAliveCells = countAliveTargetCells(target);
@@ -874,7 +884,7 @@
     healthCheckPending = true;
     lastHealthCheck = now;
     try {
-      // This bounded 48×48 readback is rate-limited well outside the animation
+      // This bounded 96×96 readback is rate-limited well outside the animation
       // loop. Normalize its padded loss back to the 24×24 training basis so
       // the existing stability and regeneration thresholds keep their meaning.
       const cells = await engine.getCells();
@@ -986,6 +996,7 @@
     });
     engine.reset({ mode: "center" });
     training = true;
+    updateInferenceRate();
     toggleButton.textContent = "Pause training";
     targetPreset.value = targetKey;
     targetPreset.disabled = false;
@@ -1105,7 +1116,7 @@
         wrap: false,
         maxCells: INFERENCE_SIZE,
       },
-      stepsPerSecond: 60,
+      stepsPerSecond: TRAINING_INFERENCE_RATE,
       render: { colorBg: { r: 1, g: 1, b: 1, a: 1 } },
       onError(error) {
         status.textContent = error.message;
@@ -1129,6 +1140,7 @@
         await restartForTarget();
       } catch (error) {
         training = false;
+        updateInferenceRate();
         targetPreset.disabled = false;
         targetUpload.disabled = false;
         toggleButton.textContent = "Resume training";
@@ -1191,6 +1203,7 @@
       }
     } catch (error) {
       training = false;
+      updateInferenceRate();
       toggleButton.textContent = "Resume training";
       updatePhaseIndicator();
       status.textContent = error instanceof Error ? error.message : String(error);
@@ -1201,6 +1214,7 @@
 
   toggleButton.addEventListener("click", (event) => {
     training = !training;
+    updateInferenceRate();
     event.currentTarget.textContent =
       training ? "Pause training" : "Resume training";
     if (training) {

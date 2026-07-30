@@ -66,7 +66,7 @@ target[index + 3] = alpha;
 ```ts
 import { Engine, GrowingNeural } from "@cazala/automata";
 
-const inferenceSize = 48;
+const inferenceSize = 96;
 const automaton = GrowingNeural.fromArtifact(artifact);
 const engine = new Engine({
   canvas,
@@ -88,9 +88,13 @@ engine.play();
 ```
 
 The learned rule is local and does not encode a grid size. The browser demo
-therefore keeps training at 24×24 but runs Automata on a centered 48×48 grid.
-That gives the organism twice as much space in each direction and halves the
-rendered cell size without changing the training tape or tensors.
+therefore keeps training at 24×24 but runs Automata on a centered 96×96 grid.
+That gives the organism four times as much space in each direction and quarters
+the rendered cell size without changing the training tape or tensors.
+While training is active, the demo runs inference at 4 generations per second,
+which approximately preserves the original 24×24-at-60 cell-update budget.
+Pausing training raises inference to 60 generations per second for smooth
+observation.
 
 While training continues, avoid rebuilding the Automata pipelines:
 
@@ -104,7 +108,7 @@ automaton.setWeights({
 ```
 
 The browser demo also rate-limits a small `engine.getCells()` readback. It
-center-pads the 24×24 target into the 48×48 inference grid before passing both
+center-pads the 24×24 target into the 96×96 inference grid before passing both
 arrays to `measureGrowingNeuralCaState(...)`, then normalizes the padded loss
 back to the training-area basis. It uses a wider live-state limit than the
 training pool, then reseeds inference when values become non-finite, hidden
