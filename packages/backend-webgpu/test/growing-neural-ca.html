@@ -460,16 +460,16 @@
       <header class="panel-head">
         <div>
           <h2>Automata inference</h2>
-          <p>
-            96 × 96 live grid · exact artifact handoff · interaction unlocks
-            with regeneration
+          <p id="inference-meta">
+            Responsive live grid · exact artifact handoff · interaction
+            unlocks with regeneration
           </p>
         </div>
       </header>
       <div id="organism-wrap" class="organism-wrap"
         data-damage-enabled="false">
         <canvas id="organism" width="720" height="540"
-          aria-label="96 by 96 growing neural cellular automaton"></canvas>
+          aria-label="Growing neural cellular automaton"></canvas>
         <output id="phase-badge" class="phase-badge" aria-live="polite">
           Phase 1 · growth · 0%
         </output>
@@ -548,11 +548,11 @@
   } from "@synaptic/backend-webgpu";
 
   const TRAINING_SIZE = 24;
-  const INFERENCE_SCALE = 4;
-  const INFERENCE_SIZE = TRAINING_SIZE * INFERENCE_SCALE;
-  const INFERENCE_LOSS_SCALE = INFERENCE_SCALE * INFERENCE_SCALE;
-  const TRAINING_INFERENCE_RATE = 4;
-  const OBSERVATION_INFERENCE_RATE = 60;
+  const INFERENCE_SIZE =
+    matchMedia("(max-width: 520px)").matches ? 32 : 48;
+  const INFERENCE_LOSS_SCALE =
+    (INFERENCE_SIZE * INFERENCE_SIZE) /
+    (TRAINING_SIZE * TRAINING_SIZE);
   const CHANNELS = 16;
   const HIDDEN = 128;
   const MIN_ROLLOUT_STEPS = 64;
@@ -585,6 +585,7 @@
   const targetContext = targetCanvas.getContext("2d", { willReadFrequently: true });
   const organismCanvas = document.querySelector("#organism");
   const organismWrap = document.querySelector("#organism-wrap");
+  const inferenceMeta = document.querySelector("#inference-meta");
   const status = document.querySelector("#status");
   const liveBadge = document.querySelector(".live-badge");
   const phaseBadge = document.querySelector("#phase-badge");
@@ -610,6 +611,14 @@
     damage: document.querySelector("#damage-count"),
     resets: document.querySelector("#reset-count"),
   };
+  inferenceMeta.textContent =
+    `${INFERENCE_SIZE} × ${INFERENCE_SIZE} live grid · ` +
+    "exact artifact handoff · interaction unlocks with regeneration";
+  organismCanvas.setAttribute(
+    "aria-label",
+    `${INFERENCE_SIZE} by ${INFERENCE_SIZE} growing neural ` +
+      "cellular automaton",
+  );
 
   function targetFromCanvas() {
     const pixels = targetContext.getImageData(
@@ -754,14 +763,6 @@
   let repairTargetLoss = Number.POSITIVE_INFINITY;
   let repairMessageUntil = 0;
 
-  function updateInferenceRate() {
-    engine?.setStepsPerSecond(
-      training
-        ? TRAINING_INFERENCE_RATE
-        : OBSERVATION_INFERENCE_RATE,
-    );
-  }
-
   function updateTargetGeometry() {
     inferenceTarget = centerTargetForInference(target);
     targetAliveCells = countAliveTargetCells(target);
@@ -884,9 +885,9 @@
     healthCheckPending = true;
     lastHealthCheck = now;
     try {
-      // This bounded 96×96 readback is rate-limited well outside the animation
-      // loop. Normalize its padded loss back to the 24×24 training basis so
-      // the existing stability and regeneration thresholds keep their meaning.
+      // This bounded responsive-grid readback is rate-limited well outside the
+      // animation loop. Normalize its padded loss back to the 24×24 training
+      // basis so existing stability and regeneration thresholds keep meaning.
       const cells = await engine.getCells();
       const measuredHealth = measureGrowingNeuralCaState(
         cells,
@@ -996,7 +997,6 @@
     });
     engine.reset({ mode: "center" });
     training = true;
-    updateInferenceRate();
     toggleButton.textContent = "Pause training";
     targetPreset.value = targetKey;
     targetPreset.disabled = false;
@@ -1116,7 +1116,7 @@
         wrap: false,
         maxCells: INFERENCE_SIZE,
       },
-      stepsPerSecond: TRAINING_INFERENCE_RATE,
+      stepsPerSecond: 60,
       render: { colorBg: { r: 1, g: 1, b: 1, a: 1 } },
       onError(error) {
         status.textContent = error.message;
@@ -1140,7 +1140,6 @@
         await restartForTarget();
       } catch (error) {
         training = false;
-        updateInferenceRate();
         targetPreset.disabled = false;
         targetUpload.disabled = false;
         toggleButton.textContent = "Resume training";
@@ -1203,7 +1202,6 @@
       }
     } catch (error) {
       training = false;
-      updateInferenceRate();
       toggleButton.textContent = "Resume training";
       updatePhaseIndicator();
       status.textContent = error instanceof Error ? error.message : String(error);
@@ -1214,7 +1212,6 @@
 
   toggleButton.addEventListener("click", (event) => {
     training = !training;
-    updateInferenceRate();
     event.currentTarget.textContent =
       training ? "Pause training" : "Resume training";
     if (training) {
