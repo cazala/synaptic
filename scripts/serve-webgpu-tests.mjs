@@ -26,6 +26,12 @@ const tests = [
     path: "/packages/backend-webgpu/test/mnist-automata.html",
   },
   {
+    description: "Train growth, persistence, and repair through a 48-generation tape, then stream the artifact into Automata.",
+    kind: "Interactive demo",
+    name: "Growing Neural CA",
+    path: "/packages/backend-webgpu/test/growing-neural-ca.html",
+  },
+  {
     description: "Train a four-cell LSTM, then animate random length-10 recall challenges.",
     kind: "Interactive demo",
     name: "Sequence recall",
@@ -54,6 +60,12 @@ const tests = [
     kind: "Hardware check",
     name: "Training parity",
     path: "/packages/backend-webgpu/test/training-parity.html",
+  },
+  {
+    description: "Verify Growing NCA loss descent and that Automata accepts the exported artifact.",
+    kind: "Hardware check",
+    name: "Growing NCA trainer",
+    path: "/packages/backend-webgpu/test/growing-neural-ca-smoke.html",
   },
   {
     description: "Learn XOR, MNIST, and DSR on hardware and report accuracy and elapsed time.",

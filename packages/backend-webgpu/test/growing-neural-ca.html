@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synaptic WebGPU — Growing Neural CA</title>
+<link rel="stylesheet" href="./demo.css">
+<script type="importmap">
+{
+  "imports": {
+    "@cazala/automata": "/node_modules/@cazala/automata/dist/index.js",
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<style>
+  :root { --mint: #68e6c1; --rose: #ff6f91; --amber: #ffc857; }
+  body {
+    background:
+      radial-gradient(circle at 15% 5%, #123c453b, transparent 30rem),
+      radial-gradient(circle at 90% 20%, #44233d4a, transparent 34rem),
+      #060a11;
+  }
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 2rem;
+  }
+  .hero h1 { max-width: 12ch; }
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    border: 1px solid #315a55;
+    border-radius: 999px;
+    padding: .55rem .8rem;
+    color: #93efd6;
+    background: #0a1919;
+    font: 700 .64rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .live-badge::before {
+    width: .55rem;
+    height: .55rem;
+    border-radius: 50%;
+    background: var(--mint);
+    box-shadow: 0 0 1rem var(--mint);
+    content: "";
+  }
+  .architecture {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .7rem;
+    margin: 1.4rem 0;
+  }
+  .stage {
+    position: relative;
+    min-height: 6.8rem;
+    display: grid;
+    align-content: center;
+    gap: .35rem;
+    padding: 1rem;
+    border: 1px solid #283b51;
+    border-radius: 1rem;
+    background: linear-gradient(145deg, #0b131f, #090e17);
+  }
+  .stage:not(:last-child)::after {
+    position: absolute;
+    z-index: 2;
+    right: -.7rem;
+    top: calc(50% - .7rem);
+    color: #58718b;
+    content: "→";
+  }
+  .stage strong { font: 750 .78rem ui-monospace, monospace; }
+  .stage small {
+    color: #75869c;
+    font: .62rem/1.45 ui-monospace, monospace;
+  }
+  .stage:nth-child(2) { border-color: #416f68; }
+  .stage:nth-child(3) { border-color: #76415d; }
+  .stage:nth-child(4) { border-color: #7a653c; }
+  .experiment {
+    display: grid;
+    grid-template-columns: minmax(13rem, .46fr) minmax(25rem, 1.54fr);
+    gap: 1.4rem;
+  }
+  .target-panel, .organism-panel { overflow: hidden; }
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: start;
+    padding: 1.1rem 1.2rem .9rem;
+    border-bottom: 1px solid #253448;
+  }
+  .panel-head h2 { margin: 0; font-size: 1rem; }
+  .panel-head p {
+    margin: .35rem 0 0;
+    color: #7b8da5;
+    font: .63rem/1.55 ui-monospace, monospace;
+  }
+  .target-wrap {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    padding: 1.4rem;
+    background:
+      linear-gradient(45deg, #e8edf2 25%, transparent 25%),
+      linear-gradient(-45deg, #e8edf2 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e8edf2 75%),
+      linear-gradient(-45deg, transparent 75%, #e8edf2 75%),
+      #fff;
+    background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+    background-size: 24px 24px;
+  }
+  #target {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+  .organism-wrap {
+    position: relative;
+    min-height: 30rem;
+    background: #fff;
+  }
+  #organism {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 30rem;
+    image-rendering: pixelated;
+  }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    background: #263649;
+    border-top: 1px solid #263649;
+  }
+  .metric {
+    min-width: 0;
+    padding: .85rem 1rem;
+    background: #0a1019;
+  }
+  .metric span {
+    display: block;
+    margin-bottom: .3rem;
+    color: #6c7e95;
+    font: 650 .54rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .metric strong {
+    overflow: hidden;
+    display: block;
+    color: #e9f2fb;
+    font: 700 .85rem ui-monospace, monospace;
+    text-overflow: ellipsis;
+  }
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem;
+    padding: 1rem 1.1rem;
+    border-top: 1px solid #263649;
+    background: #090f18;
+  }
+  .toolbar button { min-width: 8rem; }
+  .toolbar .secondary { border-color: #394a5d; background: #101822; }
+  .status {
+    margin-left: auto;
+    align-self: center;
+    color: #82e8ce;
+    font: 650 .66rem ui-monospace, monospace;
+  }
+  .notes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.4rem;
+  }
+  .note { padding: 1rem 1.1rem; }
+  .note strong { display: block; margin-bottom: .45rem; font-size: .78rem; }
+  .note p { margin: 0; color: #77899f; font: .63rem/1.6 ui-monospace, monospace; }
+  @media (max-width: 820px) {
+    .hero, .experiment { grid-template-columns: 1fr; }
+    .architecture { grid-template-columns: 1fr 1fr; }
+    .stage:nth-child(2)::after { display: none; }
+    .notes { grid-template-columns: 1fr; }
+    .organism-wrap, #organism { min-height: 24rem; }
+  }
+  @media (max-width: 520px) {
+    .architecture, .metrics { grid-template-columns: 1fr 1fr; }
+    .stage::after { display: none; }
+    .toolbar button { flex: 1 1 8rem; }
+    .status { width: 100%; margin: .25rem 0 0; }
+  }
+</style>
+<body>
+<main class="shell">
+  <nav class="demo-nav" aria-label="WebGPU demos">
+    <a href="./xor.html">XOR</a>
+    <a href="./mnist.html">Draw a digit</a>
+    <a href="./dsr.html">Sequence recall</a>
+    <a href="./learn-to-paint.html">Learn to paint</a>
+    <a href="./mnist-automata.html">MNIST → Neural CA</a>
+    <a href="./growing-neural-ca.html" aria-current="page">Growing NCA</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Differentiable morphogenesis · WebGPU</p>
+      <h1>Teach one cell to become an organism.</h1>
+      <p class="lede">
+        Synaptic unrolls a neural cellular automaton through time, trains its
+        shared local rule with backpropagation, then streams the same weights
+        into Automata for a live growth and regeneration simulation.
+      </p>
+    </div>
+    <div class="live-badge">training in browser</div>
+  </header>
+
+  <section class="architecture" aria-label="Growing Neural CA architecture">
+    <article class="stage">
+      <strong>3 × 3 perception</strong>
+      <small>identity · Sobel x · Sobel y<br>zero padded</small>
+    </article>
+    <article class="stage">
+      <strong>48 → 32 → 16</strong>
+      <small>shared pointwise MLP<br>ReLU activation</small>
+    </article>
+    <article class="stage">
+      <strong>Residual update</strong>
+      <small>50% stochastic fire mask<br>48-step BPTT tape</small>
+    </article>
+    <article class="stage">
+      <strong>Life mask</strong>
+      <small>pre + post alpha tests<br>damage sample pool</small>
+    </article>
+  </section>
+
+  <section class="experiment">
+    <article class="target-panel panel">
+      <header class="panel-head">
+        <div>
+          <h2>Training target</h2>
+          <p>24 × 24 premultiplied RGBA</p>
+        </div>
+      </header>
+      <div class="target-wrap">
+        <canvas id="target" width="24" height="24"
+          aria-label="Target flower image"></canvas>
+      </div>
+    </article>
+
+    <article class="organism-panel panel">
+      <header class="panel-head">
+        <div>
+          <h2>Automata inference</h2>
+          <p>Exact artifact handoff · click Damage to test regeneration</p>
+        </div>
+      </header>
+      <div class="organism-wrap">
+        <canvas id="organism" width="720" height="540"
+          aria-label="Growing neural cellular automaton"></canvas>
+      </div>
+      <div class="metrics" aria-live="polite">
+        <div class="metric"><span>iteration</span><strong id="iteration">0</strong></div>
+        <div class="metric"><span>loss</span><strong id="loss">—</strong></div>
+        <div class="metric"><span>train step</span><strong id="duration">—</strong></div>
+        <div class="metric"><span>damaged batch</span><strong id="damage-count">0</strong></div>
+      </div>
+      <div class="toolbar">
+        <button id="toggle" type="button">Pause training</button>
+        <button id="damage" class="secondary" type="button">Damage organism</button>
+        <button id="reset" class="secondary" type="button">Reset organism</button>
+        <button id="download" class="secondary" type="button">Download artifact</button>
+        <output id="status" class="status">initializing WebGPU…</output>
+      </div>
+    </article>
+  </section>
+
+  <section class="notes">
+    <article class="note panel">
+      <strong>Real BPTT</strong>
+      <p>Every update is differentiated across all 48 CA generations. Perception gradients gather from neighboring cells without float atomics.</p>
+    </article>
+    <article class="note panel">
+      <strong>Regeneration curriculum</strong>
+      <p>Evolved states return to a sample pool. Training periodically cuts holes into them so persistence and repair are part of the objective.</p>
+    </article>
+    <article class="note panel">
+      <strong>Portable result</strong>
+      <p>The four learned tensors export as the versioned Growing Neural CA JSON artifact understood directly by @cazala/automata.</p>
+    </article>
+  </section>
+</main>
+
+<script type="module">
+  import { Engine, GrowingNeural } from "@cazala/automata";
+  import { GrowingNeuralCaTrainer } from "@synaptic/backend-webgpu";
+
+  const SIZE = 24;
+  const CHANNELS = 16;
+  const HIDDEN = 32;
+  const targetCanvas = document.querySelector("#target");
+  const targetContext = targetCanvas.getContext("2d", { willReadFrequently: true });
+  const organismCanvas = document.querySelector("#organism");
+  const status = document.querySelector("#status");
+  const fields = {
+    iteration: document.querySelector("#iteration"),
+    loss: document.querySelector("#loss"),
+    duration: document.querySelector("#duration"),
+    damage: document.querySelector("#damage-count"),
+  };
+
+  function drawTarget() {
+    const context = targetContext;
+    context.clearRect(0, 0, SIZE, SIZE);
+    context.save();
+    context.translate(SIZE / 2, SIZE / 2 + 1);
+    for (let petal = 0; petal < 6; petal++) {
+      context.save();
+      context.rotate((Math.PI * 2 * petal) / 6);
+      const gradient = context.createLinearGradient(0, -7, 0, -1);
+      gradient.addColorStop(0, "#ff668c");
+      gradient.addColorStop(1, "#ffb34d");
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.ellipse(0, -4.2, 1.75, 3.25, 0, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+    context.fillStyle = "#ffe46b";
+    context.beginPath();
+    context.arc(0, 0, 2.55, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#5c362c";
+    context.beginPath();
+    context.arc(0, 0, 1.05, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+
+    const pixels = context.getImageData(0, 0, SIZE, SIZE).data;
+    const target = new Float32Array(SIZE * SIZE * 4);
+    for (let pixel = 0; pixel < SIZE * SIZE; pixel++) {
+      const alpha = pixels[pixel * 4 + 3] / 255;
+      target[pixel * 4] = (pixels[pixel * 4] / 255) * alpha;
+      target[pixel * 4 + 1] = (pixels[pixel * 4 + 1] / 255) * alpha;
+      target[pixel * 4 + 2] = (pixels[pixel * 4 + 2] / 255) * alpha;
+      target[pixel * 4 + 3] = alpha;
+    }
+    return target;
+  }
+
+  const target = drawTarget();
+  let trainer;
+  let automaton;
+  let engine;
+  let training = true;
+  let disposed = false;
+  let latestArtifact;
+  let damagedTotal = 0;
+
+  async function syncArtifact() {
+    latestArtifact = await trainer.artifact();
+    automaton.setWeights({
+      channels: latestArtifact.channels,
+      hidden: latestArtifact.hidden,
+      ...latestArtifact.weights,
+    });
+  }
+
+  async function initialize() {
+    trainer = await GrowingNeuralCaTrainer.create({
+      size: SIZE,
+      channels: CHANNELS,
+      hidden: HIDDEN,
+      batchSize: 4,
+      rolloutSteps: 48,
+      learningRate: .001,
+      damageProbability: 0,
+      poolWarmupIterations: 128,
+      seed: 0x6772_6f77,
+    });
+    latestArtifact = await trainer.artifact();
+    automaton = GrowingNeural.fromArtifact(latestArtifact);
+    engine = new Engine({
+      canvas: organismCanvas,
+      automaton,
+      grid: { width: SIZE, height: SIZE, wrap: false, maxCells: SIZE },
+      stepsPerSecond: 60,
+      render: { colorBg: { r: 1, g: 1, b: 1, a: 1 } },
+      onError(error) {
+        status.textContent = error.message;
+        status.dataset.error = "true";
+      },
+    });
+    await engine.initialize();
+    engine.coverGrid();
+    engine.reset({ mode: "center" });
+    engine.play();
+    status.textContent = "training · artifact synced";
+  }
+
+  async function trainLoop() {
+    if (disposed) return;
+    if (!training) {
+      requestAnimationFrame(trainLoop);
+      return;
+    }
+    try {
+      const persistencePhase = trainer.iteration >= 128;
+      const metrics = await trainer.trainStep(target, {
+        learningRate: persistencePhase ? .0002 : .001,
+        damageProbability: persistencePhase && trainer.iteration >= 512
+          ? .4
+          : 0,
+      });
+      damagedTotal += metrics.damagedSamples;
+      fields.iteration.textContent = metrics.iteration.toLocaleString();
+      fields.loss.textContent = metrics.loss.toExponential(3);
+      fields.duration.textContent = `${metrics.durationMs.toFixed(0)} ms`;
+      fields.damage.textContent = damagedTotal.toLocaleString();
+      if (metrics.iteration <= 8 || metrics.iteration % 4 === 0) {
+        await syncArtifact();
+      }
+      status.textContent =
+        metrics.iteration < 8
+          ? "warming up final layer…"
+          : metrics.iteration < 128
+          ? "training growth from one cell…"
+          : metrics.iteration < 512
+          ? "training persistence from the sample pool…"
+          : "training regeneration with damaged samples…";
+    } catch (error) {
+      training = false;
+      document.querySelector("#toggle").textContent = "Resume training";
+      status.textContent = error instanceof Error ? error.message : String(error);
+      status.dataset.error = "true";
+    }
+    requestAnimationFrame(trainLoop);
+  }
+
+  document.querySelector("#toggle").addEventListener("click", (event) => {
+    training = !training;
+    event.currentTarget.textContent =
+      training ? "Pause training" : "Resume training";
+    if (training) {
+      status.textContent = "training resumed";
+      delete status.dataset.error;
+    } else {
+      status.textContent = "training paused · organism still running";
+    }
+  });
+  document.querySelector("#damage").addEventListener("click", () => {
+    engine.fillCircle(SIZE / 2, SIZE / 2, 4, []);
+    status.textContent = "organism damaged · watching repair";
+  });
+  document.querySelector("#reset").addEventListener("click", () => {
+    engine.reset({ mode: "center" });
+    status.textContent = "organism reset to one cell";
+  });
+  document.querySelector("#download").addEventListener("click", async () => {
+    const artifact = await trainer.artifact();
+    const blob = new Blob([JSON.stringify(artifact)], {
+      type: "application/json",
+    });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `synaptic-growing-nca-${trainer.iteration}.json`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  });
+
+  addEventListener("beforeunload", () => {
+    disposed = true;
+    engine?.destroy();
+    trainer?.dispose();
+  }, { once: true });
+
+  try {
+    await initialize();
+    requestAnimationFrame(trainLoop);
+  } catch (error) {
+    status.textContent = error instanceof Error ? error.message : String(error);
+    status.dataset.error = "true";
+  }
+</script>
+</body>
+</html>

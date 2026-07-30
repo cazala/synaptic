@@ -161,14 +161,23 @@ WebGPU requires a browser with WebGPU in a secure context (`https:` or
 `localhost`). Explicit WebGPU compilation uses the declared fallback order when
 the API, adapter, plan feature, or device limit is unavailable.
 
-Run `npm run test:webgpu` to serve the hardware checks and five interactive
+Run `npm run test:webgpu` to serve the hardware checks and six interactive
 learning demos: [XOR](packages/backend-webgpu/test/xor.html),
 [MNIST digit drawing](packages/backend-webgpu/test/mnist.html),
 [MNIST to Neural CA](packages/backend-webgpu/test/mnist-automata.html),
+[Growing Neural CA](packages/backend-webgpu/test/growing-neural-ca.html),
 [discrete sequence recall](packages/backend-webgpu/test/dsr.html), and the
 coordinate-to-RGB [learn-to-paint portrait](packages/backend-webgpu/test/learn-to-paint.html).
 The portrait source is bundled with the example, so it does not depend on a
 remote image at runtime.
+
+The Growing Neural CA demo is a specialized differentiable simulation rather
+than a flattened generic graph. `GrowingNeuralCaTrainer` keeps the full
+generation tape and Adam state in one WebGPU heap, differentiates the
+identity/Sobel → ReLU MLP → stochastic residual rule through 48 generations,
+and trains persistence and repair from a bounded sample pool. Its
+`artifact()` result is the versioned JSON shape consumed directly by
+`GrowingNeural.fromArtifact(...)` in `@cazala/automata`.
 
 ## Legacy imports
 
@@ -207,6 +216,7 @@ lossless conversion.
 - [Getting started](docs/getting-started.md)
 - [Architecture](docs/architecture.md)
 - [Backend behavior](docs/backends.md)
+- [Growing Neural Cellular Automata](docs/growing-neural-ca.md)
 - [Artifacts and migration](docs/artifacts-and-migration.md)
 - [Testing](docs/testing.md)
 - [Contributing](docs/contributing.md)

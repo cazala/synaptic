@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Growing Neural CA trainer smoke test</title>
+<script type="importmap">
+{
+  "imports": {
+    "@cazala/automata": "/node_modules/@cazala/automata/dist/index.js",
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<output id="result">running…</output>
+<script type="module">
+  import { GrowingNeural } from "@cazala/automata";
+  import { GrowingNeuralCaTrainer } from "@synaptic/backend-webgpu";
+
+  const result = document.querySelector("#result");
+  try {
+    const trainer = await GrowingNeuralCaTrainer.create({
+      size: 8,
+      channels: 4,
+      hidden: 4,
+      batchSize: 1,
+      rolloutSteps: 4,
+      fireRate: 1,
+      learningRate: .0002,
+      damageProbability: 0,
+      poolWarmupIterations: 1000,
+      seed: 123,
+    });
+    const target = new Float32Array(8 * 8 * 4);
+    for (let y = 1; y < 7; y++) {
+      for (let x = 1; x < 7; x++) {
+        if ((x - 3.5) ** 2 + (y - 3.5) ** 2 > 8) continue;
+        const index = (y * 8 + x) * 4;
+        target[index] = .8;
+        target[index + 1] = .25;
+        target[index + 3] = 1;
+      }
+    }
+    const baseline = await trainer.trainStep(target, { learningRate: 0 });
+    for (let iteration = 0; iteration < 16; iteration++) {
+      await trainer.trainStep(target, { learningRate: .0002 });
+    }
+    const after = await trainer.trainStep(target, { learningRate: 0 });
+    const artifact = await trainer.artifact();
+    const automaton = GrowingNeural.fromArtifact(artifact);
+    trainer.dispose();
+    if (
+      !(after.loss < baseline.loss) ||
+      !artifact.weights.hiddenToOutput.every(Number.isFinite) ||
+      automaton.getChannels() !== 4 ||
+      automaton.getHidden() !== 4
+    ) {
+      throw new Error(
+        `Trainer verification failed: ${baseline.loss} → ${after.loss}`,
+      );
+    }
+    result.textContent =
+      `passed · loss ${baseline.loss.toExponential(3)} → ` +
+      `${after.loss.toExponential(3)} · artifact accepted`;
+  } catch (error) {
+    result.textContent = error instanceof Error ? error.stack : String(error);
+  }
+</script>
+</html>

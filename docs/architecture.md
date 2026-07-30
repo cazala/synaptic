@@ -124,6 +124,20 @@ calls. CPU, Paper, and Wasm provide portable loop implementations. WebGPU
 lowers a sequence into one packed upload and command buffer and can omit the
 final loss readback.
 
+### Spatial BPTT specialization
+
+Growing Neural CA training sits beside the generic execution-plan path as a
+backend-owned specialization. Its portable boundary is a small versioned
+artifact—four shared tensors plus exact perception, activation, stochastic,
+boundary, and life-mask semantics—while its disposable execution machinery is
+a WebGPU generation tape and reverse-time compute schedule.
+
+This preserves the architecture rule that artifacts describe meaning and
+devices own execution. It also avoids expanding a 2D, 48-generation shared
+local rule into millions of unit/connection records. Automata consumes the
+artifact for inference; it does not share Synaptic's training buffers or GPU
+device.
+
 ## Determinism and precision
 
 The portable production precision is `f32`. Paper additionally supports `f64`

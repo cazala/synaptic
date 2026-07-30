@@ -1,6 +1,6 @@
 # v2 implementation status
 
-The architecture proposal has been implemented on the `v2` branch in seven
+The architecture proposal has been implemented on the `v2` branch in eight
 milestones.
 
 | Phase | Result |
@@ -12,6 +12,7 @@ milestones.
 | WebGPU training | Backward/error passes, traces, indexed shared-parameter reduction, sequence submission, optional loss readback, checkpoint readback |
 | Specialization/migration | Dense CPU specialization, Synaptic v1 importer, public facade and backend selection |
 | Hardening | Full checkpoint restore/artifacts, comprehensive tests/docs, package cleanup, coverage and dependency audit |
+| Growing NCA specialization | WebGPU generation tape, reverse-time gradients, Adam/sample-pool curriculum, and an Automata-compatible artifact |
 
 ASM.js is intentionally absent. Modern JavaScript engines, WebAssembly, and
 WebGPU cover its former role without carrying a generated-source backend.

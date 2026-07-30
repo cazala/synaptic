@@ -92,6 +92,28 @@ has a dispatch boundary, so tiny LSTM stages can remain slower than CPU even
 after batching queue operations. Large independent-sample batching and fused
 graph kernels are separate future specializations.
 
+### Growing Neural CA specialization
+
+`GrowingNeuralCaTrainer` is an explicit WebGPU specialization for
+differentiable cellular automata. It does not pretend a large unrolled spatial
+simulation is an ordinary `ExecutionPlan`: doing so would materialize millions
+of graph connections and still miss image-state BPTT semantics.
+
+The trainer instead owns:
+
+- an f32 state tape for every batch, cell, channel, and generation;
+- exact identity/Sobel-x/Sobel-y perception with zero padding;
+- a shared ReLU pointwise MLP and stochastic residual update;
+- separate candidate and pre/post alpha-life phases;
+- reverse-time MLP and gathered convolution gradients, avoiding unavailable
+  portable f32 atomics;
+- per-tensor gradient normalization, Adam slots, and a bounded sample pool
+  that replaces runaway rollouts with fresh center seeds;
+- a versioned `artifact()` compatible with Automata `GrowingNeural`.
+
+This API requires WebGPU and deliberately has no CPU fallback. The generic
+backend/session contract remains unchanged.
+
 ## Auto-selection
 
 The public facade chooses:

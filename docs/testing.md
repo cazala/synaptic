@@ -29,6 +29,8 @@ The suite covers:
 - portable ordered-sequence inference and training contracts;
 - seeded XOR, MNIST, and discrete sequence recall learning;
 - WebGPU heap offsets, parameter adjacency, and uniform records;
+- Growing Neural CA tape/scratch layout, reference initialization, shader
+  compilation, loss descent, and Automata artifact acceptance;
 - fallback ordering, disabled fallback, ownership, and disposal;
 - Synaptic v1 fixture import and unsupported-format rejection;
 - public facade and auto-selection behavior.
@@ -91,6 +93,8 @@ Then open `http://127.0.0.1:4173/` and choose a test:
 - `http://localhost:4173/packages/backend-webgpu/test/mnist-automata.html`
 - `http://localhost:4173/packages/backend-webgpu/test/dsr.html`
 - `http://localhost:4173/packages/backend-webgpu/test/learn-to-paint.html`
+- `http://localhost:4173/packages/backend-webgpu/test/growing-neural-ca.html`
+- `http://localhost:4173/packages/backend-webgpu/test/growing-neural-ca-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/shader-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/forward-smoke.html`
 - `http://localhost:4173/packages/backend-webgpu/test/training-parity.html`
@@ -108,7 +112,7 @@ learning page runs the same XOR, MNIST, and sequence-recall helpers as the Node
 suite with fallback disabled, so its reported backend must be `webgpu`; it
 reports end-to-end time for each workload, including model compilation.
 
-The first five pages are polished interactive examples:
+The first six pages are polished interactive examples:
 
 - XOR shows the 2→3→1 topology and all four predictions as training converges.
 - MNIST trains a 196→128→10 classifier on 300 MNIST samples plus 80
@@ -139,6 +143,13 @@ The first five pages are polished interactive examples:
   epoch, while 8,100 evenly distributed preview samples return through one
   inference submission and readback. The network preview is smoothly resolved
   into the native 400×400 output canvas every epoch.
+- Growing Neural CA unrolls an exact 16-channel local rule through a
+  48-generation WebGPU tape, backpropagates the image loss without f32
+  atomics, applies per-tensor gradient normalization and Adam, and trains
+  growth, persistence, and damage repair from a bounded sample pool. Every
+  fourth update streams its four tensors into Automata's live
+  `GrowingNeural` simulation. The adjacent smoke page verifies numerical loss
+  descent and that Automata accepts the exported artifact.
 
 Browser console errors or non-pass smoke results fail the hardware check.
 
