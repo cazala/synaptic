@@ -154,8 +154,10 @@ The first six pages are polished interactive examples:
   repair confidence rather than elapsed updates. Its cuts include the demo
   button's four-cell-radius hole. Every
   eighth update streams its four tensors into Automata's live `GrowingNeural`
-  simulation. A bounded health check automatically reseeds inference when
-  hidden values run away, the grid saturates, or a formed organism collapses.
+  simulation on a 48×48 grid, while the trainer remains 24×24. A centered,
+  padded, training-area-normalized health check automatically reseeds inference
+  when hidden values run away, the grid saturates, or a formed organism
+  collapses.
   A three-stage curriculum indicator shows confidence percentages for seed
   growth, persistence, and regeneration. Damage controls and click-or-drag
   canvas erasing unlock only after growth and stability qualify. A bundled

@@ -460,13 +460,16 @@
       <header class="panel-head">
         <div>
           <h2>Automata inference</h2>
-          <p>Exact artifact handoff · interaction unlocks with regeneration</p>
+          <p>
+            48 × 48 live grid · exact artifact handoff · interaction unlocks
+            with regeneration
+          </p>
         </div>
       </header>
       <div id="organism-wrap" class="organism-wrap"
         data-damage-enabled="false">
         <canvas id="organism" width="720" height="540"
-          aria-label="Growing neural cellular automaton"></canvas>
+          aria-label="48 by 48 growing neural cellular automaton"></canvas>
         <output id="phase-badge" class="phase-badge" aria-live="polite">
           Phase 1 · growth · 0%
         </output>
@@ -544,7 +547,10 @@
     measureGrowingNeuralCaState,
   } from "@synaptic/backend-webgpu";
 
-  const SIZE = 24;
+  const TRAINING_SIZE = 24;
+  const INFERENCE_SCALE = 2;
+  const INFERENCE_SIZE = TRAINING_SIZE * INFERENCE_SCALE;
+  const INFERENCE_LOSS_SCALE = INFERENCE_SCALE * INFERENCE_SCALE;
   const CHANNELS = 16;
   const HIDDEN = 128;
   const MIN_ROLLOUT_STEPS = 64;
@@ -604,9 +610,16 @@
   };
 
   function targetFromCanvas() {
-    const pixels = targetContext.getImageData(0, 0, SIZE, SIZE).data;
-    const result = new Float32Array(SIZE * SIZE * 4);
-    for (let pixel = 0; pixel < SIZE * SIZE; pixel++) {
+    const pixels = targetContext.getImageData(
+      0,
+      0,
+      TRAINING_SIZE,
+      TRAINING_SIZE,
+    ).data;
+    const result = new Float32Array(
+      TRAINING_SIZE * TRAINING_SIZE * 4,
+    );
+    for (let pixel = 0; pixel < TRAINING_SIZE * TRAINING_SIZE; pixel++) {
       const alpha = pixels[pixel * 4 + 3] / 255;
       result[pixel * 4] = (pixels[pixel * 4] / 255) * alpha;
       result[pixel * 4 + 1] = (pixels[pixel * 4 + 1] / 255) * alpha;
@@ -618,9 +631,9 @@
 
   function drawFlowerTarget() {
     const context = targetContext;
-    context.clearRect(0, 0, SIZE, SIZE);
+    context.clearRect(0, 0, TRAINING_SIZE, TRAINING_SIZE);
     context.save();
-    context.translate(SIZE / 2, SIZE / 2 + 1);
+    context.translate(TRAINING_SIZE / 2, TRAINING_SIZE / 2 + 1);
     for (let petal = 0; petal < 6; petal++) {
       context.save();
       context.rotate((Math.PI * 2 * petal) / 6);
@@ -651,13 +664,13 @@
     if (!(width > 0 && height > 0)) {
       throw new Error("The selected image has no visible dimensions");
     }
-    const available = SIZE - padding * 2;
+    const available = TRAINING_SIZE - padding * 2;
     const scale = Math.min(available / width, available / height);
     const drawnWidth = Math.max(1, Math.round(width * scale));
     const drawnHeight = Math.max(1, Math.round(height * scale));
-    const x = Math.round((SIZE - drawnWidth) / 2);
-    const y = Math.round((SIZE - drawnHeight) / 2);
-    targetContext.clearRect(0, 0, SIZE, SIZE);
+    const x = Math.round((TRAINING_SIZE - drawnWidth) / 2);
+    const y = Math.round((TRAINING_SIZE - drawnHeight) / 2);
+    targetContext.clearRect(0, 0, TRAINING_SIZE, TRAINING_SIZE);
     targetContext.imageSmoothingEnabled = true;
     targetContext.imageSmoothingQuality = "high";
     targetContext.drawImage(image, x, y, drawnWidth, drawnHeight);
@@ -680,13 +693,38 @@
 
   function countAliveTargetCells(nextTarget) {
     let count = 0;
-    for (let cell = 0; cell < SIZE * SIZE; cell++) {
+    for (
+      let cell = 0;
+      cell < TRAINING_SIZE * TRAINING_SIZE;
+      cell++
+    ) {
       if (nextTarget[cell * 4 + 3] > .1) count++;
     }
     return count;
   }
 
+  function centerTargetForInference(nextTarget) {
+    const centered = new Float32Array(
+      INFERENCE_SIZE * INFERENCE_SIZE * 4,
+    );
+    const inset = (INFERENCE_SIZE - TRAINING_SIZE) / 2;
+    for (let y = 0; y < TRAINING_SIZE; y++) {
+      const sourceOffset = y * TRAINING_SIZE * 4;
+      const targetOffset =
+        ((y + inset) * INFERENCE_SIZE + inset) * 4;
+      centered.set(
+        nextTarget.subarray(
+          sourceOffset,
+          sourceOffset + TRAINING_SIZE * 4,
+        ),
+        targetOffset,
+      );
+    }
+    return centered;
+  }
+
   let target = drawFlowerTarget();
+  let inferenceTarget = centerTargetForInference(target);
   let curriculum = new GrowingNeuralCaCurriculum(target);
   let targetName = "Flower";
   let targetKey = "flower";
@@ -715,8 +753,9 @@
   let repairMessageUntil = 0;
 
   function updateTargetGeometry() {
+    inferenceTarget = centerTargetForInference(target);
     targetAliveCells = countAliveTargetCells(target);
-    const cells = SIZE * SIZE;
+    const cells = TRAINING_SIZE * TRAINING_SIZE;
     saturationCellLimit = Math.min(
       cells,
       Math.max(
@@ -799,7 +838,7 @@
     targetName = name;
     targetKey = key;
     targetMeta.textContent =
-      `${name} · ${SIZE} × ${SIZE} pixel target`;
+      `${name} · ${TRAINING_SIZE} × ${TRAINING_SIZE} pixel target`;
     targetCanvas.setAttribute(
       "aria-label",
       `${name} pixel-art training target`,
@@ -835,15 +874,20 @@
     healthCheckPending = true;
     lastHealthCheck = now;
     try {
-      // This is a bounded 24×24 diagnostic readback, rate-limited well outside
-      // the animation loop so the canvas never performs per-frame GPU stalls.
+      // This bounded 48×48 readback is rate-limited well outside the animation
+      // loop. Normalize its padded loss back to the 24×24 training basis so
+      // the existing stability and regeneration thresholds keep their meaning.
       const cells = await engine.getCells();
-      const health = measureGrowingNeuralCaState(
+      const measuredHealth = measureGrowingNeuralCaState(
         cells,
-        target,
+        inferenceTarget,
         CHANNELS,
         latestArtifact.life.threshold,
       );
+      const health = {
+        ...measuredHealth,
+        loss: measuredHealth.loss * INFERENCE_LOSS_SCALE,
+      };
       bestInferenceLoss = Math.min(bestInferenceLoss, health.loss);
       if (
         repairing &&
@@ -904,7 +948,7 @@
 
   function createTrainer() {
     return GrowingNeuralCaTrainer.create({
-      size: SIZE,
+      size: TRAINING_SIZE,
       channels: CHANNELS,
       hidden: HIDDEN,
       batchSize: 8,
@@ -1055,7 +1099,12 @@
     engine = new Engine({
       canvas: organismCanvas,
       automaton,
-      grid: { width: SIZE, height: SIZE, wrap: false, maxCells: SIZE },
+      grid: {
+        width: INFERENCE_SIZE,
+        height: INFERENCE_SIZE,
+        wrap: false,
+        maxCells: INFERENCE_SIZE,
+      },
       stepsPerSecond: 60,
       render: { colorBg: { r: 1, g: 1, b: 1, a: 1 } },
       onError(error) {
@@ -1165,8 +1214,8 @@
   damageButton.addEventListener("click", () => {
     if (!beginRepair()) return;
     engine.fillCircle(
-      SIZE / 2,
-      SIZE / 2,
+      INFERENCE_SIZE / 2,
+      INFERENCE_SIZE / 2,
       DAMAGE_RADIUS,
       [],
     );
@@ -1230,7 +1279,9 @@
       if (file.size > MAX_UPLOAD_BYTES) {
         throw new Error("Choose an image smaller than 12 MB");
       }
-      status.textContent = `converting ${file.name} to ${SIZE} × ${SIZE} pixels…`;
+      status.textContent =
+        `converting ${file.name} to ` +
+        `${TRAINING_SIZE} × ${TRAINING_SIZE} pixels…`;
       objectUrl = URL.createObjectURL(file);
       const image = await loadImage(objectUrl);
       if (request !== targetRequest) return;

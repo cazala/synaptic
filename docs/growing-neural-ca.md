@@ -66,11 +66,17 @@ target[index + 3] = alpha;
 ```ts
 import { Engine, GrowingNeural } from "@cazala/automata";
 
+const inferenceSize = 48;
 const automaton = GrowingNeural.fromArtifact(artifact);
 const engine = new Engine({
   canvas,
   automaton,
-  grid: { width: 24, height: 24, wrap: false, maxCells: 24 },
+  grid: {
+    width: inferenceSize,
+    height: inferenceSize,
+    wrap: false,
+    maxCells: inferenceSize,
+  },
   stepsPerSecond: 60,
   render: { colorBg: { r: 1, g: 1, b: 1, a: 1 } },
 });
@@ -80,6 +86,11 @@ engine.coverGrid();
 engine.reset({ mode: "center" });
 engine.play();
 ```
+
+The learned rule is local and does not encode a grid size. The browser demo
+therefore keeps training at 24×24 but runs Automata on a centered 48×48 grid.
+That gives the organism twice as much space in each direction and halves the
+rendered cell size without changing the training tape or tensors.
 
 While training continues, avoid rebuilding the Automata pipelines:
 
@@ -92,13 +103,14 @@ automaton.setWeights({
 });
 ```
 
-The browser demo also rate-limits a small `engine.getCells()` readback and
-passes it to `measureGrowingNeuralCaState(...)`. It uses a wider live-state
-limit than the training pool, then reseeds inference when values become
-non-finite, hidden channels exceed that range, living cells saturate the grid,
-or a previously formed organism collapses. This guard is intentionally outside
-the animation loop; production rendering should not perform a full state
-readback per frame.
+The browser demo also rate-limits a small `engine.getCells()` readback. It
+center-pads the 24×24 target into the 48×48 inference grid before passing both
+arrays to `measureGrowingNeuralCaState(...)`, then normalizes the padded loss
+back to the training-area basis. It uses a wider live-state limit than the
+training pool, then reseeds inference when values become non-finite, hidden
+channels exceed that range, living cells saturate the grid, or a previously
+formed organism collapses. This guard is intentionally outside the animation
+loop; production rendering should not perform a full state readback per frame.
 
 ## Exact model semantics
 
