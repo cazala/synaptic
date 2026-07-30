@@ -14,7 +14,7 @@ const trainer = await GrowingNeuralCaTrainer.create({
   size: 24,
   channels: 16,
   hidden: 128,
-  batchSize: 4,
+  batchSize: 8,
   minRolloutSteps: 64,
   rolloutSteps: 96,
   stabilitySteps: 16,
@@ -29,10 +29,17 @@ const target = new Float32Array(24 * 24 * 4);
 
 for (let iteration = 0; iteration < 20_000; iteration += 1) {
   const persistence = iteration >= 128;
-  const regeneration = iteration >= 12_000;
+  const regenerationProgress = Math.max(
+    0,
+    Math.min(1, (iteration - 512) / 512),
+  );
   const metrics = await trainer.trainStep(target, {
-    learningRate: regeneration ? 0.0002 : persistence ? 0.0005 : 0.002,
-    damageProbability: regeneration ? 0.3 : 0,
+    learningRate: !persistence
+      ? 0.002
+      : iteration < 2_048
+      ? 0.0005
+      : 0.0003,
+    damageProbability: regenerationProgress,
   });
   console.log(
     metrics.iteration,
@@ -138,14 +145,29 @@ organism to remain in its target basin. Recommended phases are:
 
 1. seed-only growth warm-up;
 2. persistent sample-pool rollouts at a lower learning rate;
-3. damaged pool samples for regeneration.
+3. a gradual ramp from undamaged to several damaged healthy samples per batch.
+
+The demo uses the reference batch shape of eight samples: the worst sample is
+reseeded and the healthiest three are damage candidates. It begins the damage
+ramp at update 512, reaches three damaged samples per batch at update 1,024,
+and retains the persistence learning rate through update 2,048 before decaying
+it. This teaches repair during the same early window in which the flower first
+becomes stable instead of postponing regeneration for a separate long phase.
 
 Selected outputs replace the same pool entries they came from, allowing a state
 to accumulate a long trajectory over many short BPTT windows. After warm-up,
 the selected state with the highest target loss is replaced by a fresh center
-seed. Damage is sampled from the healthier selected states. Rollouts whose
-absolute state exceeds `poolValueLimit` are also replaced by a seed, preventing
-one numerically runaway state from poisoning the pool.
+seed. Damage is sampled from the healthier selected states using random circles
+whose radius ranges from roughly 10% to 20% of the grid width. This includes
+the centered four-cell-radius cut made by the demo's Damage button. Rollouts
+whose absolute state exceeds `poolValueLimit` are also replaced by a seed,
+preventing one numerically runaway state from poisoning the pool.
+
+The demo continues its bounded health readbacks during the fifteen-second
+manual-damage grace period. Numerical divergence can still trigger a reset,
+but normal target-loss drift cannot interrupt repair. Once the visible loss
+returns near its pre-damage value, the page reports that regeneration
+succeeded.
 
 The task is iterative, not an instant classifier. The 24×24, 128-hidden demo
 begins forming the target within hundreds of iterations and becomes more

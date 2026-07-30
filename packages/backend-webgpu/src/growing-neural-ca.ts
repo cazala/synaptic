@@ -1730,13 +1730,23 @@ export class GrowingNeuralCaTrainer {
         damageCandidates.has(batch) &&
         random() < damageProbability
       ) {
-        const radius = Math.max(2, Math.floor(this.size * 0.14));
+        // Match the broad random cuts used by the reference regenerating
+        // curriculum. A fixed, small hole teaches local smoothing but does
+        // not make the target a sufficiently wide repair attractor.
+        const minimumRadius = Math.max(2, Math.floor(this.size * 0.1));
+        const maximumRadius = Math.max(
+          minimumRadius,
+          Math.floor(this.size * 0.2),
+        );
+        const radius =
+          minimumRadius +
+          Math.floor(random() * (maximumRadius - minimumRadius + 1));
         const centerX =
           Math.floor(this.size / 2) +
-          Math.floor((random() * 2 - 1) * this.size * 0.12);
+          Math.floor((random() * 2 - 1) * this.size * 0.2);
         const centerY =
           Math.floor(this.size / 2) +
-          Math.floor((random() * 2 - 1) * this.size * 0.12);
+          Math.floor((random() * 2 - 1) * this.size * 0.2);
         for (let y = 0; y < this.size; y += 1) {
           for (let x = 0; x < this.size; x += 1) {
             if ((x - centerX) ** 2 + (y - centerY) ** 2 > radius ** 2) {

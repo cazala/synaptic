@@ -147,7 +147,11 @@ The first six pages are polished interactive examples:
   64–96-generation WebGPU tape, backpropagates the image loss without f32
   atomics, applies per-tensor gradient normalization and Adam, and trains
   the last sixteen states of each rollout toward the target while learning
-  growth, persistence, and damage repair from an in-place sample pool. Every
+  growth, persistence, and damage repair from an in-place sample pool. The
+  eight-sample regeneration curriculum ramps up from updates 512–1,024 until
+  three healthy samples are damaged per batch. Its cuts include the demo
+  button's four-cell-radius hole, and the learning rate decays only after
+  update 2,048. Every
   eighth update streams its four tensors into Automata's live `GrowingNeural`
   simulation. A bounded health check automatically reseeds inference when
   hidden values run away, the grid saturates, or a formed organism collapses.

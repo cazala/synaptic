@@ -276,7 +276,7 @@
         <div class="metric"><span>loss</span><strong id="loss">—</strong></div>
         <div class="metric"><span>rollout</span><strong id="rollout">—</strong></div>
         <div class="metric"><span>train step</span><strong id="duration">—</strong></div>
-        <div class="metric"><span>damaged batch</span><strong id="damage-count">0</strong></div>
+        <div class="metric"><span>damaged samples</span><strong id="damage-count">0</strong></div>
         <div class="metric"><span>auto resets</span><strong id="reset-count">0</strong></div>
       </div>
       <div class="toolbar">
@@ -318,6 +318,10 @@
   const MIN_ROLLOUT_STEPS = 64;
   const MAX_ROLLOUT_STEPS = 96;
   const STABILITY_STEPS = 16;
+  const PERSISTENCE_START_ITERATION = 128;
+  const REGENERATION_START_ITERATION = 512;
+  const REGENERATION_RAMP_ITERATIONS = 512;
+  const LEARNING_RATE_DECAY_ITERATION = 2_048;
   const HEALTH_CHECK_INTERVAL_MS = 1_200;
   const POOL_VALUE_LIMIT = 256;
   const INFERENCE_VALUE_LIMIT = 1_000;
@@ -387,6 +391,9 @@
   let healthGuardSuppressedUntil = 0;
   let bestInferenceLoss = Number.POSITIVE_INFINITY;
   let formedSinceReset = false;
+  let repairing = false;
+  let repairTargetLoss = Number.POSITIVE_INFINITY;
+  let repairMessageUntil = 0;
 
   const targetAliveCells = (() => {
     let count = 0;
@@ -404,6 +411,8 @@
     engine.reset({ mode: "center" });
     bestInferenceLoss = Number.POSITIVE_INFINITY;
     formedSinceReset = false;
+    repairing = false;
+    repairMessageUntil = 0;
     healthGuardSuppressedUntil = performance.now() + 2_000;
     if (automatic) {
       inferenceResets++;
@@ -417,7 +426,6 @@
     const now = performance.now();
     if (
       healthCheckPending ||
-      now < healthGuardSuppressedUntil ||
       now - lastHealthCheck < HEALTH_CHECK_INTERVAL_MS
     ) {
       return false;
@@ -436,6 +444,16 @@
       );
       bestInferenceLoss = Math.min(bestInferenceLoss, health.loss);
       if (
+        repairing &&
+        health.loss <= repairTargetLoss &&
+        health.aliveCells > targetAliveCells * .4 &&
+        health.aliveCells < targetAliveCells * 1.8
+      ) {
+        repairing = false;
+        repairMessageUntil = performance.now() + 4_000;
+        status.textContent = "regeneration successful · organism repaired";
+      }
+      if (
         health.loss < .025 &&
         health.aliveCells > targetAliveCells * .4 &&
         health.aliveCells < targetAliveCells * 1.8
@@ -451,11 +469,13 @@
       } else if (health.aliveCells > saturationCellLimit) {
         reason = "growth saturated the grid";
       } else if (
+        now >= healthGuardSuppressedUntil &&
         formedSinceReset &&
         health.aliveCells < Math.max(1, targetAliveCells * .12)
       ) {
         reason = "the formed organism collapsed";
       } else if (
+        now >= healthGuardSuppressedUntil &&
         formedSinceReset &&
         health.loss > Math.max(.04, bestInferenceLoss * 5)
       ) {
@@ -485,7 +505,7 @@
       size: SIZE,
       channels: CHANNELS,
       hidden: HIDDEN,
-      batchSize: 4,
+      batchSize: 8,
       minRolloutSteps: MIN_ROLLOUT_STEPS,
       rolloutSteps: MAX_ROLLOUT_STEPS,
       stabilitySteps: STABILITY_STEPS,
@@ -529,17 +549,23 @@
       return;
     }
     try {
-      const persistencePhase = trainer.iteration >= 128;
-      const regenerationPhase = trainer.iteration >= 12_000;
+      const persistencePhase =
+        trainer.iteration >= PERSISTENCE_START_ITERATION;
+      const regenerationProgress = Math.max(
+        0,
+        Math.min(
+          1,
+          (trainer.iteration - REGENERATION_START_ITERATION) /
+            REGENERATION_RAMP_ITERATIONS,
+        ),
+      );
       const metrics = await trainer.trainStep(target, {
-        learningRate: regenerationPhase
-          ? .0002
-          : persistencePhase
+        learningRate: !persistencePhase
+          ? .002
+          : trainer.iteration < LEARNING_RATE_DECAY_ITERATION
           ? .0005
-          : .002,
-        damageProbability: regenerationPhase
-          ? .3
-          : 0,
+          : .0003,
+        damageProbability: regenerationProgress,
       });
       damagedTotal += metrics.damagedSamples;
       fields.iteration.textContent = metrics.iteration.toLocaleString();
@@ -552,15 +578,22 @@
         await syncArtifact();
         autoReset = await checkInferenceHealth();
       }
-      if (!autoReset && training) {
+      if (
+        !autoReset &&
+        training &&
+        !repairing &&
+        performance.now() >= repairMessageUntil
+      ) {
         status.textContent =
           metrics.iteration < 8
             ? "warming up final layer…"
-            : metrics.iteration < 128
+            : metrics.iteration < PERSISTENCE_START_ITERATION
             ? "training growth from one cell…"
-            : metrics.iteration < 12_000
+            : metrics.iteration < REGENERATION_START_ITERATION
             ? "training a stable attractor from the sample pool…"
-            : "training regeneration with damaged samples…";
+            : regenerationProgress < 1
+            ? "ramping up regeneration training…"
+            : "training regeneration with three damaged samples per batch…";
       }
     } catch (error) {
       training = false;
@@ -583,8 +616,13 @@
     }
   });
   document.querySelector("#damage").addEventListener("click", () => {
+    repairTargetLoss = Number.isFinite(bestInferenceLoss)
+      ? Math.max(.002, bestInferenceLoss * 2.5)
+      : .01;
+    repairing = true;
+    repairMessageUntil = 0;
     engine.fillCircle(SIZE / 2, SIZE / 2, 4, []);
-    healthGuardSuppressedUntil = performance.now() + 8_000;
+    healthGuardSuppressedUntil = performance.now() + 15_000;
     status.textContent = "organism damaged · watching repair";
   });
   document.querySelector("#reset").addEventListener("click", () => {
