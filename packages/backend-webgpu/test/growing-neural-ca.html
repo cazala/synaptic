@@ -444,6 +444,7 @@
     font-size: .7rem;
     line-height: 1.7;
   }
+  .explanation-topic p + p { margin-top: .65rem; }
   .topic-flow {
     display: block;
     margin-top: .9rem;
@@ -454,26 +455,6 @@
     background: #070c13;
     font: 650 .6rem/1.5 ui-monospace, monospace;
     white-space: normal;
-  }
-  .loss-definition {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 1rem;
-    align-items: center;
-    padding: 1rem 1.4rem;
-    border-bottom: 1px solid #263649;
-    background: #090f18;
-  }
-  .loss-definition strong {
-    color: #eaf4ff;
-    font: 750 .68rem ui-monospace, monospace;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-  }
-  .loss-definition p {
-    margin: 0;
-    color: #91a3b8;
-    font: .64rem/1.65 ui-monospace, monospace;
   }
   .curriculum-explanation {
     padding: 1.4rem;
@@ -557,7 +538,6 @@
     }
     .target-controls select,
     .upload-control { min-width: 0; width: 100%; }
-    .loss-definition { grid-template-columns: 1fr; gap: .4rem; }
   }
 </style>
 <body>
@@ -738,11 +718,17 @@
           Each optimizer update records a random 64–96-generation trajectory.
           The same target is scored at each of its final sixteen states, so the
           organism must stay correct instead of briefly passing through the
-          image. BPTT carries those errors backward through the entire tape;
-          Adam combines the resulting gradients with momentum and adaptive
-          per-weight step sizes.
+          image. Its loss is the mean squared difference between predicted and
+          target RGBA across every pixel and batch sample: zero is an exact
+          match, and lower is better.
         </p>
-        <code class="topic-flow">rollout → loss → BPTT → Adam → new weights</code>
+        <p>
+          BPTT (backpropagation through time) carries those errors backward
+          through the entire tape. Adam (adaptive moment estimation) then
+          turns the resulting gradients into weight updates using momentum and
+          an adaptive step size for each weight.
+        </p>
+        <code class="topic-flow">rollout → MSE loss → BPTT gradients → Adam update</code>
       </article>
 
       <article class="explanation-topic">
@@ -759,25 +745,15 @@
       </article>
     </div>
 
-    <aside class="loss-definition">
-      <strong>What “loss” means</strong>
-      <p>
-        Loss is mean squared error: the squared difference between predicted
-        and target RGBA, averaged across every pixel, batch sample, and the last
-        sixteen generations. Zero is an exact match; lower is better. Phase
-        confidence also checks living-cell coverage and normalizes image error
-        by the selected target's own energy.
-      </p>
-    </aside>
-
     <section class="curriculum-explanation"
       aria-labelledby="curriculum-explanation-title">
       <header>
         <h3 id="curriculum-explanation-title">An evidence-based curriculum</h3>
         <p>
           A phase advances only after a full rolling window reaches 92%
-          confidence. Every later phase must preserve the earlier skills, so
-          elapsed iterations alone can never unlock the next stage.
+          confidence, measured from target-normalized image loss and
+          living-cell coverage. Every later phase must preserve the earlier
+          skills, so elapsed iterations alone can never unlock the next stage.
         </p>
       </header>
       <dl class="curriculum-summary">
