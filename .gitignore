@@ -6,6 +6,8 @@ node_modules
 coverage
 packages/*/dist
 .cache
+.cloudflare
+.wrangler
 *.tsbuildinfo
 
 # Tmp files.

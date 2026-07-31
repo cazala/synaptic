@@ -1,0 +1,105 @@
+name: Cloudflare Pages preview
+
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, reopened, synchronize]
+
+concurrency:
+  group: cloudflare-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  preview:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+      pull-requests: write
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check
+        run: npm run check
+
+      - name: Build Pages bundle
+        run: npm run build:pages
+
+      - name: Deploy preview
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: >-
+            pages deploy .cloudflare/pages
+            --project-name=synaptic-v2
+            --branch=pr-${{ github.event.pull_request.number }}
+            --commit-hash=${{ github.sha }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add preview link to pull request
+        uses: actions/github-script@v9
+        env:
+          COMMIT_SHA: ${{ github.sha }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+          PREVIEW_URL: ${{ steps.deploy.outputs.pages-deployment-alias-url }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const marker = "<!-- cloudflare-pages-preview -->";
+            const previewUrl = process.env.PREVIEW_URL
+              || process.env.DEPLOYMENT_URL;
+            const deploymentUrl = process.env.DEPLOYMENT_URL || previewUrl;
+            if (!previewUrl) {
+              core.setFailed("Cloudflare did not return a preview URL");
+              return;
+            }
+            const body = [
+              marker,
+              "### Cloudflare Pages preview",
+              `✅ [Open the latest preview](${previewUrl})`,
+              deploymentUrl === previewUrl
+                ? undefined
+                : `[Open this exact deployment](${deploymentUrl})`,
+              `Built from \`${process.env.COMMIT_SHA.slice(0, 7)}\`.`,
+            ].filter(Boolean).join("\n\n");
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                ...context.repo,
+                issue_number: context.issue.number,
+                per_page: 100,
+              },
+            );
+            const previous = comments.find((comment) =>
+              comment.user?.type === "Bot"
+              && comment.body?.includes(marker)
+            );
+            if (previous) {
+              await github.rest.issues.updateComment({
+                ...context.repo,
+                comment_id: previous.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

@@ -10,12 +10,14 @@
   ],
   "scripts": {
     "build": "npm run build:wasm && tsc -b",
+    "build:pages": "npm run build && node scripts/build-webgpu-pages.mjs",
     "build:wasm": "node packages/backend-wasm/scripts/build.mjs",
     "benchmark:wasm": "node packages/backend-wasm/bench/compare.mjs",
     "clean": "node scripts/clean.mjs",
     "test": "vitest run --reporter=verbose",
     "test:coverage": "vitest run --coverage",
     "test:webgpu": "node scripts/serve-webgpu-tests.mjs",
+    "test:webgpu:pages": "npm run build:pages && wrangler pages dev .cloudflare/pages",
     "test:watch": "vitest",
     "typecheck": "tsc -b --pretty false && npm run typecheck:test",
     "typecheck:test": "tsc -p tsconfig.test.json --pretty false",
@@ -31,6 +33,7 @@
     "@webgpu/types": "0.1.71",
     "assemblyscript": "0.28.20",
     "typescript": "7.0.2",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "wrangler": "4.118.0"
   }
 }

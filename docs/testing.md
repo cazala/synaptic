@@ -106,6 +106,18 @@ The command builds every workspace first. To use another port:
 npm run test:webgpu -- --port 8080
 ```
 
+Build and serve the same static bundle used by Cloudflare Pages:
+
+```sh
+npm run test:webgpu:pages
+```
+
+Pull requests from branches in `cazala/synaptic` run the full check, deploy the
+bundle to the `synaptic-v2` Pages project, register a GitHub Deployment, and
+maintain one PR comment with both the stable `pr-<number>` alias and immutable
+deployment URL. Fork pull requests deliberately skip deployment because GitHub
+does not expose repository secrets to untrusted fork workflows.
+
 The pages compile every WGSL entry point and compare forward, recurrent,
 training, ordered-sequence, trace, and shared-parameter behavior with CPU. The
 learning page runs the same XOR, MNIST, and sequence-recall helpers as the Node
