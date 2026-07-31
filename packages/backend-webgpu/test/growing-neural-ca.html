@@ -385,20 +385,164 @@
     color: #82e8ce;
     font: 650 .66rem ui-monospace, monospace;
   }
-  .notes {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
+  .explanation {
+    overflow: hidden;
     margin-top: 1.4rem;
   }
-  .note { padding: 1rem 1.1rem; }
-  .note strong { display: block; margin-bottom: .45rem; font-size: .78rem; }
-  .note p { margin: 0; color: #77899f; font: .63rem/1.6 ui-monospace, monospace; }
+  .explanation-head {
+    display: grid;
+    grid-template-columns: minmax(0, .7fr) minmax(22rem, 1.3fr);
+    gap: 2rem;
+    align-items: end;
+    padding: 1.5rem;
+    border-bottom: 1px solid #263649;
+    background:
+      radial-gradient(circle at 95% 0%, #173e3a52, transparent 24rem),
+      #0a1019;
+  }
+  .explanation-head h2 {
+    max-width: 15ch;
+    margin: .25rem 0 0;
+    font-size: clamp(1.6rem, 3vw, 2.6rem);
+    line-height: .98;
+  }
+  .explanation-head > p:last-child {
+    max-width: 64ch;
+    margin: 0;
+    color: #91a2b6;
+    font-size: .84rem;
+    line-height: 1.7;
+  }
+  .explanation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-bottom: 1px solid #263649;
+  }
+  .explanation-topic {
+    min-width: 0;
+    padding: 1.35rem 1.4rem 1.5rem;
+  }
+  .explanation-topic + .explanation-topic {
+    border-left: 1px solid #263649;
+  }
+  .topic-number {
+    display: block;
+    margin-bottom: .8rem;
+    color: var(--mint);
+    font: 750 .58rem ui-monospace, monospace;
+    letter-spacing: .1em;
+  }
+  .explanation-topic:nth-child(2) .topic-number { color: var(--amber); }
+  .explanation-topic:nth-child(3) .topic-number { color: var(--rose); }
+  .explanation-topic h3 {
+    margin: 0 0 .65rem;
+    font-size: .92rem;
+  }
+  .explanation-topic p {
+    margin: 0;
+    color: #8294aa;
+    font-size: .7rem;
+    line-height: 1.7;
+  }
+  .topic-flow {
+    display: block;
+    margin-top: .9rem;
+    border: 1px solid #293b50;
+    border-radius: .65rem;
+    padding: .65rem .75rem;
+    color: #b8c8d9;
+    background: #070c13;
+    font: 650 .6rem/1.5 ui-monospace, monospace;
+    white-space: normal;
+  }
+  .loss-definition {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem 1.4rem;
+    border-bottom: 1px solid #263649;
+    background: #090f18;
+  }
+  .loss-definition strong {
+    color: #eaf4ff;
+    font: 750 .68rem ui-monospace, monospace;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+  .loss-definition p {
+    margin: 0;
+    color: #91a3b8;
+    font: .64rem/1.65 ui-monospace, monospace;
+  }
+  .curriculum-explanation {
+    padding: 1.4rem;
+  }
+  .curriculum-explanation > header {
+    display: grid;
+    grid-template-columns: minmax(0, .75fr) minmax(20rem, 1.25fr);
+    gap: 2rem;
+    align-items: end;
+    margin-bottom: 1.2rem;
+  }
+  .curriculum-explanation h3 {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+  .curriculum-explanation header p {
+    margin: 0;
+    color: #8294aa;
+    font-size: .7rem;
+    line-height: 1.65;
+  }
+  .curriculum-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.4rem;
+    margin: 0;
+  }
+  .curriculum-summary > div {
+    --summary-color: var(--mint);
+    min-width: 0;
+    border-left: .18rem solid var(--summary-color);
+    padding-left: .9rem;
+  }
+  .curriculum-summary > div:nth-child(2) {
+    --summary-color: var(--amber);
+  }
+  .curriculum-summary > div:nth-child(3) {
+    --summary-color: var(--rose);
+  }
+  .curriculum-summary dt {
+    margin-bottom: .35rem;
+    color: #eaf4ff;
+    font-size: .76rem;
+    font-weight: 750;
+  }
+  .curriculum-summary dd {
+    margin: 0;
+    color: #8294aa;
+    font: .61rem/1.6 ui-monospace, monospace;
+  }
+  .explanation-footer {
+    margin: 1.25rem 0 0;
+    border-top: 1px solid #263649;
+    padding-top: 1rem;
+    color: #71849a;
+    font: .62rem/1.6 ui-monospace, monospace;
+  }
   @media (max-width: 820px) {
     .hero, .experiment { grid-template-columns: 1fr; }
     .architecture { grid-template-columns: 1fr 1fr; }
     .stage:nth-child(2)::after { display: none; }
-    .notes { grid-template-columns: 1fr; }
+    .explanation-head,
+    .curriculum-explanation > header { grid-template-columns: 1fr; gap: .8rem; }
+    .explanation-grid,
+    .curriculum-summary { grid-template-columns: 1fr; }
+    .explanation-topic + .explanation-topic {
+      border-top: 1px solid #263649;
+      border-left: 0;
+    }
     .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .phase-list { grid-template-columns: 1fr; }
     .organism-wrap, #organism { min-height: 24rem; }
@@ -413,6 +557,7 @@
     }
     .target-controls select,
     .upload-control { min-width: 0; width: 100%; }
+    .loss-definition { grid-template-columns: 1fr; gap: .4rem; }
   }
 </style>
 <body>
@@ -558,19 +703,102 @@
     </article>
   </section>
 
-  <section class="notes">
-    <article class="note panel">
-      <strong>Real BPTT</strong>
-      <p>Each update samples a 64–96 generation horizon, then scores its last sixteen states and differentiates through the whole trajectory. Consecutive targets turn the selected image into an attractor instead of one transient frame.</p>
-    </article>
-    <article class="note panel">
-      <strong>Regeneration curriculum</strong>
-      <p>Evolved states return to their slots in a persistent sample pool. The worst sample is reseeded, while healthy samples are later damaged to widen the target's basin of attraction.</p>
-    </article>
-    <article class="note panel">
-      <strong>Portable result</strong>
-      <p>The learned tensors export as the versioned Growing Neural CA artifact understood by Automata. Curated emoji artwork is bundled from Twemoji; uploaded images never leave this page.</p>
-    </article>
+  <section class="explanation panel" aria-labelledby="explanation-title">
+    <header class="explanation-head">
+      <div>
+        <p class="eyebrow">How it works</p>
+        <h2 id="explanation-title">One local rule, learned through time.</h2>
+      </div>
+      <p>
+        Every cell runs the same tiny neural network. Repeating that local rule
+        turns one living seed into a target that can persist and eventually
+        repair itself.
+      </p>
+    </header>
+
+    <div class="explanation-grid">
+      <article class="explanation-topic">
+        <span class="topic-number">01 · CELL RULE</span>
+        <h3>See the neighborhood, then predict a change.</h3>
+        <p>
+          A cell stores premultiplied RGBA plus twelve learned hidden channels.
+          Fixed, zero-padded identity and Sobel x/y filters read each channel's
+          3 × 3 neighborhood. The resulting 48 values enter a shared pointwise
+          network; a 50% fire mask applies its residual update. Pre- and
+          post-update alpha masks keep growth attached to living cells and
+          clear dead hidden state.
+        </p>
+        <code class="topic-flow">16 channels × 3 filters → 48 → 128 ReLU → 16 Δ</code>
+      </article>
+
+      <article class="explanation-topic">
+        <span class="topic-number">02 · TRAINING TAPE</span>
+        <h3>Judge an unfolding process, not one frame.</h3>
+        <p>
+          Each optimizer update records a random 64–96-generation trajectory.
+          The same target is scored at each of its final sixteen states, so the
+          organism must stay correct instead of briefly passing through the
+          image. BPTT carries those errors backward through the entire tape;
+          Adam combines the resulting gradients with momentum and adaptive
+          per-weight step sizes.
+        </p>
+        <code class="topic-flow">rollout → loss → BPTT → Adam → new weights</code>
+      </article>
+
+      <article class="explanation-topic">
+        <span class="topic-number">03 · SAMPLE POOL</span>
+        <h3>Practice growth, persistence, and repair.</h3>
+        <p>
+          Evolved grids return to persistent pool slots and become later
+          starting states. The worst sample is replaced by a fresh seed, while
+          healthy samples are eventually cut and asked to recover the complete
+          target. This widens the target's basin of attraction: more partial,
+          old, and damaged states naturally evolve back toward it.
+        </p>
+        <code class="topic-flow">seed + retained + damaged states → target attractor</code>
+      </article>
+    </div>
+
+    <aside class="loss-definition">
+      <strong>What “loss” means</strong>
+      <p>
+        Loss is mean squared error: the squared difference between predicted
+        and target RGBA, averaged across every pixel, batch sample, and the last
+        sixteen generations. Zero is an exact match; lower is better. Phase
+        confidence also checks living-cell coverage and normalizes image error
+        by the selected target's own energy.
+      </p>
+    </aside>
+
+    <section class="curriculum-explanation"
+      aria-labelledby="curriculum-explanation-title">
+      <header>
+        <h3 id="curriculum-explanation-title">An evidence-based curriculum</h3>
+        <p>
+          A phase advances only after a full rolling window reaches 92%
+          confidence. Every later phase must preserve the earlier skills, so
+          elapsed iterations alone can never unlock the next stage.
+        </p>
+      </header>
+      <dl class="curriculum-summary">
+        <div>
+          <dt>01 · Growth</dt>
+          <dd>Fresh seed → target. No pool or damage. 16 observations; relative loss ≤ .08 and living coverage 60–160%.</dd>
+        </div>
+        <div>
+          <dt>02 · Stability</dt>
+          <dd>Retained pool states → target. 32 observations; relative loss ≤ .06 and living coverage 70–145%.</dd>
+        </div>
+        <div>
+          <dt>03 · Regeneration</dt>
+          <dd>Damaged pool states → target. 48 observations; relative loss ≤ .08, coverage 60–160%, and damage ramps 25–100%.</dd>
+        </div>
+      </dl>
+      <p class="explanation-footer">
+        The learned 48 → 128 → 16 tensors export as a versioned artifact and
+        run unchanged in Automata's larger live inference grid.
+      </p>
+    </section>
   </section>
 </main>
 
