@@ -81,6 +81,11 @@ export interface GrowingNeuralCaTrainOptions {
   readonly useSamplePool?: boolean;
 }
 
+export interface GrowingNeuralCaRestartOptions {
+  readonly resetPool?: boolean;
+  readonly resetOptimizer?: boolean;
+}
+
 export interface GrowingNeuralCaBatchQuality {
   readonly samples: number;
   readonly meanLoss: number;
@@ -1508,7 +1513,30 @@ export class GrowingNeuralCaTrainer {
 
   resetPool(): void {
     this.#assertAvailable();
+    invariant(!this.#busy, "Growing Neural CA trainer is busy", "SESSION_BUSY");
     this.#fillPoolWithSeeds();
+  }
+
+  /**
+   * Preserve learned weights while restarting the state distribution and Adam
+   * moments after a curriculum plateau.
+   */
+  restartLearning(options: GrowingNeuralCaRestartOptions = {}): void {
+    this.#assertAvailable();
+    invariant(!this.#busy, "Growing Neural CA trainer is busy", "SESSION_BUSY");
+    if (options.resetPool ?? true) {
+      this.#fillPoolWithSeeds();
+    }
+    if (options.resetOptimizer ?? true) {
+      for (const name of ["adamFirst", "adamSecond"] as const) {
+        const section = this.#layout.sections[name];
+        this.#device.queue.writeBuffer(
+          this.#heap,
+          section.byteOffset,
+          new Float32Array(section.length),
+        );
+      }
+    }
   }
 
   async trainStep(

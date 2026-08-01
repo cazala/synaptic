@@ -26,7 +26,15 @@ export interface GrowingNeuralCaCurriculumSnapshot {
   readonly detail: string;
   readonly progress: number;
   readonly mastered: boolean;
+  readonly recoveries: number;
   readonly phases: readonly GrowingNeuralCaCurriculumPhase[];
+}
+
+export interface GrowingNeuralCaCurriculumRecovery {
+  readonly sequence: number;
+  readonly key: GrowingNeuralCaCurriculumPhaseKey;
+  readonly label: string;
+  readonly reason: string;
 }
 
 export interface GrowingNeuralCaCurriculumTrainingOptions {
@@ -96,6 +104,10 @@ const PHASES: readonly PhaseDefinition[] = Object.freeze([
   }),
 ]);
 
+const PLATEAU_WINDOW_MULTIPLIER = 16;
+const MEANINGFUL_PROGRESS = 0.01;
+const RESTART_LEARNING_RATE_UPDATES = 64;
+
 function clamp(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
@@ -106,6 +118,12 @@ export class GrowingNeuralCaCurriculum {
   readonly #trackers: readonly Tracker[];
   #phaseIndex = 0;
   #regenerationMastered = false;
+  #updates = 0;
+  #bestPhaseProgress = 0;
+  #lastPhaseImprovement = 0;
+  #restartLearningRateUntil = 0;
+  #recoverySequence = 0;
+  #pendingRecovery: GrowingNeuralCaCurriculumRecovery | undefined;
 
   constructor(target: ArrayLike<number>) {
     if (target.length === 0 || target.length % 4 !== 0) {
@@ -137,6 +155,9 @@ export class GrowingNeuralCaCurriculum {
   }
 
   update(metrics: GrowingNeuralCaMetrics): GrowingNeuralCaCurriculumSnapshot {
+    this.#updates += 1;
+    const previousPhase = this.#phaseIndex;
+    const regenerationWasMastered = this.#regenerationMastered;
     this.#observe(0, metrics.quality.seed);
     this.#observe(1, metrics.quality.persistent);
     this.#observe(2, metrics.quality.damaged);
@@ -146,7 +167,21 @@ export class GrowingNeuralCaCurriculum {
     } else if (this.#phaseReady(this.#phaseIndex)) {
       this.#phaseIndex += 1;
     }
+    if (
+      this.#phaseIndex !== previousPhase ||
+      (regenerationWasMastered && !this.#regenerationMastered)
+    ) {
+      this.#resetPlateauTracking();
+    } else if (!this.#regenerationMastered) {
+      this.#detectPlateau();
+    }
     return this.snapshot();
+  }
+
+  takeRecoveryRequest(): GrowingNeuralCaCurriculumRecovery | undefined {
+    const recovery = this.#pendingRecovery;
+    this.#pendingRecovery = undefined;
+    return recovery;
   }
 
   snapshot(): GrowingNeuralCaCurriculumSnapshot {
@@ -192,11 +227,14 @@ export class GrowingNeuralCaCurriculum {
         : definition.detail,
       progress,
       mastered: this.#regenerationMastered,
+      recoveries: this.#recoverySequence,
       phases: Object.freeze(phases),
     });
   }
 
   trainingOptions(): GrowingNeuralCaCurriculumTrainingOptions {
+    const restartedLearningRate =
+      this.#updates < this.#restartLearningRateUntil;
     if (this.#phaseIndex === 0) {
       return Object.freeze({
         learningRate: 0.002,
@@ -206,7 +244,7 @@ export class GrowingNeuralCaCurriculum {
     }
     if (this.#phaseIndex === 1) {
       return Object.freeze({
-        learningRate: 0.0005,
+        learningRate: restartedLearningRate ? 0.001 : 0.0005,
         damageProbability: 0,
         useSamplePool: true,
       });
@@ -215,7 +253,11 @@ export class GrowingNeuralCaCurriculum {
       ? 1
       : this.#phaseProgress(2);
     return Object.freeze({
-      learningRate: this.#regenerationMastered ? 0.0003 : 0.0005,
+      learningRate: this.#regenerationMastered
+        ? 0.0003
+        : restartedLearningRate
+        ? 0.001
+        : 0.0005,
       damageProbability: 0.5 + progress * 0.5,
       useSamplePool: true,
     });
@@ -297,5 +339,41 @@ export class GrowingNeuralCaCurriculum {
       }
     }
     return true;
+  }
+
+  #resetPlateauTracking(): void {
+    this.#bestPhaseProgress = this.#phaseProgress(this.#phaseIndex);
+    this.#lastPhaseImprovement = this.#updates;
+  }
+
+  #detectPlateau(): void {
+    const progress = this.#phaseProgress(this.#phaseIndex);
+    if (progress >= this.#bestPhaseProgress + MEANINGFUL_PROGRESS) {
+      this.#bestPhaseProgress = progress;
+      this.#lastPhaseImprovement = this.#updates;
+      return;
+    }
+    const definition = PHASES[this.#phaseIndex]!;
+    const patience = definition.observations * PLATEAU_WINDOW_MULTIPLIER;
+    if (
+      this.#pendingRecovery !== undefined ||
+      this.#updates - this.#lastPhaseImprovement < patience
+    ) {
+      return;
+    }
+    this.#recoverySequence += 1;
+    this.#pendingRecovery = Object.freeze({
+      sequence: this.#recoverySequence,
+      key: definition.key,
+      label: definition.label,
+      reason:
+        `${definition.label} confidence stopped improving for ` +
+        `${PLATEAU_WINDOW_MULTIPLIER} evidence windows`,
+    });
+    this.#trackers[this.#phaseIndex]!.scores.length = 0;
+    this.#bestPhaseProgress = 0;
+    this.#lastPhaseImprovement = this.#updates;
+    this.#restartLearningRateUntil =
+      this.#updates + RESTART_LEARNING_RATE_UPDATES;
   }
 }

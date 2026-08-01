@@ -62,6 +62,7 @@
       learningRate: 0,
       useSamplePool: true,
     });
+    trainer.restartLearning();
     const artifact = await trainer.artifact();
     const automaton = GrowingNeural.fromArtifact(artifact);
     trainer.dispose();

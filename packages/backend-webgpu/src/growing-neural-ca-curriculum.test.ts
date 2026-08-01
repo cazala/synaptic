@@ -182,6 +182,32 @@ describe("Growing Neural CA adaptive curriculum", () => {
     expect(reliable.mastered).toBe(true);
   });
 
+  it("requests a weight-preserving restart when a phase plateaus", () => {
+    const curriculum = new GrowingNeuralCaCurriculum(target());
+    advance(curriculum, 16, metrics(quality()));
+    expect(curriculum.snapshot().key).toBe("stability");
+
+    advance(
+      curriculum,
+      32 * 16,
+      metrics(quality(), quality(1, 0, { minimumTargetCoverage: 0 })),
+    );
+    expect(curriculum.takeRecoveryRequest()).toMatchObject({
+      sequence: 1,
+      key: "stability",
+    });
+    expect(curriculum.takeRecoveryRequest()).toBeUndefined();
+    expect(curriculum.snapshot().recoveries).toBe(1);
+    expect(curriculum.trainingOptions().learningRate).toBe(0.001);
+
+    advance(
+      curriculum,
+      64,
+      metrics(quality(), quality(1, 0, { minimumTargetCoverage: 0 })),
+    );
+    expect(curriculum.trainingOptions().learningRate).toBe(0.0005);
+  });
+
   it("rejects empty targets that could falsely satisfy image loss", () => {
     expect(
       () => new GrowingNeuralCaCurriculum(new Float32Array(16)),

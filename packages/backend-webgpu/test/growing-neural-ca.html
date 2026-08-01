@@ -760,7 +760,10 @@
           confidence and pass-rate bar. The score uses the worst sample in each
           batch—not its average—and combines target-normalized image loss,
           living-cell bounds, and coverage of visible target cells. Every later
-          phase must also preserve the earlier skills.
+          phase must also preserve the earlier skills. If confidence stops
+          improving for sixteen full evidence windows, training keeps its best
+          weights but flushes stale states, resets Adam's momentum, and briefly
+          restarts with a higher learning rate.
         </p>
       </header>
       <dl class="curriculum-summary">
@@ -1410,6 +1413,12 @@
       fields.duration.textContent = `${metrics.durationMs.toFixed(0)} ms`;
       fields.damage.textContent = damagedTotal.toLocaleString();
       const curriculumState = curriculum.update(metrics);
+      const recovery = curriculum.takeRecoveryRequest();
+      if (recovery) {
+        trainer.restartLearning();
+        status.textContent =
+          `${recovery.label} plateau · refreshed states and optimizer`;
+      }
       updatePhaseIndicator(curriculumState);
       let autoReset = false;
       if (metrics.iteration <= 8 || metrics.iteration % 8 === 0) {
@@ -1434,6 +1443,7 @@
       }
       if (
         !autoReset &&
+        !recovery &&
         !checkpointReached &&
         training &&
         !repairing &&
