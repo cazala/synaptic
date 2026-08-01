@@ -55,6 +55,10 @@ export interface GrowingNeuralCaTrainerOptions {
   readonly stabilitySteps?: number;
   /** Weight of the explicit target-alpha L1 + L2 shape loss. */
   readonly shapeLossWeight?: number;
+  /** Weight of RGBA L1 error; RGBA L2 remains the base image objective. */
+  readonly imageL1LossWeight?: number;
+  /** Weight of the local Sobel x/y edge-alignment objective. */
+  readonly edgeLossWeight?: number;
   /** Weight of the L1 penalty for state values outside [-1, 1]. */
   readonly overflowLossWeight?: number;
   readonly fireRate?: number;
@@ -116,7 +120,10 @@ export interface GrowingNeuralCaMetrics {
 }
 
 export interface GrowingNeuralCaStateHealth {
+  /** Mean RGBA L2 error retained for curriculum compatibility. */
   readonly loss: number;
+  readonly imageL1Loss: number;
+  readonly edgeLoss: number;
   /** Mean L1 + L2 error between state alpha and target alpha. */
   readonly shapeLoss: number;
   /** Mean distance of all state channels beyond the stable [-1, 1] range. */
@@ -176,6 +183,8 @@ interface ResolvedOptions {
   readonly minRolloutSteps: number;
   readonly stabilitySteps: number;
   readonly shapeLossWeight: number;
+  readonly imageL1LossWeight: number;
+  readonly edgeLossWeight: number;
   readonly overflowLossWeight: number;
   readonly fireRate: number;
   readonly stepSize: number;
@@ -335,6 +344,7 @@ export function measureGrowingNeuralCaState(
     "INVALID_GROWING_CA_STATE",
   );
   let squaredError = 0;
+  let absoluteError = 0;
   let shapeError = 0;
   let overflowError = 0;
   let maximumAbsoluteValue = 0;
@@ -388,6 +398,43 @@ export function measureGrowingNeuralCaState(
         } else {
           const difference = value - expected;
           squaredError += difference * difference;
+          absoluteError += Math.abs(difference);
+        }
+      }
+    }
+  }
+  const cells = target.length / 4;
+  const size = Math.sqrt(cells);
+  const sampleDifference = (
+    x: number,
+    y: number,
+    channel: number,
+  ): number => {
+    if (x < 0 || y < 0 || x >= size || y >= size) {
+      return 0;
+    }
+    const cell = y * size + x;
+    return (state[cell * channelCount + channel] ?? 0) -
+      (target[cell * 4 + channel] ?? 0);
+  };
+  let edgeSquaredError = 0;
+  if (Number.isInteger(size)) {
+    for (let y = 0; y < size; y += 1) {
+      for (let x = 0; x < size; x += 1) {
+        for (let channel = 0; channel < 4; channel += 1) {
+          const d00 = sampleDifference(x - 1, y - 1, channel);
+          const d10 = sampleDifference(x, y - 1, channel);
+          const d20 = sampleDifference(x + 1, y - 1, channel);
+          const d01 = sampleDifference(x - 1, y, channel);
+          const d21 = sampleDifference(x + 1, y, channel);
+          const d02 = sampleDifference(x - 1, y + 1, channel);
+          const d12 = sampleDifference(x, y + 1, channel);
+          const d22 = sampleDifference(x + 1, y + 1, channel);
+          const edgeX =
+            (d20 + 2 * d21 + d22 - d00 - 2 * d01 - d02) / 8;
+          const edgeY =
+            (d02 + 2 * d12 + d22 - d00 - 2 * d10 - d20) / 8;
+          edgeSquaredError += edgeX * edgeX + edgeY * edgeY;
         }
       }
     }
@@ -395,6 +442,12 @@ export function measureGrowingNeuralCaState(
   return Object.freeze({
     loss: nonFiniteValues === 0
       ? squaredError / target.length
+      : Number.POSITIVE_INFINITY,
+    imageL1Loss: nonFiniteValues === 0
+      ? absoluteError / target.length
+      : Number.POSITIVE_INFINITY,
+    edgeLoss: nonFiniteValues === 0 && Number.isInteger(size)
+      ? edgeSquaredError / (cells * 4 * 2)
       : Number.POSITIVE_INFINITY,
     shapeLoss: nonFiniteValues === 0
       ? shapeError / (target.length / 4)
@@ -654,6 +707,18 @@ function resolveOptions(options: GrowingNeuralCaTrainerOptions): ResolvedOptions
       0,
       1_000,
     ),
+    imageL1LossWeight: finiteRange(
+      "imageL1LossWeight",
+      options.imageL1LossWeight ?? 1,
+      0,
+      1_000,
+    ),
+    edgeLossWeight: finiteRange(
+      "edgeLossWeight",
+      options.edgeLossWeight ?? 0.1,
+      0,
+      1_000,
+    ),
     overflowLossWeight: finiteRange(
       "overflowLossWeight",
       options.overflowLossWeight ?? 10,
@@ -761,6 +826,8 @@ const FIRE_RATE: f32 = ${options.fireRate};
 const STEP_SIZE: f32 = ${options.stepSize};
 const ALIVE_THRESHOLD: f32 = ${options.aliveThreshold};
 const SHAPE_LOSS_WEIGHT: f32 = ${options.shapeLossWeight};
+const IMAGE_L1_LOSS_WEIGHT: f32 = ${options.imageL1LossWeight};
+const EDGE_LOSS_WEIGHT: f32 = ${options.edgeLossWeight};
 const OVERFLOW_LOSS_WEIGHT: f32 = ${options.overflowLossWeight};
 
 const WEIGHTS: u32 = ${o("weights")}u;
@@ -810,6 +877,86 @@ fn sampleCandidate(batch: u32, x: i32, y: i32, channel: u32) -> f32 {
   }
   let cell = u32(y) * SIZE + u32(x);
   return heap[CANDIDATE + (batch * CELLS + cell) * CHANNELS + channel];
+}
+
+fn sampleVisibleDifference(
+  time: u32,
+  batch: u32,
+  x: i32,
+  y: i32,
+  channel: u32,
+) -> f32 {
+  if (x < 0 || y < 0 || x >= i32(SIZE) || y >= i32(SIZE)) {
+    return 0.0;
+  }
+  let cell = u32(y) * SIZE + u32(x);
+  return sampleState(time, batch, x, y, channel) -
+    heap[TARGET + cell * 4u + channel];
+}
+
+fn edgeDifference(
+  time: u32,
+  batch: u32,
+  x: i32,
+  y: i32,
+  channel: u32,
+) -> vec2<f32> {
+  let d00 = sampleVisibleDifference(time, batch, x - 1, y - 1, channel);
+  let d10 = sampleVisibleDifference(time, batch, x,     y - 1, channel);
+  let d20 = sampleVisibleDifference(time, batch, x + 1, y - 1, channel);
+  let d01 = sampleVisibleDifference(time, batch, x - 1, y,     channel);
+  let d21 = sampleVisibleDifference(time, batch, x + 1, y,     channel);
+  let d02 = sampleVisibleDifference(time, batch, x - 1, y + 1, channel);
+  let d12 = sampleVisibleDifference(time, batch, x,     y + 1, channel);
+  let d22 = sampleVisibleDifference(time, batch, x + 1, y + 1, channel);
+  return vec2<f32>(
+    (d20 + 2.0 * d21 + d22 - d00 - 2.0 * d01 - d02) / 8.0,
+    (d02 + 2.0 * d12 + d22 - d00 - 2.0 * d10 - d20) / 8.0,
+  );
+}
+
+// Return the local Sobel loss and its derivative for one state value. The
+// derivative gathers every neighboring edge centered around that value, so
+// each invocation owns exactly one gradient slot and no atomics are needed.
+fn edgeObjective(
+  time: u32,
+  batch: u32,
+  x: i32,
+  y: i32,
+  channel: u32,
+) -> vec2<f32> {
+  let local = edgeDifference(time, batch, x, y, channel);
+  var gradient = 0.0;
+  for (var outputY = y - 1; outputY <= y + 1; outputY += 1) {
+    for (var outputX = x - 1; outputX <= x + 1; outputX += 1) {
+      if (
+        outputX < 0 || outputY < 0 ||
+        outputX >= i32(SIZE) || outputY >= i32(SIZE)
+      ) {
+        continue;
+      }
+      let dx = x - outputX;
+      let dy = y - outputY;
+      var coefficientX = 0.0;
+      var coefficientY = 0.0;
+      if (dx != 0) {
+        coefficientX = f32(dx) * select(0.125, 0.25, dy == 0);
+      }
+      if (dy != 0) {
+        coefficientY = f32(dy) * select(0.125, 0.25, dx == 0);
+      }
+      let edge = edgeDifference(
+        time,
+        batch,
+        outputX,
+        outputY,
+        channel,
+      );
+      gradient += 2.0 *
+        (edge.x * coefficientX + edge.y * coefficientY);
+    }
+  }
+  return vec2<f32>(dot(local, local), gradient);
 }
 
 fn hash(value: u32) -> u32 {
@@ -958,8 +1105,22 @@ fn initializeLoss(@builtin(global_invocation_id) gid: vec3<u32>) {
       heap[stateIndex(dispatch.activeSteps, batchCell, channel)] -
       heap[TARGET + cell * 4u + channel];
     let imageScale = stateScale / 4.0;
-    heap[GRADIENT_A + index] = 2.0 * difference * imageScale;
-    heap[LOSS + index] = difference * difference * imageScale;
+    heap[GRADIENT_A + index] =
+      (2.0 * difference + IMAGE_L1_LOSS_WEIGHT * sign(difference)) *
+      imageScale;
+    heap[LOSS + index] =
+      (difference * difference + IMAGE_L1_LOSS_WEIGHT * abs(difference)) *
+      imageScale;
+    let edge = edgeObjective(
+      dispatch.activeSteps,
+      batchCell / CELLS,
+      i32(cell % SIZE),
+      i32(cell / SIZE),
+      channel,
+    );
+    let edgeScale = EDGE_LOSS_WEIGHT * imageScale / 2.0;
+    heap[GRADIENT_A + index] += edge.y * edgeScale;
+    heap[LOSS + index] += edge.x * edgeScale;
     if (channel == 3u) {
       heap[GRADIENT_A + index] +=
         SHAPE_LOSS_WEIGHT * (sign(difference) + 2.0 * difference) *
@@ -993,8 +1154,22 @@ fn addStabilityLoss(@builtin(global_invocation_id) gid: vec3<u32>) {
       heap[stateIndex(dispatch.time, batchCell, channel)] -
       heap[TARGET + cell * 4u + channel];
     let imageScale = stateScale / 4.0;
-    heap[gradientIndex] += 2.0 * difference * imageScale;
-    heap[LOSS + index] += difference * difference * imageScale;
+    heap[gradientIndex] +=
+      (2.0 * difference + IMAGE_L1_LOSS_WEIGHT * sign(difference)) *
+      imageScale;
+    heap[LOSS + index] +=
+      (difference * difference + IMAGE_L1_LOSS_WEIGHT * abs(difference)) *
+      imageScale;
+    let edge = edgeObjective(
+      dispatch.time,
+      batchCell / CELLS,
+      i32(cell % SIZE),
+      i32(cell / SIZE),
+      channel,
+    );
+    let edgeScale = EDGE_LOSS_WEIGHT * imageScale / 2.0;
+    heap[gradientIndex] += edge.y * edgeScale;
+    heap[LOSS + index] += edge.x * edgeScale;
     if (channel == 3u) {
       heap[gradientIndex] +=
         SHAPE_LOSS_WEIGHT * (sign(difference) + 2.0 * difference) *

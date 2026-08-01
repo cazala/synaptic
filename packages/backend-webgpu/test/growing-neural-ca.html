@@ -718,13 +718,14 @@
           Each optimizer update records a random 64–96-generation trajectory.
           The same target is scored at each of its final sixteen states, so the
           organism must stay correct instead of briefly passing through the
-          image. Its loss combines RGBA mean-squared error with an explicit
-          alpha-shape L1 + L2 penalty across every cell and batch sample: zero
-          is an exact match, and lower is better. The shape term directly
-          teaches which cells should live or die instead of leaving silhouette
-          coverage only to curriculum scoring. A hidden-state overflow penalty
-          also pulls every channel back toward the stable −1…1 range before a
-          large value can turn into an exploding rollout.
+          image. Its loss combines RGBA L1 + L2 error, local Sobel edge
+          alignment, and an explicit alpha-shape L1 + L2 penalty across every
+          cell and batch sample: zero is an exact match, and lower is better.
+          The shape term directly teaches which cells should live or die instead
+          of leaving silhouette coverage only to curriculum scoring. A
+          hidden-state overflow penalty also pulls every channel back toward the
+          stable −1…1 range before a large value can turn into an exploding
+          rollout.
         </p>
         <p>
           BPTT (backpropagation through time) carries those errors backward
@@ -732,7 +733,7 @@
           turns the resulting gradients into weight updates using momentum and
           an adaptive step size for each weight.
         </p>
-        <code class="topic-flow">rollout → image + shape + overflow loss → BPTT → Adam</code>
+        <code class="topic-flow">rollout → pixel + edge + shape + overflow loss → BPTT → Adam</code>
       </article>
 
       <article class="explanation-topic">

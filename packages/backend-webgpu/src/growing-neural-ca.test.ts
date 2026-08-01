@@ -112,6 +112,8 @@ describe("Growing Neural CA trainer substrate", () => {
       nonFiniteValues: 0,
     });
     expect(health.loss).toBeCloseTo((0.25 ** 2 + 0.2 ** 2) / 8);
+    expect(health.imageL1Loss).toBeCloseTo((0.25 + 0.2) / 8);
+    expect(health.edgeLoss).toBeGreaterThan(0);
     expect(health.shapeLoss).toBeCloseTo((0.2 + 0.2 ** 2) / 2);
     expect(health.overflowLoss).toBeCloseTo((3 + 2) / 12);
 
