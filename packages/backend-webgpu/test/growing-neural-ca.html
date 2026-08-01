@@ -740,10 +740,12 @@
         <h3>Practice growth, persistence, and repair.</h3>
         <p>
           Evolved grids return to persistent pool slots and become later
-          starting states. The worst sample is replaced by a fresh seed, while
-          healthy samples are eventually cut and asked to recover the complete
-          target. This widens the target's basin of attraction: more partial,
-          old, and damaged states naturally evolve back toward it.
+          starting states. This experiment retains 512 histories while keeping
+          the GPU batch at eight. The worst selected sample is replaced by a
+          fresh seed, while healthy samples eventually receive round or
+          elongated target-anchored cuts and must recover the complete target.
+          This widens the target's basin of attraction: more partial, old, and
+          differently damaged states naturally evolve back toward it.
         </p>
         <code class="topic-flow">seed + retained + damaged states → target attractor</code>
       </article>
@@ -1201,7 +1203,7 @@
       stabilitySteps: STABILITY_STEPS,
       learningRate: .002,
       damageProbability: 0,
-      poolSize: 128,
+      poolSize: 512,
       poolValueLimit: POOL_VALUE_LIMIT,
       seed: 0x6772_6f77,
     });

@@ -57,6 +57,11 @@
       learningRate: 0,
       useSamplePool: true,
     });
+    const damaged = await trainer.trainStep(target, {
+      damageProbability: 1,
+      learningRate: 0,
+      useSamplePool: true,
+    });
     const artifact = await trainer.artifact();
     const automaton = GrowingNeural.fromArtifact(artifact);
     trainer.dispose();
@@ -66,6 +71,8 @@
       baseline.quality.seed?.samples !== 1 ||
       baseline.quality.persistent !== undefined ||
       pooled.quality.persistent?.samples !== 1 ||
+      damaged.damagedSamples !== 1 ||
+      damaged.quality.damaged?.samples !== 1 ||
       !artifact.weights.hiddenToOutput.every(Number.isFinite) ||
       automaton.getChannels() !== 4 ||
       automaton.getHidden() !== 4

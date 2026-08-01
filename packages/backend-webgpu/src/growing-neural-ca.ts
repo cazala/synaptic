@@ -62,6 +62,7 @@ export interface GrowingNeuralCaTrainerOptions {
   readonly aliveThreshold?: number;
   readonly learningRate?: number;
   readonly seed?: number;
+  /** CPU-resident persistent states; does not change the WebGPU batch size. */
   readonly poolSize?: number;
   readonly poolWarmupIterations?: number;
   readonly poolValueLimit?: number;
@@ -681,9 +682,9 @@ function resolveOptions(options: GrowingNeuralCaTrainerOptions): ResolvedOptions
     seed: options.seed ?? 0x6e63_6102,
     poolSize: integer(
       "poolSize",
-      options.poolSize ?? Math.max(8, (options.batchSize ?? 2) * 4),
+      options.poolSize ?? Math.max(128, (options.batchSize ?? 2) * 16),
       1,
-      256,
+      1_024,
     ),
     poolWarmupIterations: integer(
       "poolWarmupIterations",
@@ -1977,6 +1978,14 @@ export class GrowingNeuralCaTrainer {
         const radius =
           minimumRadius +
           Math.floor(random() * (maximumRadius - minimumRadius + 1));
+        // Mix round wounds with horizontal and vertical tears. The area stays
+        // comparable, but the network cannot specialize in filling one hole
+        // geometry.
+        const geometry = Math.floor(random() * 3);
+        const radiusX = geometry === 1 ? radius * 1.5 :
+          geometry === 2 ? radius * 0.65 : radius;
+        const radiusY = geometry === 2 ? radius * 1.5 :
+          geometry === 1 ? radius * 0.65 : radius;
         const targetCell = targetCells.length === 0
           ? [Math.floor(this.size / 2), Math.floor(this.size / 2)]
           : targetCells[Math.floor(random() * targetCells.length)]!;
@@ -1986,7 +1995,9 @@ export class GrowingNeuralCaTrainer {
           Math.floor((random() * 2 - 1) * radius * 0.35);
         for (let y = 0; y < this.size; y += 1) {
           for (let x = 0; x < this.size; x += 1) {
-            if ((x - centerX) ** 2 + (y - centerY) ** 2 > radius ** 2) {
+            const normalizedX = (x - centerX) / radiusX;
+            const normalizedY = (y - centerY) / radiusY;
+            if (normalizedX ** 2 + normalizedY ** 2 > 1) {
               continue;
             }
             sample.fill(
