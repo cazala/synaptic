@@ -55,6 +55,7 @@ describe("Growing Neural CA trainer substrate", () => {
     expect(layout.sections.perception.length).toBe(
       2 * 2 * 24 * 24 * 16 * 3,
     );
+    expect(layout.sections.loss.length).toBe(2 * 24 * 24 * 16);
     for (let index = 1; index < sections.length; index += 1) {
       const previous = sections[index - 1];
       const current = sections[index];
@@ -111,6 +112,7 @@ describe("Growing Neural CA trainer substrate", () => {
       nonFiniteValues: 0,
     });
     expect(health.loss).toBeCloseTo((0.25 ** 2 + 0.2 ** 2) / 8);
+    expect(health.shapeLoss).toBeCloseTo((0.2 + 0.2 ** 2) / 2);
 
     state[3] = 0;
     expect(measureGrowingNeuralCaState(state, target, 6).targetCoverage).toBe(0);

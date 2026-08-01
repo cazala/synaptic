@@ -718,9 +718,11 @@
           Each optimizer update records a random 64–96-generation trajectory.
           The same target is scored at each of its final sixteen states, so the
           organism must stay correct instead of briefly passing through the
-          image. Its loss is the mean squared difference between predicted and
-          target RGBA across every pixel and batch sample: zero is an exact
-          match, and lower is better.
+          image. Its loss combines RGBA mean-squared error with an explicit
+          alpha-shape L1 + L2 penalty across every cell and batch sample: zero
+          is an exact match, and lower is better. The shape term directly
+          teaches which cells should live or die instead of leaving silhouette
+          coverage only to curriculum scoring.
         </p>
         <p>
           BPTT (backpropagation through time) carries those errors backward
@@ -728,7 +730,7 @@
           turns the resulting gradients into weight updates using momentum and
           an adaptive step size for each weight.
         </p>
-        <code class="topic-flow">rollout → MSE loss → BPTT gradients → Adam update</code>
+        <code class="topic-flow">rollout → image + shape loss → BPTT gradients → Adam update</code>
       </article>
 
       <article class="explanation-topic">
