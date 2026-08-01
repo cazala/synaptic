@@ -1,0 +1,528 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synaptic WebGPU — draw a digit</title>
+<link rel="stylesheet" href="./demo.css">
+<script type="importmap">
+{
+  "imports": {
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/layers": "/packages/layers/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<script src="/node_modules/mnist/dist/mnist.js"></script>
+<style>
+  .digit-lab {
+    display: grid;
+    grid-template-columns: minmax(17rem, .85fr) minmax(20rem, 1.15fr);
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+  .drawing-panel, .answer-panel { padding: clamp(1rem, 3vw, 1.7rem); }
+  .drawing-wrap {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #344760;
+    border-radius: .85rem;
+    background: #000;
+    box-shadow: inset 0 0 3rem #18344b35;
+  }
+  #drawing {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    cursor: crosshair;
+    touch-action: none;
+  }
+  .canvas-label {
+    position: absolute;
+    top: .75rem;
+    left: .75rem;
+    pointer-events: none;
+    color: #718299;
+    font: 650 .62rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .drawing-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: .75rem;
+    align-items: center;
+    margin-top: 1rem;
+  }
+  .drawing-actions p {
+    margin: 0;
+    color: #7f8da3;
+    font: .68rem/1.5 ui-monospace, monospace;
+  }
+  .answer {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.5rem;
+    align-items: center;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #27374d;
+  }
+  .prediction {
+    display: grid;
+    width: 7rem;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid #ff809d;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 35% 30%, #ffadbf, #7a2547 60%, #190b13);
+    box-shadow: 0 0 2.8rem #ff4f9335;
+    color: #fff4f7;
+    font: 750 3.8rem/1 ui-monospace, monospace;
+  }
+  .answer-copy small, .probability small {
+    color: #718198;
+    font: 650 .62rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .answer-copy h2 {
+    margin: .35rem 0;
+    font-size: clamp(1.3rem, 3vw, 2.2rem);
+    letter-spacing: -.04em;
+  }
+  .answer-copy p { margin: 0; color: #8796ab; line-height: 1.55; }
+  .probabilities {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .7rem;
+    margin-top: 1.5rem;
+  }
+  .probability {
+    display: grid;
+    gap: .42rem;
+    min-width: 0;
+  }
+  .probability header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .25rem;
+  }
+  .probability strong { font: 700 .9rem ui-monospace, monospace; }
+  .probability small { font-size: .52rem; }
+  .probability .bar {
+    height: 3.5rem;
+    display: flex;
+    align-items: end;
+    overflow: hidden;
+    border-radius: .35rem;
+    background: #080c13;
+  }
+  .probability .bar span {
+    width: 100%;
+    height: 0;
+    background: linear-gradient(#ff789e, #42c9f0);
+    transition: height .25s ease;
+  }
+  .preview {
+    display: flex;
+    gap: .7rem;
+    align-items: center;
+    margin-top: 1.25rem;
+    color: #718198;
+    font: .62rem/1.5 ui-monospace, monospace;
+  }
+  #input-preview {
+    width: 3.5rem;
+    aspect-ratio: 1;
+    border: 1px solid #344760;
+    border-radius: .35rem;
+    background: #000;
+    image-rendering: pixelated;
+  }
+  @media (max-width: 800px) {
+    .digit-lab { grid-template-columns: 1fr; }
+  }
+</style>
+<main>
+  <nav class="demo-nav" aria-label="WebGPU learning demos">
+    <a href="./xor.html">XOR</a>
+    <a href="./mnist.html" aria-current="page">Draw a digit</a>
+    <a href="./mnist-automata.html">MNIST → Neural CA</a>
+    <a href="./growing-neural-ca.html">Growing NCA</a>
+    <a href="./dsr.html">Sequence recall</a>
+    <a href="./learn-to-paint.html">Learn to paint</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Draw a digit.</h1>
+      <p>
+        WebGPU trains a 196→128→10 network on all ten MNIST classes. Draw any
+        number from zero to nine; your strokes are normalized to the same
+        14×14 representation the network learned.
+      </p>
+    </div>
+    <span class="badge" id="backend">loading MNIST</span>
+  </header>
+
+  <section class="digit-lab">
+    <article class="drawing-panel panel">
+      <div class="drawing-wrap">
+        <canvas id="drawing" width="280" height="280"
+          aria-label="Draw a handwritten digit"></canvas>
+        <span class="canvas-label">Draw here</span>
+      </div>
+      <div class="drawing-actions">
+        <p>Use your mouse, trackpad, or finger.</p>
+        <button id="clear">Clear</button>
+      </div>
+    </article>
+
+    <article class="answer-panel panel">
+      <div class="answer">
+        <output class="prediction" id="prediction">?</output>
+        <div class="answer-copy">
+          <small>Network prediction</small>
+          <h2 id="answer-title">Training the classifier…</h2>
+          <p id="answer-copy">The drawing pad unlocks as soon as training finishes.</p>
+        </div>
+      </div>
+      <div class="probabilities" id="probabilities"
+        aria-label="Network output by digit"></div>
+      <div class="preview">
+        <canvas id="input-preview" width="14" height="14"
+          aria-label="14 by 14 network input"></canvas>
+        <span>This tiny image is the exact 196-value input sent to WebGPU.</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="controls panel">
+    <div class="metrics">
+      <div class="metric"><small>Epoch</small><output id="epoch">0 / 30</output></div>
+      <div class="metric"><small>Train accuracy</small><output id="train-accuracy">—</output></div>
+      <div class="metric"><small>Test accuracy</small><output id="test-accuracy">—</output></div>
+      <div class="metric"><small>Train time</small><output id="time">—</output></div>
+    </div>
+    <div class="actions">
+      <span class="badge" id="model">196 → 128 → 10</span>
+    </div>
+  </section>
+  <div class="progress" aria-hidden="true"><span id="progress"></span></div>
+  <p class="status" id="status">Preparing handwritten examples…</p>
+</main>
+
+<script type="module">
+  import { createMnistDataset } from "../../conformance/dist/index.js";
+  import { trainMnistDemo } from "./demo-models.js";
+
+  const IMAGE_SIZE = 14;
+  const MNIST_SIZE = 28;
+  const DOWNSAMPLE_BLOCK = MNIST_SIZE / IMAGE_SIZE;
+  const drawing = document.querySelector("#drawing");
+  const drawingContext = drawing.getContext("2d", { willReadFrequently: true });
+  const preview = document.querySelector("#input-preview");
+  const previewContext = preview.getContext("2d");
+  const backend = document.querySelector("#backend");
+  const epoch = document.querySelector("#epoch");
+  const trainAccuracy = document.querySelector("#train-accuracy");
+  const testAccuracy = document.querySelector("#test-accuracy");
+  const time = document.querySelector("#time");
+  const progress = document.querySelector("#progress");
+  const status = document.querySelector("#status");
+  const clearButton = document.querySelector("#clear");
+  const prediction = document.querySelector("#prediction");
+  const answerTitle = document.querySelector("#answer-title");
+  const answerCopy = document.querySelector("#answer-copy");
+  const probabilities = document.querySelector("#probabilities");
+
+  let session;
+  let drawingActive = false;
+  let lastPoint;
+  let classifyQueued = false;
+
+  probabilities.innerHTML = Array.from({ length: 10 }, (_, digit) => `
+    <div class="probability" data-digit="${digit}">
+      <header><strong>${digit}</strong><small>0%</small></header>
+      <div class="bar"><span></span></div>
+    </div>
+  `).join("");
+
+  const resetDrawing = () => {
+    drawingContext.fillStyle = "#000";
+    drawingContext.fillRect(0, 0, drawing.width, drawing.height);
+    previewContext.fillStyle = "#000";
+    previewContext.fillRect(0, 0, preview.width, preview.height);
+    prediction.value = "?";
+    answerTitle.textContent = session ? "Draw a number" : "Training the classifier…";
+    answerCopy.textContent = session
+      ? "The prediction updates when you finish a stroke."
+      : "The drawing pad unlocks as soon as training finishes.";
+    for (const item of probabilities.children) {
+      item.querySelector("small").textContent = "0%";
+      item.querySelector(".bar span").style.height = "0";
+    }
+  };
+
+  const pointFromEvent = (event) => {
+    const bounds = drawing.getBoundingClientRect();
+    return {
+      x: (event.clientX - bounds.left) * drawing.width / bounds.width,
+      y: (event.clientY - bounds.top) * drawing.height / bounds.height,
+    };
+  };
+
+  const drawTo = (point) => {
+    drawingContext.strokeStyle = "#fff";
+    drawingContext.lineWidth = 23;
+    drawingContext.lineCap = "round";
+    drawingContext.lineJoin = "round";
+    drawingContext.beginPath();
+    drawingContext.moveTo(lastPoint.x, lastPoint.y);
+    drawingContext.lineTo(point.x, point.y);
+    drawingContext.stroke();
+    lastPoint = point;
+  };
+
+  const downsamplePixels = (pixels) => {
+    const input = [];
+    for (let outputY = 0; outputY < IMAGE_SIZE; outputY += 1) {
+      for (let outputX = 0; outputX < IMAGE_SIZE; outputX += 1) {
+        let value = 0;
+        for (let sourceY = 0; sourceY < DOWNSAMPLE_BLOCK; sourceY += 1) {
+          for (let sourceX = 0; sourceX < DOWNSAMPLE_BLOCK; sourceX += 1) {
+            const x = outputX * DOWNSAMPLE_BLOCK + sourceX;
+            const y = outputY * DOWNSAMPLE_BLOCK + sourceY;
+            value += pixels[(y * MNIST_SIZE + x) * 4] ?? 0;
+          }
+        }
+        input.push(value / (255 * DOWNSAMPLE_BLOCK * DOWNSAMPLE_BLOCK));
+      }
+    }
+    return input;
+  };
+
+  const createDrawingExamples = () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = MNIST_SIZE;
+    canvas.height = MNIST_SIZE;
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    const examples = [];
+    const variants = [
+      { angle: -.06, font: "700 24px Arial", offsetX: -1, offsetY: 1 },
+      { angle: .04, font: "600 25px Arial", offsetX: 1, offsetY: 0 },
+      { angle: -.03, font: "700 24px sans-serif", offsetX: 0, offsetY: -1 },
+      { angle: .06, font: "600 25px sans-serif", offsetX: -1, offsetY: 0 },
+      { angle: 0, font: "700 23px serif", offsetX: 1, offsetY: 1 },
+      { angle: .02, font: "600 24px serif", offsetX: 0, offsetY: 0 },
+    ];
+    const addExample = (digit) => {
+      const target = new Array(10).fill(0);
+      target[digit] = 1;
+      examples.push({
+        input: downsamplePixels(
+          context.getImageData(0, 0, MNIST_SIZE, MNIST_SIZE).data,
+        ),
+        label: digit,
+        target,
+      });
+    };
+    for (let digit = 0; digit < 10; digit += 1) {
+      for (const variant of variants) {
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        context.fillStyle = "#000";
+        context.fillRect(0, 0, MNIST_SIZE, MNIST_SIZE);
+        context.translate(
+          MNIST_SIZE / 2 + variant.offsetX,
+          MNIST_SIZE / 2 + variant.offsetY,
+        );
+        context.rotate(variant.angle);
+        context.fillStyle = "#fff";
+        context.font = variant.font;
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(String(digit), 0, 1);
+        addExample(digit);
+      }
+    }
+    for (let variant = 0; variant < 20; variant += 1) {
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      context.fillStyle = "#000";
+      context.fillRect(0, 0, MNIST_SIZE, MNIST_SIZE);
+      const left = 3 + variant % 3;
+      const right = 23 + variant % 2;
+      const top = 3 + variant % 2;
+      context.strokeStyle = "#fff";
+      context.lineWidth = 2.5 + variant % 4 * .35;
+      context.lineCap = "round";
+      context.lineJoin = "round";
+      context.beginPath();
+      context.moveTo(left, top);
+      context.lineTo(right, top);
+      context.lineTo(8 + variant % 5, 23 + variant % 3);
+      context.stroke();
+      addExample(7);
+    }
+    return examples;
+  };
+
+  const normalizeDrawing = () => {
+    const pixels = drawingContext.getImageData(
+      0,
+      0,
+      drawing.width,
+      drawing.height,
+    ).data;
+    let left = drawing.width;
+    let top = drawing.height;
+    let right = -1;
+    let bottom = -1;
+    for (let y = 0; y < drawing.height; y += 1) {
+      for (let x = 0; x < drawing.width; x += 1) {
+        if ((pixels[(y * drawing.width + x) * 4] ?? 0) > 8) {
+          left = Math.min(left, x);
+          top = Math.min(top, y);
+          right = Math.max(right, x);
+          bottom = Math.max(bottom, y);
+        }
+      }
+    }
+    if (right < left || bottom < top) return undefined;
+
+    const normalized = document.createElement("canvas");
+    normalized.width = 28;
+    normalized.height = 28;
+    const context = normalized.getContext("2d", { willReadFrequently: true });
+    context.fillStyle = "#000";
+    context.fillRect(0, 0, 28, 28);
+    const sourceWidth = right - left + 1;
+    const sourceHeight = bottom - top + 1;
+    const scale = 20 / Math.max(sourceWidth, sourceHeight);
+    const width = sourceWidth * scale;
+    const height = sourceHeight * scale;
+    context.drawImage(
+      drawing,
+      left,
+      top,
+      sourceWidth,
+      sourceHeight,
+      (28 - width) / 2,
+      (28 - height) / 2,
+      width,
+      height,
+    );
+    return downsamplePixels(
+      context.getImageData(0, 0, MNIST_SIZE, MNIST_SIZE).data,
+    );
+  };
+
+  const renderPreview = (input) => {
+    const image = previewContext.createImageData(IMAGE_SIZE, IMAGE_SIZE);
+    input.forEach((value, index) => {
+      const intensity = Math.round(value * 255);
+      image.data[index * 4] = intensity;
+      image.data[index * 4 + 1] = intensity;
+      image.data[index * 4 + 2] = intensity;
+      image.data[index * 4 + 3] = 255;
+    });
+    previewContext.putImageData(image, 0, 0);
+  };
+
+  const classify = async () => {
+    if (!session) return;
+    const input = normalizeDrawing();
+    if (!input) {
+      resetDrawing();
+      return;
+    }
+    renderPreview(input);
+    const output = await session.forward(input);
+    const values = Array.from(output.data);
+    let bestDigit = 0;
+    for (let digit = 1; digit < values.length; digit += 1) {
+      if ((values[digit] ?? 0) > (values[bestDigit] ?? 0)) bestDigit = digit;
+    }
+    const confidence = values[bestDigit] ?? 0;
+    prediction.value = String(bestDigit);
+    answerTitle.textContent = `I think it’s a ${bestDigit}`;
+    answerCopy.textContent =
+      `The strongest output is ${Math.round(confidence * 100)}%. `
+      + "Try another handwriting style and see where it changes its mind.";
+    values.forEach((value, digit) => {
+      const item = probabilities.querySelector(`[data-digit="${digit}"]`);
+      item.querySelector("small").textContent = `${Math.round(value * 100)}%`;
+      item.querySelector(".bar span").style.height = `${value * 100}%`;
+    });
+  };
+
+  const queueClassification = () => {
+    if (classifyQueued) return;
+    classifyQueued = true;
+    requestAnimationFrame(() => {
+      classifyQueued = false;
+      void classify();
+    });
+  };
+
+  drawing.addEventListener("pointerdown", (event) => {
+    if (!session) return;
+    drawingActive = true;
+    drawing.setPointerCapture(event.pointerId);
+    lastPoint = pointFromEvent(event);
+    drawTo({ x: lastPoint.x + .01, y: lastPoint.y + .01 });
+  });
+  drawing.addEventListener("pointermove", (event) => {
+    if (!drawingActive) return;
+    drawTo(pointFromEvent(event));
+  });
+  const finishStroke = () => {
+    if (!drawingActive) return;
+    drawingActive = false;
+    queueClassification();
+  };
+  drawing.addEventListener("pointerup", finishStroke);
+  drawing.addEventListener("pointercancel", finishStroke);
+  clearButton.addEventListener("click", resetDrawing);
+  window.addEventListener("pagehide", () => session?.dispose());
+
+  resetDrawing();
+  try {
+    const dataset = createMnistDataset(window.mnist, {
+      imageSize: IMAGE_SIZE,
+      trainingPerDigit: 30,
+      testPerDigit: 10,
+    });
+    dataset.training.push(...createDrawingExamples());
+    status.textContent =
+      `Training on ${dataset.training.length.toLocaleString()} examples; `
+      + `${dataset.test.length.toLocaleString()} remain held out.`;
+    const result = await trainMnistDemo(dataset, (completed, total) => {
+      epoch.value = `${completed} / ${total}`;
+      progress.style.width = `${completed / total * 100}%`;
+    });
+    session = result.session;
+    backend.textContent = result.backend;
+    trainAccuracy.value = `${Math.round(result.trainingAccuracy * 100)}%`;
+    testAccuracy.value = `${Math.round(result.testAccuracy * 100)}%`;
+    time.value = `${result.durationMs.toLocaleString()} ms`;
+    answerTitle.textContent = "Draw a number";
+    answerCopy.textContent = "The prediction updates when you finish a stroke.";
+    const pass =
+      result.backend === "webgpu"
+      && result.trainingAccuracy >= .95
+      && result.testAccuracy >= .85;
+    status.textContent = pass
+      ? "Ready. Draw a large, centered digit in one or more strokes."
+      : "Training finished below the expected accuracy threshold.";
+    document.body.dataset.pass = String(pass);
+  } catch (error) {
+    backend.textContent = "unavailable";
+    status.classList.add("error");
+    status.textContent = error instanceof Error ? error.message : String(error);
+    document.body.dataset.pass = "false";
+  }
+</script>
+</html>

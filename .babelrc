@@ -1,7 +1,0 @@
-{
-  "presets": ["es2015", "env"],
-  "plugins": [
-    "transform-class-properties",
-    "transform-object-rest-spread"
-  ]
-}

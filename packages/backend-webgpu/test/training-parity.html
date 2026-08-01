@@ -1,0 +1,138 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Synaptic WebGPU training parity</title>
+<script type="importmap">
+{
+  "imports": {
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/layers": "/packages/layers/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<pre id="result">running</pre>
+<script type="module">
+  import { CpuBackend } from "@synaptic/backend-cpu";
+  import { WebGpuBackend } from "@synaptic/backend-webgpu";
+  import { compilePlan } from "@synaptic/core";
+  import {
+    recurrentFixture,
+    sharedParameterFixture,
+  } from "../../conformance/dist/index.js";
+
+  const result = document.querySelector("#result");
+  const maxDifference = (left, right) => {
+    let difference = 0;
+    for (let index = 0; index < left.length; index += 1) {
+      difference = Math.max(
+        difference,
+        Math.abs(left[index] - right[index]),
+      );
+    }
+    return difference;
+  };
+
+  try {
+    const fixture = recurrentFixture();
+    const plan = compilePlan(fixture.definition);
+    const gpu = await new WebGpuBackend({
+      fallbackBackends: [],
+    }).compile(plan, fixture.snapshot, { training: true });
+    const cpu = await new CpuBackend().compile(
+      plan,
+      fixture.snapshot,
+      { training: true },
+    );
+    const [gpuMetrics, cpuMetrics] = await Promise.all([
+      gpu.trainSequence(fixture.sequence, { learningRate: 0.04 }),
+      cpu.trainSequence(fixture.sequence, { learningRate: 0.04 }),
+    ]);
+    const lossDifference = Math.abs(gpuMetrics.loss - cpuMetrics.loss);
+    const [gpuCheckpoint, cpuCheckpoint] = await Promise.all([
+      gpu.checkpoint(),
+      cpu.checkpoint(),
+    ]);
+    const restoredGpu = await new WebGpuBackend({
+      fallbackBackends: [],
+    }).compile(plan, cpuCheckpoint, { training: true });
+    const restoredCpu = await new CpuBackend().compile(
+      plan,
+      cpuCheckpoint,
+      { training: true },
+    );
+    const [restoredGpuOutputs, restoredCpuOutputs] = await Promise.all([
+      restoredGpu.forwardSequence(fixture.sequence.map(({ input }) => input)),
+      restoredCpu.forwardSequence(fixture.sequence.map(({ input }) => input)),
+    ]);
+    const sharedFixture = sharedParameterFixture();
+    const sharedPlan = compilePlan(sharedFixture.definition);
+    const sharedGpu = await new WebGpuBackend({
+      fallbackBackends: [],
+    }).compile(sharedPlan, sharedFixture.snapshot, { training: true });
+    const sharedCpu = await new CpuBackend().compile(
+      sharedPlan,
+      sharedFixture.snapshot,
+      { training: true },
+    );
+    await Promise.all([
+      sharedGpu.trainSequence(sharedFixture.sequence, {
+        learningRate: 0.1,
+        metrics: "none",
+      }),
+      sharedCpu.trainSequence(sharedFixture.sequence, {
+        learningRate: 0.1,
+        metrics: "none",
+      }),
+    ]);
+    const [sharedGpuSnapshot, sharedCpuSnapshot] = await Promise.all([
+      sharedGpu.snapshot(),
+      sharedCpu.snapshot(),
+    ]);
+    result.textContent = JSON.stringify({
+      backend: gpu.backend,
+      lossDifference,
+      sequenceSteps: gpuMetrics.steps,
+      parameterDifference: maxDifference(
+        gpuCheckpoint.parameters,
+        cpuCheckpoint.parameters,
+      ),
+      stateDifference: maxDifference(
+        gpuCheckpoint.runtime.state,
+        cpuCheckpoint.runtime.state,
+      ),
+      eligibilityDifference: maxDifference(
+        gpuCheckpoint.runtime.eligibilityTrace,
+        cpuCheckpoint.runtime.eligibilityTrace,
+      ),
+      extendedDifference: maxDifference(
+        gpuCheckpoint.runtime.extendedEligibilityTrace,
+        cpuCheckpoint.runtime.extendedEligibilityTrace,
+      ),
+      errorDifference: maxDifference(
+        gpuCheckpoint.runtime.error,
+        cpuCheckpoint.runtime.error,
+      ),
+      restoredOutputDifference: maxDifference(
+        restoredGpuOutputs.flatMap(({ data }) => [...data]),
+        restoredCpuOutputs.flatMap(({ data }) => [...data]),
+      ),
+      sharedParameterDifference: maxDifference(
+        sharedGpuSnapshot.parameters,
+        sharedCpuSnapshot.parameters,
+      ),
+      sharedParameter: sharedGpuSnapshot.parameters[0],
+    });
+    gpu.dispose();
+    cpu.dispose();
+    restoredGpu.dispose();
+    restoredCpu.dispose();
+    sharedGpu.dispose();
+    sharedCpu.dispose();
+  } catch (error) {
+    result.textContent = JSON.stringify({
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+</script>

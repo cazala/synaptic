@@ -1,0 +1,1515 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synaptic WebGPU — Growing Neural CA</title>
+<link rel="stylesheet" href="./demo.css">
+<script type="importmap">
+{
+  "imports": {
+    "@cazala/automata": "/node_modules/@cazala/automata/dist/index.js",
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<style>
+  :root { --mint: #68e6c1; --rose: #ff6f91; --amber: #ffc857; }
+  body {
+    background:
+      radial-gradient(circle at 15% 5%, #123c453b, transparent 30rem),
+      radial-gradient(circle at 90% 20%, #44233d4a, transparent 34rem),
+      #060a11;
+  }
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .hero h1 { max-width: 12ch; }
+  .phase-badge {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    bottom: 1rem;
+    max-width: calc(100% - 2rem);
+    border: 1px solid #315a55;
+    border-radius: 999px;
+    padding: .45rem .7rem;
+    color: #9af0d9;
+    background: #0a1919e8;
+    box-shadow: 0 .4rem 1.4rem #07101552;
+    font: 700 .58rem ui-monospace, monospace;
+    letter-spacing: .07em;
+    overflow: hidden;
+    pointer-events: none;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+  .phase-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    border-top: 1px solid #263649;
+    border-bottom: 1px solid #263649;
+    background: #263649;
+  }
+  .phase-step {
+    --phase-color: #6f8299;
+    position: relative;
+    min-width: 0;
+    display: grid;
+    grid-template-areas:
+      "number title status"
+      "number subtitle status";
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
+    gap: .25rem .7rem;
+    align-items: center;
+    padding: .9rem 1rem 1rem;
+    background: #0a1019;
+    opacity: .58;
+    transition: opacity .2s ease, background .2s ease;
+  }
+  .phase-step:nth-child(1) { --phase-color: var(--mint); }
+  .phase-step:nth-child(2) { --phase-color: var(--amber); }
+  .phase-step:nth-child(3) { --phase-color: var(--rose); }
+  .phase-step[data-state="active"],
+  .phase-step[data-state="complete"] { opacity: 1; }
+  .phase-step[data-state="active"] {
+    background: color-mix(in srgb, var(--phase-color) 9%, #0a1019);
+  }
+  .phase-step::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: .18rem;
+    transform: scaleX(var(--phase-progress, 0));
+    transform-origin: left;
+    background: var(--phase-color);
+    content: "";
+    transition: transform .2s ease;
+  }
+  .phase-number {
+    grid-area: number;
+    color: var(--phase-color);
+    font: 750 .62rem ui-monospace, monospace;
+  }
+  .phase-step > strong {
+    grid-area: title;
+    font-size: .75rem;
+  }
+  .phase-step small {
+    grid-area: subtitle;
+    overflow: hidden;
+    color: #71839a;
+    font: .58rem ui-monospace, monospace;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .phase-status {
+    grid-area: status;
+    display: grid;
+    gap: .15rem;
+    justify-items: end;
+  }
+  .phase-percent {
+    color: var(--phase-color);
+    font: 750 .72rem ui-monospace, monospace;
+  }
+  .phase-state {
+    color: #8293a8;
+    font: 700 .53rem ui-monospace, monospace;
+    font-style: normal;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .phase-step[data-state="active"] .phase-state {
+    color: var(--phase-color);
+  }
+  .architecture {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .7rem;
+    margin: 1.4rem 0;
+  }
+  .stage {
+    position: relative;
+    min-height: 6.8rem;
+    display: grid;
+    align-content: center;
+    gap: .35rem;
+    padding: 1rem;
+    border: 1px solid #283b51;
+    border-radius: 1rem;
+    background: linear-gradient(145deg, #0b131f, #090e17);
+  }
+  .stage:not(:last-child)::after {
+    position: absolute;
+    z-index: 2;
+    right: -.7rem;
+    top: calc(50% - .7rem);
+    color: #58718b;
+    content: "→";
+  }
+  .stage strong { font: 750 .78rem ui-monospace, monospace; }
+  .stage small {
+    color: #75869c;
+    font: .62rem/1.45 ui-monospace, monospace;
+  }
+  .stage:nth-child(2) { border-color: #416f68; }
+  .stage:nth-child(3) { border-color: #76415d; }
+  .stage:nth-child(4) { border-color: #7a653c; }
+  .experiment {
+    display: grid;
+    grid-template-columns: minmax(13rem, .46fr) minmax(25rem, 1.54fr);
+    gap: 1.4rem;
+  }
+  .target-panel, .organism-panel { overflow: hidden; }
+  .target-panel { align-self: start; }
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: start;
+    padding: 1.1rem 1.2rem .9rem;
+    border-bottom: 1px solid #253448;
+  }
+  .panel-head h2 { margin: 0; font-size: 1rem; }
+  .panel-head p {
+    margin: .35rem 0 0;
+    color: #7b8da5;
+    font: .63rem/1.55 ui-monospace, monospace;
+  }
+  .target-controls {
+    display: grid;
+    gap: .45rem;
+    justify-items: stretch;
+  }
+  .target-panel .panel-head { display: grid; }
+  .target-controls,
+  .target-controls label { min-width: 0; width: 100%; }
+  .target-controls select,
+  .upload-control {
+    box-sizing: border-box;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    border: 1px solid #394a5d;
+    border-radius: .62rem;
+    padding: .58rem .7rem;
+    color: #e9f2fb;
+    background: #101822;
+    font: 700 .63rem ui-monospace, monospace;
+  }
+  .target-controls > label:first-child {
+    position: relative;
+  }
+  .target-controls > label:first-child::after {
+    position: absolute;
+    top: 50%;
+    right: .85rem;
+    width: .38rem;
+    height: .38rem;
+    border-right: 1px solid #98a9bc;
+    border-bottom: 1px solid #98a9bc;
+    content: "";
+    pointer-events: none;
+    transform: translateY(-70%) rotate(45deg);
+  }
+  .target-controls select {
+    padding-right: 2.2rem;
+    appearance: none;
+    cursor: pointer;
+  }
+  .upload-control {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .upload-control input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .target-wrap {
+    position: relative;
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    padding: 1.4rem;
+    background:
+      linear-gradient(45deg, #e8edf2 25%, transparent 25%),
+      linear-gradient(-45deg, #e8edf2 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #e8edf2 75%),
+      linear-gradient(-45deg, transparent 75%, #e8edf2 75%),
+      #fff;
+    background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+    background-size: 24px 24px;
+  }
+  #target {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+  }
+  .organism-wrap {
+    position: relative;
+    min-height: 30rem;
+    background: #fff;
+  }
+  #organism {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 30rem;
+    image-rendering: pixelated;
+  }
+  #organism.damage-enabled {
+    cursor: crosshair;
+    touch-action: none;
+  }
+  .reset-organism {
+    position: absolute;
+    z-index: 3;
+    top: 1rem;
+    right: 1rem;
+    min-width: 0;
+    width: 2.4rem;
+    height: 2.4rem;
+    display: grid;
+    place-items: center;
+    border: 1px solid #43556a;
+    border-radius: 50%;
+    padding: 0;
+    color: #b8c9dc;
+    background: #0b1420e8;
+    box-shadow: 0 .4rem 1.4rem #07101a66;
+    backdrop-filter: blur(.5rem);
+  }
+  .reset-organism:hover:not(:disabled) {
+    border-color: #63809d;
+    color: #f1f7ff;
+    background: #111d2a;
+  }
+  .reset-organism:focus-visible {
+    outline: 2px solid #82e8ce;
+    outline-offset: 2px;
+  }
+  .reset-organism:disabled {
+    cursor: wait;
+    opacity: .4;
+  }
+  .reset-organism svg {
+    width: 1.1rem;
+    height: 1.1rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+  }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 1px;
+    background: #263649;
+    border-top: 1px solid #263649;
+  }
+  .metric {
+    min-width: 0;
+    padding: .85rem 1rem;
+    background: #0a1019;
+  }
+  .metric span {
+    display: block;
+    margin-bottom: .3rem;
+    color: #6c7e95;
+    font: 650 .54rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .metric strong {
+    overflow: hidden;
+    display: block;
+    color: #e9f2fb;
+    font: 700 .85rem ui-monospace, monospace;
+    text-overflow: ellipsis;
+  }
+  .caption-bar {
+    display: grid;
+    place-items: center;
+    padding: .55rem 1.1rem;
+    border-top: 1px solid #263649;
+    background: #090f18;
+    text-align: center;
+  }
+  .status {
+    color: #82e8ce;
+    font: 650 .66rem ui-monospace, monospace;
+  }
+  .explanation {
+    overflow: hidden;
+    margin-top: 1.4rem;
+  }
+  .explanation-head {
+    display: grid;
+    grid-template-columns: minmax(0, .7fr) minmax(22rem, 1.3fr);
+    gap: 2rem;
+    align-items: end;
+    padding: 1.5rem;
+    border-bottom: 1px solid #263649;
+    background:
+      radial-gradient(circle at 95% 0%, #173e3a52, transparent 24rem),
+      #0a1019;
+  }
+  .explanation-head h2 {
+    max-width: 15ch;
+    margin: .25rem 0 0;
+    font-size: clamp(1.6rem, 3vw, 2.6rem);
+    line-height: .98;
+  }
+  .explanation-head > p:last-child {
+    max-width: 64ch;
+    margin: 0;
+    color: #91a2b6;
+    font-size: .84rem;
+    line-height: 1.7;
+  }
+  .explanation-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    border-bottom: 1px solid #263649;
+  }
+  .explanation-topic {
+    min-width: 0;
+    padding: 1.35rem 1.4rem 1.5rem;
+  }
+  .explanation-topic + .explanation-topic {
+    border-left: 1px solid #263649;
+  }
+  .topic-number {
+    display: block;
+    margin-bottom: .8rem;
+    color: var(--mint);
+    font: 750 .58rem ui-monospace, monospace;
+    letter-spacing: .1em;
+  }
+  .explanation-topic:nth-child(2) .topic-number { color: var(--amber); }
+  .explanation-topic:nth-child(3) .topic-number { color: var(--rose); }
+  .explanation-topic h3 {
+    margin: 0 0 .65rem;
+    font-size: .92rem;
+  }
+  .explanation-topic p {
+    margin: 0;
+    color: #8294aa;
+    font-size: .7rem;
+    line-height: 1.7;
+  }
+  .explanation-topic p + p { margin-top: .65rem; }
+  .topic-flow {
+    display: block;
+    margin-top: .9rem;
+    border: 1px solid #293b50;
+    border-radius: .65rem;
+    padding: .65rem .75rem;
+    color: #b8c8d9;
+    background: #070c13;
+    font: 650 .6rem/1.5 ui-monospace, monospace;
+    white-space: normal;
+  }
+  .curriculum-explanation {
+    padding: 1.4rem;
+  }
+  .curriculum-explanation > header {
+    max-width: 76ch;
+    margin-bottom: 1.2rem;
+  }
+  .curriculum-explanation h3 {
+    margin: 0;
+    font-size: 1.05rem;
+  }
+  .curriculum-explanation header p {
+    margin: .55rem 0 0;
+    color: #8294aa;
+    font-size: .7rem;
+    line-height: 1.65;
+  }
+  .curriculum-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.4rem;
+    margin: 0;
+  }
+  .curriculum-summary > div {
+    --summary-color: var(--mint);
+    min-width: 0;
+    border-left: .18rem solid var(--summary-color);
+    padding-left: .9rem;
+  }
+  .curriculum-summary > div:nth-child(2) {
+    --summary-color: var(--amber);
+  }
+  .curriculum-summary > div:nth-child(3) {
+    --summary-color: var(--rose);
+  }
+  .curriculum-summary dt {
+    margin-bottom: .35rem;
+    color: #eaf4ff;
+    font-size: .76rem;
+    font-weight: 750;
+  }
+  .curriculum-summary dd {
+    margin: 0;
+    color: #8294aa;
+    font: .61rem/1.6 ui-monospace, monospace;
+  }
+  .explanation-footer {
+    margin: 1.25rem 0 0;
+    border-top: 1px solid #263649;
+    padding-top: 1rem;
+    color: #71849a;
+    font: .62rem/1.6 ui-monospace, monospace;
+  }
+  @media (max-width: 820px) {
+    .hero, .experiment { grid-template-columns: 1fr; }
+    .architecture { grid-template-columns: 1fr 1fr; }
+    .stage:nth-child(2)::after { display: none; }
+    .explanation-head { grid-template-columns: 1fr; gap: .8rem; }
+    .explanation-grid,
+    .curriculum-summary { grid-template-columns: 1fr; }
+    .explanation-topic + .explanation-topic {
+      border-top: 1px solid #263649;
+      border-left: 0;
+    }
+    .metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .phase-list { grid-template-columns: 1fr; }
+    .organism-wrap, #organism { min-height: 24rem; }
+  }
+  @media (max-width: 520px) {
+    .architecture, .metrics { grid-template-columns: 1fr 1fr; }
+    .stage::after { display: none; }
+    .panel-head { flex-wrap: wrap; }
+    .target-controls {
+      width: 100%;
+      grid-template-columns: 1fr 1fr;
+    }
+    .target-controls select,
+    .upload-control { min-width: 0; width: 100%; }
+  }
+</style>
+<body>
+<main class="shell">
+  <nav class="demo-nav" aria-label="WebGPU demos">
+    <a href="./xor.html">XOR</a>
+    <a href="./mnist.html">Draw a digit</a>
+    <a href="./dsr.html">Sequence recall</a>
+    <a href="./learn-to-paint.html">Learn to paint</a>
+    <a href="./mnist-automata.html">MNIST → Neural CA</a>
+    <a href="./growing-neural-ca.html" aria-current="page">Growing NCA</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <p class="eyebrow">Differentiable morphogenesis · WebGPU</p>
+      <h1>Teach one cell to become an organism.</h1>
+      <p class="lede">
+        Synaptic unrolls a neural cellular automaton through time, trains its
+        shared local rule, and continuously runs what it has learned in the live
+        growth and regeneration simulation below.
+      </p>
+    </div>
+  </header>
+
+  <section class="architecture" aria-label="Growing Neural CA architecture">
+    <article class="stage">
+      <strong>3 × 3 perception</strong>
+      <small>identity · Sobel x · Sobel y<br>zero padded</small>
+    </article>
+    <article class="stage">
+      <strong>48 → 128 → 16</strong>
+      <small>shared pointwise MLP<br>ReLU activation</small>
+    </article>
+    <article class="stage">
+      <strong>Residual update</strong>
+      <small>50% stochastic fire mask<br>random 64–96-step tape</small>
+    </article>
+    <article class="stage">
+      <strong>Life mask</strong>
+      <small>pre + post alpha tests<br>damage sample pool</small>
+    </article>
+  </section>
+
+  <section class="experiment">
+    <article class="target-panel panel">
+      <header class="panel-head">
+        <div>
+          <h2>Training target</h2>
+          <p id="target-meta">Flower · 24 × 24 premultiplied RGBA</p>
+        </div>
+        <div class="target-controls">
+          <label>
+            <span hidden>Choose a target</span>
+            <select id="target-preset" aria-label="Choose a training target">
+              <option value="flower">🌼 Flower</option>
+              <option value="butterfly">🦋 Butterfly</option>
+              <option value="mushroom">🍄 Mushroom</option>
+              <option value="rainbow">🌈 Rainbow</option>
+              <option value="robot">🤖 Robot</option>
+              <option value="upload" hidden>Uploaded image</option>
+            </select>
+          </label>
+          <label class="upload-control">
+            Upload image
+            <input id="target-upload" type="file" accept="image/*">
+          </label>
+        </div>
+      </header>
+      <div class="target-wrap">
+        <canvas id="target" width="24" height="24"
+          aria-label="Pixel-art training target"></canvas>
+      </div>
+    </article>
+
+    <article class="organism-panel panel">
+      <header class="panel-head">
+        <div>
+          <h2>Live organism</h2>
+          <p id="inference-meta">
+            Responsive live grid · latest learned rule · click or drag to
+            damage after regeneration
+          </p>
+        </div>
+      </header>
+      <div id="organism-wrap" class="organism-wrap"
+        data-damage-enabled="false">
+        <canvas id="organism" width="720" height="540"
+          aria-label="Growing neural cellular automaton"></canvas>
+        <button id="reset" class="reset-organism" type="button"
+          aria-label="Reset organism" title="Reset organism" disabled>
+          <!-- Lucide rotate-ccw -->
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-7.7L3 7"></path>
+            <path d="M3 3v4h4"></path>
+          </svg>
+        </button>
+        <output id="phase-badge" class="phase-badge" aria-live="polite">
+          Phase 1 · growth · 0%
+        </output>
+      </div>
+      <div class="phase-list" aria-label="Training curriculum">
+        <article class="phase-step" data-phase="growth" data-state="active">
+          <span class="phase-number">01</span>
+          <strong>Growth</strong>
+          <small>seed → target · repeated quality checks</small>
+          <span class="phase-status">
+            <b class="phase-percent">0%</b>
+            <i class="phase-state">active</i>
+          </span>
+        </article>
+        <article class="phase-step" data-phase="stability" data-state="pending">
+          <span class="phase-number">02</span>
+          <strong>Stability</strong>
+          <small>retained states · repeated quality checks</small>
+          <span class="phase-status">
+            <b class="phase-percent">0%</b>
+            <i class="phase-state">waiting</i>
+          </span>
+        </article>
+        <article class="phase-step" data-phase="regeneration" data-state="pending">
+          <span class="phase-number">03</span>
+          <strong>Regeneration</strong>
+          <small>96 damaged batches · ≥90% strict passes</small>
+          <span class="phase-status">
+            <b class="phase-percent">0%</b>
+            <i class="phase-state">waiting</i>
+          </span>
+        </article>
+      </div>
+      <div class="metrics" aria-live="polite">
+        <div class="metric"><span>iteration</span><strong id="iteration">0</strong></div>
+        <div class="metric"><span>loss</span><strong id="loss">—</strong></div>
+        <div class="metric"><span>rollout</span><strong id="rollout">—</strong></div>
+        <div class="metric"><span>train step</span><strong id="duration">—</strong></div>
+        <div class="metric"><span>damaged samples</span><strong id="damage-count">0</strong></div>
+        <div class="metric"><span>auto resets</span><strong id="reset-count">0</strong></div>
+      </div>
+      <div class="caption-bar">
+        <output id="status" class="status">initializing WebGPU…</output>
+      </div>
+    </article>
+  </section>
+
+  <section class="explanation panel" aria-labelledby="explanation-title">
+    <header class="explanation-head">
+      <div>
+        <p class="eyebrow">How it works</p>
+        <h2 id="explanation-title">One local rule, learned through time.</h2>
+      </div>
+      <p>
+        Every cell runs the same tiny neural network. Repeating that local rule
+        turns one living seed into a target that can persist and eventually
+        repair itself.
+      </p>
+    </header>
+
+    <div class="explanation-grid">
+      <article class="explanation-topic">
+        <span class="topic-number">01 · CELL RULE</span>
+        <h3>See the neighborhood, then predict a change.</h3>
+        <p>
+          A cell stores premultiplied RGBA plus twelve learned hidden channels.
+          Fixed, zero-padded identity and Sobel x/y filters read each channel's
+          3 × 3 neighborhood. The resulting 48 values enter a shared pointwise
+          network; a 50% fire mask applies its residual update. Pre- and
+          post-update alpha masks keep growth attached to living cells and
+          clear dead hidden state.
+        </p>
+        <code class="topic-flow">16 channels × 3 filters → 48 → 128 ReLU → 16 Δ</code>
+      </article>
+
+      <article class="explanation-topic">
+        <span class="topic-number">02 · LEARNING OVER TIME</span>
+        <h3>Learn a process, not a snapshot.</h3>
+        <p>
+          Each lesson lets the organism evolve for a random 64–96 generations.
+          Synaptic scores its final sixteen states, rewarding accurate color,
+          crisp edges, the right living shape, and stable internal values.
+          Scoring a sequence prevents the organism from resembling the target
+          for only one lucky moment.
+        </p>
+        <p>
+          L1 counts every difference by its size. L2 squares differences, giving
+          larger mistakes extra weight. Together they provide steady correction
+          and strong pressure on obvious errors. They contribute to the loss
+          shown above: zero is an exact match, and lower is better.
+        </p>
+        <p>
+          Synaptic traces that feedback backward through the recorded
+          generations—backpropagation through time—then Adam makes a measured
+          update to the shared rule.
+        </p>
+        <code class="topic-flow">grow → score the final 16 states → trace mistakes → adjust the rule</code>
+      </article>
+
+      <article class="explanation-topic">
+        <span class="topic-number">03 · SAMPLE POOL</span>
+        <h3>Practice growth, persistence, and repair.</h3>
+        <p>
+          Evolved grids return to persistent pool slots and become later
+          starting states. This experiment retains 512 histories while keeping
+          the GPU batch at eight. The worst selected sample is replaced by a
+          fresh seed, while healthy samples eventually receive round or
+          elongated target-anchored cuts and must recover the complete target.
+          This widens the target's basin of attraction: more partial, old, and
+          differently damaged states naturally evolve back toward it.
+        </p>
+        <code class="topic-flow">seed + retained + damaged states → target attractor</code>
+      </article>
+    </div>
+
+    <section class="curriculum-explanation"
+      aria-labelledby="curriculum-explanation-title">
+      <header>
+        <h3 id="curriculum-explanation-title">An evidence-based curriculum</h3>
+        <p>
+          A phase advances only when a rolling set of recent trials is
+          consistently good, including the weakest example in each batch. The
+          check balances image accuracy, living-cell count, and target coverage;
+          later phases must also preserve earlier skills. If progress stalls for
+          sixteen full windows, Synaptic keeps the learned rule, refreshes its
+          practice states, clears learning momentum, and briefly raises the
+          learning rate.
+        </p>
+      </header>
+      <dl class="curriculum-summary">
+        <div>
+          <dt>01 · Growth</dt>
+          <dd>Fresh seed → target. No pool or damage. 16 observations at 92% confidence; relative loss ≤ .08, target coverage ≥70%, and living count 60–160%.</dd>
+        </div>
+        <div>
+          <dt>02 · Stability</dt>
+          <dd>Retained pool states → target. 32 observations at 92% confidence; relative loss ≤ .06, target coverage ≥80%, and living count 70–145%.</dd>
+        </div>
+        <div>
+          <dt>03 · Regeneration</dt>
+          <dd>Target-anchored cuts → target. 96 damaged batches at 97% confidence with ≥90% strict passes; relative loss ≤ .04, target coverage ≥90%, living count 80–125%, and damage ramps 50–100%.</dd>
+        </div>
+      </dl>
+      <p class="explanation-footer">
+        The same local rule learned on the compact training grid runs
+        continuously on the larger live grid above.
+      </p>
+    </section>
+  </section>
+</main>
+
+<script type="module">
+  import { Engine, GrowingNeural } from "@cazala/automata";
+  import {
+    GrowingNeuralCaCurriculum,
+    GrowingNeuralCaTrainer,
+    measureGrowingNeuralCaState,
+  } from "@synaptic/backend-webgpu";
+
+  const TRAINING_SIZE = 24;
+  const INFERENCE_SIZE =
+    matchMedia("(max-width: 520px)").matches ? 32 : 48;
+  const INFERENCE_LOSS_SCALE =
+    (INFERENCE_SIZE * INFERENCE_SIZE) /
+    (TRAINING_SIZE * TRAINING_SIZE);
+  const CHANNELS = 16;
+  const HIDDEN = 128;
+  const MIN_ROLLOUT_STEPS = 64;
+  const MAX_ROLLOUT_STEPS = 96;
+  const STABILITY_STEPS = 16;
+  const HEALTH_CHECK_INTERVAL_MS = 1_200;
+  const POOL_VALUE_LIMIT = 256;
+  const INFERENCE_VALUE_LIMIT = 1_000;
+  const DAMAGE_RADIUS = 4;
+  const MAX_UPLOAD_BYTES = 12 * 1024 * 1024;
+  const TARGET_PRESETS = Object.freeze({
+    butterfly: {
+      label: "Butterfly",
+      url: "./assets/growing-ca/butterfly.svg",
+    },
+    mushroom: {
+      label: "Mushroom",
+      url: "./assets/growing-ca/mushroom.svg",
+    },
+    rainbow: {
+      label: "Rainbow",
+      url: "./assets/growing-ca/rainbow.svg",
+    },
+    robot: {
+      label: "Robot",
+      url: "./assets/growing-ca/robot.svg",
+    },
+  });
+  const targetCanvas = document.querySelector("#target");
+  const targetContext = targetCanvas.getContext("2d", { willReadFrequently: true });
+  const organismCanvas = document.querySelector("#organism");
+  const organismWrap = document.querySelector("#organism-wrap");
+  const inferenceMeta = document.querySelector("#inference-meta");
+  const status = document.querySelector("#status");
+  const phaseBadge = document.querySelector("#phase-badge");
+  const phaseSteps = [...document.querySelectorAll(".phase-step")].map(
+    (element) => ({
+      element,
+      state: element.querySelector(".phase-state"),
+      percent: element.querySelector(".phase-percent"),
+    }),
+  );
+  const targetMeta = document.querySelector("#target-meta");
+  const targetPreset = document.querySelector("#target-preset");
+  const targetUpload = document.querySelector("#target-upload");
+  const resetButton = document.querySelector("#reset");
+  const fields = {
+    iteration: document.querySelector("#iteration"),
+    loss: document.querySelector("#loss"),
+    rollout: document.querySelector("#rollout"),
+    duration: document.querySelector("#duration"),
+    damage: document.querySelector("#damage-count"),
+    resets: document.querySelector("#reset-count"),
+  };
+  inferenceMeta.textContent =
+    `${INFERENCE_SIZE} × ${INFERENCE_SIZE} live grid · ` +
+    "latest learned rule · click or drag to damage after regeneration";
+  organismCanvas.setAttribute(
+    "aria-label",
+    `${INFERENCE_SIZE} by ${INFERENCE_SIZE} growing neural ` +
+      "cellular automaton",
+  );
+
+  function targetFromCanvas() {
+    const pixels = targetContext.getImageData(
+      0,
+      0,
+      TRAINING_SIZE,
+      TRAINING_SIZE,
+    ).data;
+    const result = new Float32Array(
+      TRAINING_SIZE * TRAINING_SIZE * 4,
+    );
+    for (let pixel = 0; pixel < TRAINING_SIZE * TRAINING_SIZE; pixel++) {
+      const alpha = pixels[pixel * 4 + 3] / 255;
+      result[pixel * 4] = (pixels[pixel * 4] / 255) * alpha;
+      result[pixel * 4 + 1] = (pixels[pixel * 4 + 1] / 255) * alpha;
+      result[pixel * 4 + 2] = (pixels[pixel * 4 + 2] / 255) * alpha;
+      result[pixel * 4 + 3] = alpha;
+    }
+    return result;
+  }
+
+  function drawFlowerTarget() {
+    const context = targetContext;
+    context.clearRect(0, 0, TRAINING_SIZE, TRAINING_SIZE);
+    context.save();
+    context.translate(TRAINING_SIZE / 2, TRAINING_SIZE / 2 + 1);
+    for (let petal = 0; petal < 6; petal++) {
+      context.save();
+      context.rotate((Math.PI * 2 * petal) / 6);
+      const gradient = context.createLinearGradient(0, -7, 0, -1);
+      gradient.addColorStop(0, "#ff668c");
+      gradient.addColorStop(1, "#ffb34d");
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.ellipse(0, -4.2, 1.75, 3.25, 0, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
+    context.fillStyle = "#ffe46b";
+    context.beginPath();
+    context.arc(0, 0, 2.55, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = "#5c362c";
+    context.beginPath();
+    context.arc(0, 0, 1.05, 0, Math.PI * 2);
+    context.fill();
+    context.restore();
+    return targetFromCanvas();
+  }
+
+  function drawImageTarget(image, padding = 2) {
+    const width = image.naturalWidth || image.width;
+    const height = image.naturalHeight || image.height;
+    if (!(width > 0 && height > 0)) {
+      throw new Error("The selected image has no visible dimensions");
+    }
+    const available = TRAINING_SIZE - padding * 2;
+    const scale = Math.min(available / width, available / height);
+    const drawnWidth = Math.max(1, Math.round(width * scale));
+    const drawnHeight = Math.max(1, Math.round(height * scale));
+    const x = Math.round((TRAINING_SIZE - drawnWidth) / 2);
+    const y = Math.round((TRAINING_SIZE - drawnHeight) / 2);
+    targetContext.clearRect(0, 0, TRAINING_SIZE, TRAINING_SIZE);
+    targetContext.imageSmoothingEnabled = true;
+    targetContext.imageSmoothingQuality = "high";
+    targetContext.drawImage(image, x, y, drawnWidth, drawnHeight);
+    return targetFromCanvas();
+  }
+
+  function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.addEventListener("load", () => resolve(image), { once: true });
+      image.addEventListener(
+        "error",
+        () => reject(new Error("The selected image could not be decoded")),
+        { once: true },
+      );
+      image.src = url;
+    });
+  }
+
+  function countAliveTargetCells(nextTarget) {
+    let count = 0;
+    for (
+      let cell = 0;
+      cell < TRAINING_SIZE * TRAINING_SIZE;
+      cell++
+    ) {
+      if (nextTarget[cell * 4 + 3] > .1) count++;
+    }
+    return count;
+  }
+
+  function centerTargetForInference(nextTarget) {
+    const centered = new Float32Array(
+      INFERENCE_SIZE * INFERENCE_SIZE * 4,
+    );
+    const inset = (INFERENCE_SIZE - TRAINING_SIZE) / 2;
+    for (let y = 0; y < TRAINING_SIZE; y++) {
+      const sourceOffset = y * TRAINING_SIZE * 4;
+      const targetOffset =
+        ((y + inset) * INFERENCE_SIZE + inset) * 4;
+      centered.set(
+        nextTarget.subarray(
+          sourceOffset,
+          sourceOffset + TRAINING_SIZE * 4,
+        ),
+        targetOffset,
+      );
+    }
+    return centered;
+  }
+
+  let target = drawFlowerTarget();
+  let inferenceTarget = centerTargetForInference(target);
+  let curriculum = new GrowingNeuralCaCurriculum(target);
+  let targetName = "Flower";
+  let targetKey = "flower";
+  let targetAliveCells = 0;
+  let saturationCellLimit = 0;
+  let trainer;
+  let automaton;
+  let engine;
+  let training = true;
+  let disposed = false;
+  let pendingTarget;
+  let targetRequest = 0;
+  let damageEnabled = false;
+  let stopAutoResize = () => {};
+  let stopDamageInteraction = () => {};
+  let latestArtifact;
+  let damagedTotal = 0;
+  let inferenceResets = 0;
+  let completedPhaseCheckpoints = 0;
+  let lastHealthCheck = 0;
+  let healthCheckPending = false;
+  let healthGuardSuppressedUntil = 0;
+  let bestInferenceLoss = Number.POSITIVE_INFINITY;
+  let formedSinceReset = false;
+  let repairing = false;
+  let repairTargetLoss = Number.POSITIVE_INFINITY;
+  let repairMessageUntil = 0;
+
+  function updateTargetGeometry() {
+    inferenceTarget = centerTargetForInference(target);
+    targetAliveCells = countAliveTargetCells(target);
+    const cells = TRAINING_SIZE * TRAINING_SIZE;
+    saturationCellLimit = Math.min(
+      cells,
+      Math.max(
+        Math.floor(cells * .65),
+        Math.ceil(targetAliveCells * 1.35),
+        targetAliveCells + 24,
+      ),
+    );
+  }
+
+  function updateDamageAvailability(snapshot = curriculum.snapshot()) {
+    damageEnabled =
+      pendingTarget === undefined &&
+      snapshot.key === "regeneration";
+    organismWrap.dataset.damageEnabled = String(damageEnabled);
+    organismCanvas.classList.toggle("damage-enabled", damageEnabled);
+  }
+
+  function updatePhaseIndicator(snapshot = curriculum.snapshot()) {
+    const percentage = Math.round(snapshot.progress * 100);
+    phaseBadge.textContent =
+      `Phase ${snapshot.index + 1} · ${snapshot.label} · ${percentage}%`;
+    for (let index = 0; index < phaseSteps.length; index++) {
+      const step = phaseSteps[index];
+      const phase = snapshot.phases[index];
+      if (phase === undefined) continue;
+      step.element.dataset.state = phase.state;
+      step.element.style.setProperty(
+        "--phase-progress",
+        String(phase.progress),
+      );
+      step.percent.textContent = `${Math.round(phase.progress * 100)}%`;
+      step.state.textContent =
+        phase.state === "active" && !training
+          ? "paused"
+          : phase.stateLabel;
+    }
+    updateDamageAvailability(snapshot);
+  }
+
+  function resetTrainingMetrics() {
+    damagedTotal = 0;
+    inferenceResets = 0;
+    completedPhaseCheckpoints = 0;
+    lastHealthCheck = 0;
+    healthCheckPending = false;
+    healthGuardSuppressedUntil = 0;
+    bestInferenceLoss = Number.POSITIVE_INFINITY;
+    formedSinceReset = false;
+    repairing = false;
+    repairTargetLoss = Number.POSITIVE_INFINITY;
+    repairMessageUntil = 0;
+    fields.iteration.textContent = "0";
+    fields.loss.textContent = "—";
+    fields.rollout.textContent = "—";
+    fields.duration.textContent = "—";
+    fields.damage.textContent = "0";
+    fields.resets.textContent = "0";
+    fields.resets.removeAttribute("title");
+  }
+
+  function queueTarget(nextTarget, name, key) {
+    const aliveCells = countAliveTargetCells(nextTarget);
+    if (aliveCells < 4) {
+      throw new Error("Choose an image with at least a few visible pixels");
+    }
+    pendingTarget = { target: nextTarget, name, key };
+    targetName = name;
+    targetKey = key;
+    targetMeta.textContent =
+      `${name} · ${TRAINING_SIZE} × ${TRAINING_SIZE} pixel target`;
+    targetCanvas.setAttribute(
+      "aria-label",
+      `${name} pixel-art training target`,
+    );
+    updateDamageAvailability();
+    status.textContent = `preparing ${name.toLowerCase()} target…`;
+    delete status.dataset.error;
+  }
+
+  function resetInference(message, automatic = false) {
+    engine.reset({ mode: "center" });
+    bestInferenceLoss = Number.POSITIVE_INFINITY;
+    formedSinceReset = false;
+    repairing = false;
+    repairMessageUntil = 0;
+    healthGuardSuppressedUntil = performance.now() + 2_000;
+    if (automatic) {
+      inferenceResets++;
+      fields.resets.textContent = inferenceResets.toLocaleString();
+      fields.resets.title = message;
+    }
+    status.textContent = message;
+  }
+
+  async function checkInferenceHealth() {
+    const now = performance.now();
+    if (
+      healthCheckPending ||
+      now - lastHealthCheck < HEALTH_CHECK_INTERVAL_MS
+    ) {
+      return false;
+    }
+    healthCheckPending = true;
+    lastHealthCheck = now;
+    try {
+      // This bounded responsive-grid readback is rate-limited well outside the
+      // animation loop. Normalize its padded loss back to the 24×24 training
+      // basis so existing stability and regeneration thresholds keep meaning.
+      const cells = await engine.getCells();
+      const measuredHealth = measureGrowingNeuralCaState(
+        cells,
+        inferenceTarget,
+        CHANNELS,
+        latestArtifact.life.threshold,
+      );
+      const health = {
+        ...measuredHealth,
+        loss: measuredHealth.loss * INFERENCE_LOSS_SCALE,
+      };
+      bestInferenceLoss = Math.min(bestInferenceLoss, health.loss);
+      if (
+        repairing &&
+        health.loss <= repairTargetLoss &&
+        health.aliveCells > targetAliveCells * .4 &&
+        health.aliveCells < targetAliveCells * 1.8
+      ) {
+        repairing = false;
+        repairMessageUntil = performance.now() + 4_000;
+        status.textContent = "regeneration successful · organism repaired";
+      }
+      if (
+        health.loss < .025 &&
+        health.aliveCells > targetAliveCells * .4 &&
+        health.aliveCells < targetAliveCells * 1.8
+      ) {
+        formedSinceReset = true;
+      }
+
+      let reason = "";
+      if (health.nonFiniteValues > 0) {
+        reason = "non-finite cell state";
+      } else if (health.maximumAbsoluteValue > INFERENCE_VALUE_LIMIT) {
+        reason = "hidden state exceeded its safe range";
+      } else if (health.aliveCells > saturationCellLimit) {
+        reason = "growth saturated the grid";
+      } else if (
+        now >= healthGuardSuppressedUntil &&
+        formedSinceReset &&
+        health.aliveCells < Math.max(1, targetAliveCells * .12)
+      ) {
+        reason = "the formed organism collapsed";
+      } else if (
+        now >= healthGuardSuppressedUntil &&
+        formedSinceReset &&
+        health.loss > Math.max(.04, bestInferenceLoss * 5)
+      ) {
+        reason = "the formed organism drifted away";
+      }
+      if (reason) {
+        resetInference(`auto-reset · ${reason}`, true);
+        return true;
+      }
+      return false;
+    } finally {
+      healthCheckPending = false;
+    }
+  }
+
+  async function syncArtifact() {
+    latestArtifact = await trainer.artifact();
+    automaton.setWeights({
+      channels: latestArtifact.channels,
+      hidden: latestArtifact.hidden,
+      ...latestArtifact.weights,
+    });
+  }
+
+  function createTrainer() {
+    return GrowingNeuralCaTrainer.create({
+      size: TRAINING_SIZE,
+      channels: CHANNELS,
+      hidden: HIDDEN,
+      batchSize: 8,
+      minRolloutSteps: MIN_ROLLOUT_STEPS,
+      rolloutSteps: MAX_ROLLOUT_STEPS,
+      stabilitySteps: STABILITY_STEPS,
+      learningRate: .002,
+      damageProbability: 0,
+      poolSize: 512,
+      poolValueLimit: POOL_VALUE_LIMIT,
+      seed: 0x6772_6f77,
+    });
+  }
+
+  async function restartForTarget() {
+    const next = pendingTarget;
+    if (!next) return;
+    pendingTarget = undefined;
+    targetPreset.disabled = true;
+    targetUpload.disabled = true;
+    status.textContent = `restarting training for ${next.name.toLowerCase()}…`;
+    trainer.dispose();
+    target = next.target;
+    targetName = next.name;
+    targetKey = next.key;
+    updateTargetGeometry();
+    curriculum = new GrowingNeuralCaCurriculum(target);
+    resetTrainingMetrics();
+    trainer = await createTrainer();
+    latestArtifact = await trainer.artifact();
+    automaton.setWeights({
+      channels: latestArtifact.channels,
+      hidden: latestArtifact.hidden,
+      ...latestArtifact.weights,
+    });
+    engine.reset({ mode: "center" });
+    training = true;
+    targetPreset.value = targetKey;
+    targetPreset.disabled = false;
+    targetUpload.disabled = false;
+    updatePhaseIndicator();
+    status.textContent =
+      `training ${targetName.toLowerCase()} growth from one cell…`;
+  }
+
+  function beginRepair() {
+    if (!damageEnabled) return false;
+    if (!repairing) {
+      repairTargetLoss = Number.isFinite(bestInferenceLoss)
+        ? Math.max(.002, bestInferenceLoss * 2.5)
+        : .01;
+    }
+    repairing = true;
+    repairMessageUntil = 0;
+    healthGuardSuppressedUntil = performance.now() + 15_000;
+    status.textContent = "organism damaged · watching repair";
+    return true;
+  }
+
+  function screenToWorld(event) {
+    const rect = organismCanvas.getBoundingClientRect();
+    const size = engine.getSize();
+    const camera = engine.getCamera();
+    const zoom = engine.getZoom();
+    const screenX =
+      (event.clientX - rect.left) * (size.width / rect.width);
+    const screenY =
+      (event.clientY - rect.top) * (size.height / rect.height);
+    return {
+      x: camera.x + (screenX - size.width / 2) / zoom,
+      y: camera.y + (screenY - size.height / 2) / zoom,
+    };
+  }
+
+  function bindDamageInteraction() {
+    let activePointer = null;
+    let previous;
+
+    const stamp = (point) => {
+      engine.fillCircle(point.x, point.y, DAMAGE_RADIUS, []);
+      healthGuardSuppressedUntil = performance.now() + 15_000;
+    };
+
+    const onPointerDown = (event) => {
+      if (!damageEnabled || event.button !== 0) return;
+      event.preventDefault();
+      if (!beginRepair()) return;
+      activePointer = event.pointerId;
+      previous = screenToWorld(event);
+      try {
+        organismCanvas.setPointerCapture(event.pointerId);
+      } catch {
+        // Synthetic pointers may not support capture; movement still works.
+      }
+      stamp(previous);
+    };
+
+    const onPointerMove = (event) => {
+      if (event.pointerId !== activePointer || previous === undefined) return;
+      event.preventDefault();
+      const next = screenToWorld(event);
+      const distance = Math.hypot(
+        next.x - previous.x,
+        next.y - previous.y,
+      );
+      const steps = Math.max(
+        1,
+        Math.ceil(distance / (DAMAGE_RADIUS * .55)),
+      );
+      for (let step = 1; step <= steps; step++) {
+        const progress = step / steps;
+        stamp({
+          x: previous.x + (next.x - previous.x) * progress,
+          y: previous.y + (next.y - previous.y) * progress,
+        });
+      }
+      previous = next;
+    };
+
+    const onPointerUp = (event) => {
+      if (event.pointerId !== activePointer) return;
+      activePointer = null;
+      previous = undefined;
+      if (organismCanvas.hasPointerCapture(event.pointerId)) {
+        organismCanvas.releasePointerCapture(event.pointerId);
+      }
+    };
+
+    organismCanvas.addEventListener("pointerdown", onPointerDown);
+    organismCanvas.addEventListener("pointermove", onPointerMove);
+    organismCanvas.addEventListener("pointerup", onPointerUp);
+    organismCanvas.addEventListener("pointercancel", onPointerUp);
+    return () => {
+      organismCanvas.removeEventListener("pointerdown", onPointerDown);
+      organismCanvas.removeEventListener("pointermove", onPointerMove);
+      organismCanvas.removeEventListener("pointerup", onPointerUp);
+      organismCanvas.removeEventListener("pointercancel", onPointerUp);
+    };
+  }
+
+  async function initialize() {
+    updateTargetGeometry();
+    resetTrainingMetrics();
+    trainer = await createTrainer();
+    latestArtifact = await trainer.artifact();
+    automaton = GrowingNeural.fromArtifact(latestArtifact);
+    engine = new Engine({
+      canvas: organismCanvas,
+      automaton,
+      grid: {
+        width: INFERENCE_SIZE,
+        height: INFERENCE_SIZE,
+        wrap: false,
+        maxCells: INFERENCE_SIZE,
+      },
+      stepsPerSecond: 60,
+      render: { colorBg: { r: 1, g: 1, b: 1, a: 1 } },
+      onError(error) {
+        status.textContent = error.message;
+        status.dataset.error = "true";
+      },
+    });
+    await engine.initialize();
+    stopAutoResize = engine.autoResize();
+    engine.coverGrid();
+    engine.reset({ mode: "center" });
+    stopDamageInteraction = bindDamageInteraction();
+    engine.play();
+    resetButton.disabled = false;
+    updatePhaseIndicator();
+    status.textContent = "training flower growth from one cell…";
+  }
+
+  async function trainLoop() {
+    if (disposed) return;
+    if (pendingTarget) {
+      try {
+        await restartForTarget();
+      } catch (error) {
+        training = false;
+        targetPreset.disabled = false;
+        targetUpload.disabled = false;
+        status.textContent =
+          error instanceof Error ? error.message : String(error);
+        status.dataset.error = "true";
+      }
+      requestAnimationFrame(trainLoop);
+      return;
+    }
+    if (!training) {
+      try {
+        await checkInferenceHealth();
+      } catch (error) {
+        status.textContent = error instanceof Error ? error.message : String(error);
+        status.dataset.error = "true";
+      }
+      requestAnimationFrame(trainLoop);
+      return;
+    }
+    try {
+      const metrics = await trainer.trainStep(
+        target,
+        curriculum.trainingOptions(),
+      );
+      if (pendingTarget) {
+        requestAnimationFrame(trainLoop);
+        return;
+      }
+      damagedTotal += metrics.damagedSamples;
+      fields.iteration.textContent = metrics.iteration.toLocaleString();
+      fields.loss.textContent = metrics.loss.toExponential(3);
+      fields.rollout.textContent = `${metrics.rolloutSteps} gen`;
+      fields.duration.textContent = `${metrics.durationMs.toFixed(0)} ms`;
+      fields.damage.textContent = damagedTotal.toLocaleString();
+      const curriculumState = curriculum.update(metrics);
+      const recovery = curriculum.takeRecoveryRequest();
+      if (recovery) {
+        trainer.restartLearning();
+        status.textContent =
+          `${recovery.label} plateau · refreshed states and optimizer`;
+      }
+      updatePhaseIndicator(curriculumState);
+      let autoReset = false;
+      if (metrics.iteration <= 8 || metrics.iteration % 8 === 0) {
+        await syncArtifact();
+        autoReset = await checkInferenceHealth();
+      }
+      const phaseCheckpoint = curriculumState.mastered
+        ? curriculumState.phases.length
+        : curriculumState.index;
+      const checkpointReached =
+        phaseCheckpoint > completedPhaseCheckpoints;
+      if (checkpointReached) {
+        completedPhaseCheckpoints = phaseCheckpoint;
+        if (!autoReset) {
+          const completedPhase =
+            curriculumState.phases[phaseCheckpoint - 1];
+          resetInference(
+            `${completedPhase.label} learned · organism reset at checkpoint`,
+            true,
+          );
+        }
+      }
+      if (
+        !autoReset &&
+        !recovery &&
+        !checkpointReached &&
+        training &&
+        !repairing &&
+        performance.now() >= repairMessageUntil
+      ) {
+        const confidence = Math.round(curriculumState.progress * 100);
+        status.textContent =
+          metrics.iteration < 8
+            ? "warming up final layer…"
+            : curriculumState.key === "growth"
+            ? `measuring seed growth · ${confidence}% confidence`
+            : curriculumState.key === "stability"
+            ? `measuring retained-state stability · ${confidence}% confidence`
+            : curriculumState.mastered
+            ? "regeneration learned · continuing maintenance training…"
+            : `measuring damage repair · ${confidence}% confidence`;
+      }
+    } catch (error) {
+      training = false;
+      updatePhaseIndicator();
+      status.textContent = error instanceof Error ? error.message : String(error);
+      status.dataset.error = "true";
+    }
+    requestAnimationFrame(trainLoop);
+  }
+
+  resetButton.addEventListener("click", () => {
+    if (!engine) return;
+    resetInference("organism reset to one cell");
+  });
+
+  targetPreset.addEventListener("change", async () => {
+    const key = targetPreset.value;
+    if (key === "upload") return;
+    const request = ++targetRequest;
+    try {
+      status.textContent = `loading ${key} target…`;
+      let nextTarget;
+      let name;
+      if (key === "flower") {
+        nextTarget = drawFlowerTarget();
+        name = "Flower";
+      } else {
+        const preset = TARGET_PRESETS[key];
+        if (!preset) throw new Error(`Unknown target: ${key}`);
+        const image = await loadImage(preset.url);
+        if (request !== targetRequest) return;
+        nextTarget = drawImageTarget(image);
+        name = preset.label;
+      }
+      if (request !== targetRequest) return;
+      queueTarget(nextTarget, name, key);
+    } catch (error) {
+      targetPreset.value = targetKey;
+      status.textContent =
+        error instanceof Error ? error.message : String(error);
+      status.dataset.error = "true";
+    }
+  });
+
+  targetUpload.addEventListener("change", async () => {
+    const file = targetUpload.files?.[0];
+    targetUpload.value = "";
+    if (!file) return;
+    const request = ++targetRequest;
+    let objectUrl;
+    try {
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Choose a PNG, JPEG, WebP, GIF, or SVG image");
+      }
+      if (file.size > MAX_UPLOAD_BYTES) {
+        throw new Error("Choose an image smaller than 12 MB");
+      }
+      status.textContent =
+        `converting ${file.name} to ` +
+        `${TRAINING_SIZE} × ${TRAINING_SIZE} pixels…`;
+      objectUrl = URL.createObjectURL(file);
+      const image = await loadImage(objectUrl);
+      if (request !== targetRequest) return;
+      const nextTarget = drawImageTarget(image, 1);
+      const name = file.name.replace(/\.[^.]+$/, "") || "Uploaded image";
+      targetPreset.value = "upload";
+      queueTarget(nextTarget, name, "upload");
+    } catch (error) {
+      targetPreset.value = targetKey;
+      status.textContent =
+        error instanceof Error ? error.message : String(error);
+      status.dataset.error = "true";
+    } finally {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    }
+  });
+
+  addEventListener("beforeunload", () => {
+    disposed = true;
+    stopDamageInteraction();
+    stopAutoResize();
+    engine?.destroy();
+    trainer?.dispose();
+  }, { once: true });
+
+  try {
+    await initialize();
+    requestAnimationFrame(trainLoop);
+  } catch (error) {
+    status.textContent = error instanceof Error ? error.message : String(error);
+    status.dataset.error = "true";
+  }
+</script>
+</body>
+</html>

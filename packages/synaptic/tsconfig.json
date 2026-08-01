@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "../../.cache/typescript/synaptic.tsbuildinfo"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"],
+  "references": [
+    { "path": "../core" },
+    { "path": "../layers" },
+    { "path": "../backend-paper" },
+    { "path": "../backend-cpu" },
+    { "path": "../backend-wasm" },
+    { "path": "../backend-webgpu" },
+    { "path": "../compat-v1" }
+  ]
+}

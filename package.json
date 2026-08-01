@@ -1,62 +1,39 @@
 {
-  "name": "synaptic",
-  "version": "1.1.4",
-  "description": "architecture-free neural network library",
-  "main": "./dist/synaptic",
+  "name": "synaptic-v2-workspace",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "description": "Architecture-free neural networks with portable CPU, WebAssembly, and WebGPU backends",
+  "type": "module",
+  "packageManager": "npm@10.9.2",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "test": "npm run test:mocha:src",
-    "test:dist": "npm run build && npm run test:mocha:dist && npm run test:karma:browsers",
-    "test:mocha:src": "mocha test/_inject-src test",
-    "test:mocha:dist": "mocha test/_inject-dist test",
-    "test:karma:browsers": "karma start --single-run --browsers Chrome,Firefox,SafariPrivate",
-    "test:karma:chrome": "karma start --single-run --browsers Chrome",
-    "test:karma:phantomjs": "karma start --single-run --browsers PhantomJS",
-    "test:travis": "npm run test:mocha:src && npm run build && npm run test:mocha:dist",
-    "build": "webpack --config webpack.config.js"
+    "build": "npm run build:wasm && tsc -b",
+    "build:pages": "npm run build && node scripts/build-webgpu-pages.mjs",
+    "build:wasm": "node packages/backend-wasm/scripts/build.mjs",
+    "benchmark:wasm": "node packages/backend-wasm/bench/compare.mjs",
+    "clean": "node scripts/clean.mjs",
+    "test": "vitest run --reporter=verbose",
+    "test:coverage": "vitest run --coverage",
+    "test:webgpu": "node scripts/serve-webgpu-tests.mjs",
+    "test:webgpu:pages": "npm run build:pages && wrangler pages dev .cloudflare/pages",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b --pretty false && npm run typecheck:test",
+    "typecheck:test": "tsc -p tsconfig.test.json --pretty false",
+    "check": "npm run typecheck && npm test"
   },
-  "prepush": [
-    "test",
-    "build"
-  ],
-  "devDependencies": {
-    "babel-core": "^6.26.0",
-    "babel-loader": "^7.1.2",
-    "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-env": "^1.6.0",
-    "babel-preset-es2015": "^6.24.1",
-    "babel-register": "^6.26.0",
-    "chai": "^3.5.0",
-    "chai-stats": "^0.3.0",
-    "karma": "^1.1.2",
-    "karma-chrome-launcher": "^1.0.1",
-    "karma-firefox-launcher": "^1.0.0",
-    "karma-mocha": "^1.1.1",
-    "karma-phantomjs-launcher": "^1.0.1",
-    "karma-safari-launcher": "^1.0.0",
-    "karma-webpack": "^2.0.4",
-    "mocha": "^2.2.4",
-    "pre-push": "^0.1.1",
-    "webpack": "^3.5.5"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/cazala/synaptic.git"
-  },
-  "keywords": [
-    "neural network",
-    "machine learning",
-    "long short term memory",
-    "perceptron",
-    "architecture free"
-  ],
-  "author": "Juan Cazala <juancazala@gmail.com> (http://juancazala.com/)",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/cazala/synaptic/issues"
-  },
-  "homepage": "http://caza.la/synaptic",
   "engines": {
-    "node": ">=4"
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@cazala/automata": "0.3.0",
+    "@vitest/coverage-v8": "4.1.10",
+    "@webgpu/types": "0.1.71",
+    "assemblyscript": "0.28.20",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10",
+    "wrangler": "4.118.0"
   }
 }

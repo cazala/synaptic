@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synaptic WebGPU — XOR</title>
+<link rel="stylesheet" href="./demo.css">
+<script type="importmap">
+{
+  "imports": {
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/layers": "/packages/layers/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<style>
+  .network {
+    display: grid;
+    grid-template-columns: auto 1fr auto 1fr auto;
+    gap: clamp(.8rem, 3vw, 2rem);
+    align-items: center;
+    padding: clamp(1.2rem, 4vw, 2.5rem);
+  }
+  .layer {
+    display: grid;
+    justify-items: center;
+    gap: .65rem;
+  }
+  .layer small {
+    color: #718198;
+    font: 650 .6rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .neurons { display: flex; flex-wrap: wrap; justify-content: center; gap: .55rem; }
+  .neuron {
+    width: 2.5rem;
+    aspect-ratio: 1;
+    border: 1px solid #6583a6;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #45cfff, #1a476a 65%, #0a121d);
+    box-shadow: 0 0 1.8rem #31b9ff38;
+  }
+  .layer.hidden .neuron {
+    background: radial-gradient(circle at 35% 30%, #ff91b8, #722749 65%, #170b13);
+    border-color: #b95b82;
+    box-shadow: 0 0 1.8rem #ff5f9d30;
+  }
+  .layer.output .neuron {
+    background: radial-gradient(circle at 35% 30%, #ffe07b, #8b5d14 65%, #171006);
+    border-color: #c99b43;
+  }
+  .connections {
+    height: 1px;
+    background: linear-gradient(90deg, #3a6b8a, #a94d78);
+    box-shadow: 0 -.5rem 0 #40546b, 0 .5rem 0 #40546b;
+  }
+  .truth-table {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .truth-card { padding: 1.2rem; }
+  .bits { display: flex; gap: .55rem; margin-bottom: 1.2rem; }
+  .bit {
+    display: grid;
+    width: 2.25rem;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid #41536a;
+    border-radius: 50%;
+    color: #8c9aab;
+    font: 700 .8rem ui-monospace, monospace;
+  }
+  .bit.on {
+    border-color: #ff859f;
+    background: #ff6b8d;
+    color: #280810;
+  }
+  .prediction {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .5rem;
+  }
+  .prediction strong {
+    font: 700 1.7rem ui-monospace, monospace;
+  }
+  .prediction span {
+    color: #77869a;
+    font: 650 .62rem ui-monospace, monospace;
+    text-transform: uppercase;
+  }
+  .meter {
+    height: .42rem;
+    margin-top: .7rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #070a0f;
+  }
+  .meter span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #42d6ff, #ff6b9d);
+    transition: width .5s ease;
+  }
+  @media (max-width: 760px) {
+    .truth-table { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 520px) {
+    .network { grid-template-columns: 1fr; }
+    .connections { width: 1px; height: 2rem; margin: auto; }
+  }
+</style>
+<main>
+  <nav class="demo-nav" aria-label="WebGPU learning demos">
+    <a href="./xor.html" aria-current="page">XOR</a>
+    <a href="./mnist.html">Draw a digit</a>
+    <a href="./mnist-automata.html">MNIST → Neural CA</a>
+    <a href="./growing-neural-ca.html">Growing NCA</a>
+    <a href="./dsr.html">Sequence recall</a>
+    <a href="./learn-to-paint.html">Learn to paint</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Learn XOR.</h1>
+      <p>
+        The smallest nonlinear classic: two inputs, three hidden neurons, and
+        one output. WebGPU performs online training until the four corners of
+        the truth table separate cleanly.
+      </p>
+    </div>
+    <span class="badge" id="backend">initializing WebGPU</span>
+  </header>
+
+  <section class="network panel" aria-label="2 to 3 to 1 neural network">
+    <div class="layer">
+      <small>2 inputs</small>
+      <div class="neurons"><i class="neuron"></i><i class="neuron"></i></div>
+    </div>
+    <i class="connections"></i>
+    <div class="layer hidden">
+      <small>3 logistic</small>
+      <div class="neurons">
+        <i class="neuron"></i><i class="neuron"></i><i class="neuron"></i>
+      </div>
+    </div>
+    <i class="connections"></i>
+    <div class="layer output">
+      <small>1 output</small>
+      <div class="neurons"><i class="neuron"></i></div>
+    </div>
+  </section>
+
+  <section class="truth-table" id="truth-table" aria-label="XOR predictions"></section>
+
+  <section class="controls panel">
+    <div class="metrics">
+      <div class="metric"><small>Epoch</small><output id="epoch">0 / 2500</output></div>
+      <div class="metric"><small>Accuracy</small><output id="accuracy">—</output></div>
+      <div class="metric"><small>Train time</small><output id="time">—</output></div>
+      <div class="metric"><small>Backend</small><output id="metric-backend">—</output></div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="train">Train again</button>
+    </div>
+  </section>
+  <div class="progress" aria-hidden="true"><span id="progress"></span></div>
+  <p class="status" id="status">Compiling the XOR model…</p>
+</main>
+
+<script type="module">
+  import { trainXorDemo, XOR_SAMPLES } from "./demo-models.js";
+
+  const table = document.querySelector("#truth-table");
+  const backendBadge = document.querySelector("#backend");
+  const backendMetric = document.querySelector("#metric-backend");
+  const epochOutput = document.querySelector("#epoch");
+  const accuracyOutput = document.querySelector("#accuracy");
+  const timeOutput = document.querySelector("#time");
+  const progress = document.querySelector("#progress");
+  const status = document.querySelector("#status");
+  const trainButton = document.querySelector("#train");
+
+  table.innerHTML = XOR_SAMPLES.map(({ input, target }, index) => `
+    <article class="truth-card panel" data-sample="${index}">
+      <div class="bits">
+        ${input.map((value) =>
+          `<i class="bit ${value ? "on" : ""}">${value}</i>`).join("")}
+      </div>
+      <div class="prediction">
+        <span>Expected ${target[0]}</span>
+        <strong>—</strong>
+      </div>
+      <div class="meter"><span></span></div>
+    </article>
+  `).join("");
+
+  const run = async () => {
+    trainButton.disabled = true;
+    status.classList.remove("error");
+    progress.style.width = "0";
+    accuracyOutput.value = "—";
+    timeOutput.value = "—";
+    try {
+      const result = await trainXorDemo((completed, total) => {
+        epochOutput.value = `${completed} / ${total}`;
+        progress.style.width = `${completed / total * 100}%`;
+      });
+      backendBadge.textContent = result.backend;
+      backendMetric.value = result.backend;
+      let correct = 0;
+      result.outputs.forEach((value, index) => {
+        const expected = XOR_SAMPLES[index].target[0];
+        correct += Math.round(value) === expected ? 1 : 0;
+        const card = table.querySelector(`[data-sample="${index}"]`);
+        card.querySelector("strong").textContent = value.toFixed(4);
+        card.querySelector(".meter span").style.width = `${value * 100}%`;
+      });
+      const accuracy = correct / XOR_SAMPLES.length;
+      accuracyOutput.value = `${Math.round(accuracy * 100)}%`;
+      timeOutput.value = `${result.durationMs} ms`;
+      status.textContent =
+        accuracy === 1
+          ? "Solved: all four inputs land on the correct side of 0.5."
+          : "The run did not converge. Train again to retry.";
+      document.body.dataset.pass = String(accuracy === 1);
+    } catch (error) {
+      backendBadge.textContent = "unavailable";
+      status.classList.add("error");
+      status.textContent = error instanceof Error ? error.message : String(error);
+      document.body.dataset.pass = "false";
+    } finally {
+      trainButton.disabled = false;
+    }
+  };
+
+  trainButton.addEventListener("click", () => void run());
+  await run();
+</script>
+</html>

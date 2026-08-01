@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Synaptic WebGPU — learn to paint</title>
+<link rel="stylesheet" href="./demo.css">
+<script type="importmap">
+{
+  "imports": {
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/layers": "/packages/layers/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<style>
+  .canvases {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+  figure {
+    position: relative;
+    margin: 0;
+    overflow: hidden;
+  }
+  canvas.painting {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    image-rendering: auto;
+  }
+  figcaption {
+    position: absolute;
+    top: .8rem;
+    left: .8rem;
+    padding: .45rem .65rem;
+    border: 1px solid #ffffff35;
+    border-radius: .6rem;
+    background: #080b12b8;
+    backdrop-filter: blur(12px);
+    font: 650 .68rem ui-monospace, monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .source {
+    color: #a9cfff;
+    text-underline-offset: .18em;
+  }
+  @media (max-width: 640px) {
+    .canvases { grid-template-columns: 1fr; }
+  }
+</style>
+<main>
+  <nav class="demo-nav" aria-label="WebGPU learning demos">
+    <a href="./xor.html">XOR</a>
+    <a href="./mnist.html">Draw a digit</a>
+    <a href="./mnist-automata.html">MNIST → Neural CA</a>
+    <a href="./growing-neural-ca.html">Growing NCA</a>
+    <a href="./dsr.html">Sequence recall</a>
+    <a href="./learn-to-paint.html" aria-current="page">Learn to paint</a>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Learn to paint.</h1>
+      <p>
+        A 180→48→3 neural field receives a Fourier encoding derived only from
+        normalized <em>x</em> and <em>y</em> coordinates. WebGPU continuously
+        trains it at its native 400×400 resolution to reproduce
+        <a class="source" href="./portrait.jpg" target="_blank">this RGB
+          portrait</a>.
+      </p>
+    </div>
+    <span class="badge" id="backend">loading target</span>
+  </header>
+
+  <section class="canvases" aria-label="Neural painting comparison">
+    <figure class="panel">
+      <canvas class="painting" id="target" width="400" height="400"></canvas>
+      <figcaption>Target portrait</figcaption>
+    </figure>
+    <figure class="panel">
+      <canvas class="painting" id="learned" width="400" height="400"></canvas>
+      <figcaption>Network output</figcaption>
+    </figure>
+  </section>
+
+  <section class="controls panel">
+    <div class="metrics">
+      <div class="metric">
+        <small>Epoch</small>
+        <output id="epoch">0</output>
+      </div>
+      <div class="metric">
+        <small>Sampled error</small>
+        <output id="loss">—</output>
+      </div>
+      <div class="metric">
+        <small>Last epoch</small>
+        <output id="time">—</output>
+      </div>
+      <div class="metric">
+        <small>GPU submits</small>
+        <output id="submits">0</output>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="play" aria-pressed="true">Pause</button>
+    </div>
+  </section>
+  <p class="status" id="status">
+    Loading the portrait and compiling the WebGPU model…
+  </p>
+</main>
+
+<script type="module">
+  import { WebGpuBackend } from "@synaptic/backend-webgpu";
+  import { compilePlan, createSnapshot } from "@synaptic/core";
+  import { dense, input, sequential } from "@synaptic/layers";
+
+  const AVATAR_URL = "./portrait.jpg";
+  const IMAGE_SIZE = 400;
+  const PIXELS = IMAGE_SIZE * IMAGE_SIZE;
+  const TRAINING_BATCH_SIZE = 4_096;
+  const PREVIEW_SAMPLE_SIZE = 90;
+  const PREVIEW_SAMPLES = PREVIEW_SAMPLE_SIZE * PREVIEW_SAMPLE_SIZE;
+  const TRAINING_STRIDE = 7_919;
+  const FREQUENCIES = [];
+  for (let frequencyY = 0; frequencyY <= 6; frequencyY += 1) {
+    for (let frequencyX = -6; frequencyX <= 6; frequencyX += 1) {
+      if (frequencyX !== 0 || frequencyY !== 0) {
+        FREQUENCIES.push([frequencyX, frequencyY]);
+      }
+    }
+  }
+  const INPUT_SIZE = FREQUENCIES.length * 2;
+  const TARGET_CANVAS = document.querySelector("#target");
+  const LEARNED_CANVAS = document.querySelector("#learned");
+  const backendOutput = document.querySelector("#backend");
+  const epochOutput = document.querySelector("#epoch");
+  const lossOutput = document.querySelector("#loss");
+  const timeOutput = document.querySelector("#time");
+  const submitsOutput = document.querySelector("#submits");
+  const status = document.querySelector("#status");
+  const playButton = document.querySelector("#play");
+  const learnedContext = LEARNED_CANVAS.getContext(
+    "2d",
+    { willReadFrequently: true },
+  );
+
+  let session;
+  let targetPixels;
+  let trainingCursor = 0;
+  let epoch = 0;
+  let submissions = 0;
+  let playing = true;
+  let running = false;
+  let resumeWhenVisible = false;
+
+  const clamp = (value) => Math.max(0, Math.min(1, value));
+
+  const encodePosition = (x, y) => FREQUENCIES.flatMap(
+    ([frequencyX, frequencyY]) => {
+      const phase = Math.PI * (frequencyX * x + frequencyY * y);
+      return [Math.sin(phase), Math.cos(phase)];
+    },
+  );
+
+  const inputForPixel = (pixel) => {
+    const x = pixel % IMAGE_SIZE;
+    const y = Math.floor(pixel / IMAGE_SIZE);
+    return encodePosition(
+      x / (IMAGE_SIZE - 1) * 2 - 1,
+      y / (IMAGE_SIZE - 1) * 2 - 1,
+    );
+  };
+
+  const sampleForPixel = (pixel) => {
+    const offset = pixel * 4;
+    return {
+      input: inputForPixel(pixel),
+      target: [
+        (targetPixels[offset] ?? 0) / 255,
+        (targetPixels[offset + 1] ?? 0) / 255,
+        (targetPixels[offset + 2] ?? 0) / 255,
+      ],
+    };
+  };
+
+  const loadTarget = async () => {
+    const response = await fetch(AVATAR_URL);
+    if (!response.ok) {
+      throw new Error(`Unable to load target portrait (${response.status})`);
+    }
+    const bitmap = await createImageBitmap(await response.blob());
+    const crop = Math.min(bitmap.width, bitmap.height);
+    const sourceX = (bitmap.width - crop) / 2;
+    const sourceY = (bitmap.height - crop) / 2;
+    const context = TARGET_CANVAS.getContext("2d", { willReadFrequently: true });
+    context.drawImage(
+      bitmap,
+      sourceX,
+      sourceY,
+      crop,
+      crop,
+      0,
+      0,
+      IMAGE_SIZE,
+      IMAGE_SIZE,
+    );
+    bitmap.close();
+    targetPixels = context.getImageData(
+      0,
+      0,
+      IMAGE_SIZE,
+      IMAGE_SIZE,
+    ).data;
+  };
+
+  const createSession = async () => {
+    const definition = sequential(
+      input({ size: INPUT_SIZE }),
+      dense({ units: 48, activation: "tanh", label: "paint.hidden" }),
+      dense({ units: 3, activation: "logistic", label: "paint.rgb" }),
+    );
+    return new WebGpuBackend({ fallbackBackends: [] }).compile(
+      compilePlan(definition),
+      createSnapshot(definition, 0x7061_696e),
+      { training: true },
+    );
+  };
+
+  const renderNetworkPreview = async () => {
+    const pixels = [];
+    for (let y = 0; y < PREVIEW_SAMPLE_SIZE; y += 1) {
+      for (let x = 0; x < PREVIEW_SAMPLE_SIZE; x += 1) {
+        const sourceX = Math.round(
+          x / (PREVIEW_SAMPLE_SIZE - 1) * (IMAGE_SIZE - 1),
+        );
+        const sourceY = Math.round(
+          y / (PREVIEW_SAMPLE_SIZE - 1) * (IMAGE_SIZE - 1),
+        );
+        pixels.push(sourceY * IMAGE_SIZE + sourceX);
+      }
+    }
+    const outputs = await session.forwardSequence(
+      pixels.map(inputForPixel),
+    );
+    submissions += 1;
+    const preview = document.createElement("canvas");
+    preview.width = PREVIEW_SAMPLE_SIZE;
+    preview.height = PREVIEW_SAMPLE_SIZE;
+    const context = preview.getContext("2d");
+    const image = context.createImageData(
+      PREVIEW_SAMPLE_SIZE,
+      PREVIEW_SAMPLE_SIZE,
+    );
+    let error = 0;
+    outputs.forEach(({ data }, pixel) => {
+      const offset = pixel * 4;
+      image.data[offset] = Math.round(clamp(data[0] ?? 0) * 255);
+      image.data[offset + 1] = Math.round(clamp(data[1] ?? 0) * 255);
+      image.data[offset + 2] = Math.round(clamp(data[2] ?? 0) * 255);
+      image.data[offset + 3] = 255;
+      const targetOffset = (pixels[pixel] ?? 0) * 4;
+      for (let channel = 0; channel < 3; channel += 1) {
+        const target = (targetPixels[targetOffset + channel] ?? 0) / 255;
+        const difference = target - (data[channel] ?? 0);
+        error += difference * difference;
+      }
+    });
+    context.putImageData(image, 0, 0);
+    learnedContext.imageSmoothingEnabled = true;
+    learnedContext.drawImage(
+      preview,
+      0,
+      0,
+      IMAGE_SIZE,
+      IMAGE_SIZE,
+    );
+    lossOutput.value = (error / (PREVIEW_SAMPLES * 3)).toFixed(5);
+    submitsOutput.value = String(submissions);
+  };
+
+  const setPlaying = (value) => {
+    playing = value;
+    playButton.textContent = value ? "Pause" : "Play";
+    playButton.setAttribute("aria-pressed", String(value));
+    if (value) {
+      status.textContent =
+        "Training continuously; pause whenever you want to inspect the result.";
+      void runLoop();
+    } else {
+      status.textContent = "Paused. The current epoch finishes before the GPU loop stops.";
+    }
+  };
+
+  const runLoop = async () => {
+    if (running || !session) return;
+    running = true;
+    try {
+      while (playing) {
+        const started = performance.now();
+        const learningRate = .01 / Math.sqrt(1 + epoch * .01);
+        const sequence = Array.from(
+          { length: TRAINING_BATCH_SIZE },
+          (_, offset) => {
+            const logicalPixel = (trainingCursor + offset) % PIXELS;
+            return sampleForPixel(
+              logicalPixel * TRAINING_STRIDE % PIXELS,
+            );
+          },
+        );
+        trainingCursor = (trainingCursor + TRAINING_BATCH_SIZE) % PIXELS;
+        await session.trainSequence(sequence, {
+          learningRate,
+          metrics: "none",
+        });
+        submissions += 1;
+        epoch += 1;
+        epochOutput.value = String(epoch);
+        await renderNetworkPreview();
+        timeOutput.value = `${Math.round(performance.now() - started)} ms`;
+        if (playing) {
+          status.textContent =
+            `Training continuously; each preview samples `
+            + `${PREVIEW_SAMPLES.toLocaleString()} points into the 400×400 `
+            + "canvas.";
+        }
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
+    } catch (error) {
+      playing = false;
+      playButton.textContent = "Play";
+      status.classList.add("error");
+      status.textContent = error instanceof Error ? error.message : String(error);
+    } finally {
+      running = false;
+    }
+  };
+
+  playButton.addEventListener("click", () => setPlaying(!playing));
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden && playing) {
+      resumeWhenVisible = true;
+      setPlaying(false);
+    } else if (!document.hidden && resumeWhenVisible) {
+      resumeWhenVisible = false;
+      setPlaying(true);
+    }
+  });
+  window.addEventListener("pagehide", () => {
+    playing = false;
+    session?.dispose();
+  });
+
+  try {
+    learnedContext.fillStyle = "#808080";
+    learnedContext.fillRect(0, 0, IMAGE_SIZE, IMAGE_SIZE);
+    await loadTarget();
+    session = await createSession();
+    backendOutput.textContent = session.backend;
+    await renderNetworkPreview();
+    status.textContent =
+      `${TRAINING_BATCH_SIZE.toLocaleString()} full-resolution samples use `
+      + "one training submission; the native canvas refreshes every epoch.";
+    setPlaying(true);
+  } catch (error) {
+    playing = false;
+    playButton.disabled = true;
+    backendOutput.textContent = "unavailable";
+    status.classList.add("error");
+    status.textContent = error instanceof Error ? error.message : String(error);
+  }
+</script>
+</html>

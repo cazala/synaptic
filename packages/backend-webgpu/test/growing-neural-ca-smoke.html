@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Growing Neural CA trainer smoke test</title>
+<script type="importmap">
+{
+  "imports": {
+    "@cazala/automata": "/node_modules/@cazala/automata/dist/index.js",
+    "@synaptic/core": "/packages/core/dist/index.js",
+    "@synaptic/backend-cpu": "/packages/backend-cpu/dist/index.js",
+    "@synaptic/backend-wasm": "/packages/backend-wasm/dist/index.js",
+    "@synaptic/backend-webgpu": "/packages/backend-webgpu/dist/index.js"
+  }
+}
+</script>
+<output id="result">running…</output>
+<script type="module">
+  import { GrowingNeural } from "@cazala/automata";
+  import { GrowingNeuralCaTrainer } from "@synaptic/backend-webgpu";
+
+  const result = document.querySelector("#result");
+  try {
+    const trainer = await GrowingNeuralCaTrainer.create({
+      size: 8,
+      channels: 4,
+      hidden: 4,
+      batchSize: 1,
+      minRolloutSteps: 2,
+      rolloutSteps: 4,
+      stabilitySteps: 2,
+      fireRate: 1,
+      learningRate: .0002,
+      damageProbability: 0,
+      poolWarmupIterations: 1000,
+      seed: 123,
+    });
+    const target = new Float32Array(8 * 8 * 4);
+    for (let y = 1; y < 7; y++) {
+      for (let x = 1; x < 7; x++) {
+        if ((x - 3.5) ** 2 + (y - 3.5) ** 2 > 8) continue;
+        const index = (y * 8 + x) * 4;
+        target[index] = .8;
+        target[index + 1] = .25;
+        target[index + 3] = 1;
+      }
+    }
+    const rolloutLengths = new Set();
+    const baseline = await trainer.trainStep(target, { learningRate: 0 });
+    rolloutLengths.add(baseline.rolloutSteps);
+    for (let iteration = 0; iteration < 16; iteration++) {
+      const metrics = await trainer.trainStep(target, { learningRate: .0002 });
+      rolloutLengths.add(metrics.rolloutSteps);
+    }
+    const after = await trainer.trainStep(target, { learningRate: 0 });
+    rolloutLengths.add(after.rolloutSteps);
+    const pooled = await trainer.trainStep(target, {
+      learningRate: 0,
+      useSamplePool: true,
+    });
+    const damaged = await trainer.trainStep(target, {
+      damageProbability: 1,
+      learningRate: 0,
+      useSamplePool: true,
+    });
+    trainer.restartLearning();
+    const artifact = await trainer.artifact();
+    const automaton = GrowingNeural.fromArtifact(artifact);
+    trainer.dispose();
+    if (
+      !(after.loss < baseline.loss) ||
+      rolloutLengths.size < 2 ||
+      baseline.quality.seed?.samples !== 1 ||
+      baseline.quality.persistent !== undefined ||
+      pooled.quality.persistent?.samples !== 1 ||
+      damaged.damagedSamples !== 1 ||
+      damaged.quality.damaged?.samples !== 1 ||
+      !artifact.weights.hiddenToOutput.every(Number.isFinite) ||
+      automaton.getChannels() !== 4 ||
+      automaton.getHidden() !== 4
+    ) {
+      throw new Error(
+        `Trainer verification failed: ${baseline.loss} → ${after.loss}`,
+      );
+    }
+    result.textContent =
+      `passed · loss ${baseline.loss.toExponential(3)} → ` +
+      `${after.loss.toExponential(3)} · ${rolloutLengths.size} horizons · ` +
+      "artifact accepted";
+  } catch (error) {
+    result.textContent = error instanceof Error ? error.stack : String(error);
+  }
+</script>
+</html>

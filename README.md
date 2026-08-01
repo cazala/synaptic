@@ -1,220 +1,228 @@
-Synaptic
-========
+# Synaptic v2
 
-Synaptic is a javascript neural network library for **node.js** and the **browser**, its generalized algorithm is architecture-free, so you can build and train basically any type of first order or even [second order neural network](http://en.wikipedia.org/wiki/Recurrent_neural_network#Second_Order_Recurrent_Neural_Network) architectures.
+Synaptic v2 is a TypeScript-first neural-network runtime for architecture-free
+graphs. It preserves Synaptic's distinctive units, weighted connections, and
+connection gates while separating portable model data from backend execution.
 
-This library includes a few built-in architectures like [multilayer perceptrons](http://en.wikipedia.org/wiki/Multilayer_perceptron), [multilayer long-short term memory](http://en.wikipedia.org/wiki/Long_short_term_memory) networks (LSTM), [liquid state machines](http://en.wikipedia.org/wiki/Liquid_state_machine) or [Hopfield](http://en.wikipedia.org/wiki/Hopfield_network) networks, and a trainer capable of training any given network, which includes built-in training tasks/tests like solving an XOR, completing a Distracted Sequence Recall task or an [Embedded Reber Grammar](http://www.willamette.edu/~gorr/classes/cs449/reber.html) test, so you can easily test and compare the performance of different architectures.
+The same immutable model can run on:
 
+- `paper`: a readable implementation of the LSTM-g equations and the
+  correctness oracle;
+- `cpu`: the portable TypeScript production backend;
+- `wasm`: a persistent AssemblyScript/WebAssembly runtime with scalar and SIMD
+  artifacts;
+- `webgpu`: a WGSL compute backend for repeated, parallel workloads, with
+  explicit fallback.
 
-The algorithm implemented by this library has been taken from Derek D. Monner's paper:
+This branch is a `2.0.0-alpha.0` development line. Its artifact formats are
+versioned, but the public API may still change before v2 is stable.
 
-[A generalized LSTM-like training algorithm for second-order recurrent neural networks](http://www.overcomplete.net/papers/nn2012.pdf)
+## Quick start
 
+The current repository requires Node.js 20 or newer.
 
-There are references to the equations in that paper commented through the source code.
-
-#### Introduction
-
-If you have no prior knowledge about Neural Networks, you should start by [reading this guide](https://github.com/cazala/synaptic/wiki/Neural-Networks-101).
-
-
-If you want a practical example on how to feed data to a neural network, then take a look at [this article](https://github.com/cazala/synaptic/wiki/Normalization-101).
-
-You may also want to take a look at [this article](http://blog.webkid.io/neural-networks-in-javascript/).
-
-#### Demos
-
-- [Solve an XOR](http://caza.la/synaptic/#/xor)
-- [Discrete Sequence Recall Task](http://caza.la/synaptic/#/dsr)
-- [Learn Image Filters](http://caza.la/synaptic/#/image-filters)
-- [Paint an Image](http://caza.la/synaptic/#/paint-an-image)
-- [Self Organizing Map](http://caza.la/synaptic/#/self-organizing-map)
-- [Read from Wikipedia](http://caza.la/synaptic/#/wikipedia)
-- [Creating a Simple Neural Network (Video)](https://scrimba.com/casts/cast-1980)
-- [Learn how to shoot](https://sta-ger.bitbucket.io/apps/bot/index.html)
-- [Beer glass classifier](https://sta-ger.bitbucket.io/apps/beer/index.html)
-
-The source code of these demos can be found in [this branch](https://github.com/cazala/synaptic/tree/gh-pages/scripts).
-
-#### Getting started
-
-- [Neurons](https://github.com/cazala/synaptic/wiki/Neurons/)
-- [Layers](https://github.com/cazala/synaptic/wiki/Layers/)
-- [Networks](https://github.com/cazala/synaptic/wiki/Networks/)
-- [Trainer](https://github.com/cazala/synaptic/wiki/Trainer/)
-- [Architect](https://github.com/cazala/synaptic/wiki/Architect/)
-
-To try out the examples, checkout the [gh-pages](https://github.com/cazala/synaptic/tree/gh-pages) branch.
-
-`git checkout gh-pages`
-
-#### Other languages
-
-This README is also available in other languages.
-
-- [Chinese Simplified | 中文文档](https://github.com/cazala/synaptic/blob/master/README_Zh-CN.md), thanks to [@noraincode](https://github.com/noraincode).
-- [Chinese Traditional | 繁體中文](https://github.com/cazala/synaptic/blob/master/README_Zh-TW.md), by [@NoobTW](https://github.com/noobtw).
-- [Japanese | 日本語](https://github.com/cazala/synaptic/blob/master/README_Ja-JP.md), thanks to [@oshirogo](https://github.com/dscripps).  
-
-## Overview
-
-### Installation
-
-##### In node
-
-You can install synaptic with [npm](http://npmjs.org):
-
-```cmd
-npm install synaptic --save
+```sh
+npm install
+npm run check
 ```
 
-##### In the browser
+Create and run a model:
 
-You can install synaptic with [bower](http://bower.io):
+```ts
+import {
+  compileModel,
+  dense,
+  input,
+  lstm,
+  sequential,
+} from "synaptic";
 
-```cmd
-bower install synaptic
+const definition = sequential(
+  input({ size: 2 }),
+  lstm({ units: 8, peepholes: true }),
+  dense({ units: 1, activation: "logistic" }),
+);
+
+const session = await compileModel(definition, {
+  backend: "auto",
+  seed: 42,
+  expectedSteps: 10_000,
+});
+
+const output = await session.forward([1, 0]);
+console.log(output.data);
+
+const metrics = await session.trainStep(
+  { input: [0, 1], target: [1] },
+  { learningRate: 0.05 },
+);
+console.log(metrics);
+
+session.dispose();
 ```
 
-Or you can simply use the CDN link, kindly provided by [CDNjs](https://cdnjs.com/)
+All session operations are asynchronous, even on CPU. This gives every backend
+one honest API and avoids changing application structure when work moves to
+WebAssembly or WebGPU.
 
-```html
-<script src="https://cdnjs.cloudflare.com/ajax/libs/synaptic/1.1.4/synaptic.js"></script>
+Ordered work can cross the backend boundary as one sequence:
+
+```ts
+await session.trainSequence(
+  [
+    { input: [0, 0], target: [0] },
+    { input: [0, 1], target: [1] },
+  ],
+  { learningRate: 0.05, metrics: "none" },
+);
+
+const outputs = await session.forwardSequence([[0, 0], [0, 1]]);
 ```
 
-### Usage
+Sequences retain recurrent state and online updates between their steps. The
+portable backends execute the same semantics as repeated scalar calls; WebGPU
+packs the inputs into one upload and command submission. Use `metrics: "none"`
+when the loss is not consumed so an accelerator need not synchronize just to
+read a prediction back.
 
-```javascript
-var synaptic = require('synaptic'); // this line is not needed in the browser
-var Neuron = synaptic.Neuron,
-	Layer = synaptic.Layer,
-	Network = synaptic.Network,
-	Trainer = synaptic.Trainer,
-	Architect = synaptic.Architect;
+## Portable state
+
+Definitions contain topology, not devices or executable code. A snapshot adds
+parameters. A checkpoint also adds recurrent state, eligibility traces,
+optimizer slots, PRNG state, and the logical step:
+
+```ts
+import {
+  compileModel,
+  loadCheckpoint,
+  saveCheckpoint,
+} from "synaptic";
+
+const first = await compileModel(definition, { backend: "cpu", seed: 42 });
+await first.forward([1, 0]);
+
+const bundle = saveCheckpoint(await first.checkpoint());
+first.dispose();
+
+// Persist bundle.manifest as JSON and each entry in bundle.buffers as a
+// separate binary sidecar.
+const checkpoint = loadCheckpoint(bundle);
+const resumed = await compileModel(checkpoint, { backend: "wasm" });
 ```
 
-Now you can start to create networks, train them, or use built-in networks from the [Architect](https://github.com/cazala/synaptic/wiki/Architect/).
+Artifacts use a versioned JSON manifest, little-endian binary buffers, declared
+dtypes and lengths, and checksums. Checkpoints can resume on a different
+compatible backend.
 
-### Examples
+## Authoring unusual graphs
 
-##### Perceptron
+Layer helpers are graph macros. The lower-level `GraphBuilder` remains available
+for shared parameters, custom recurrence, and second-order gating:
 
-This is how you can create a simple **perceptron**:
+```ts
+import { GraphBuilder, compileModel } from "synaptic";
 
-![perceptron](http://www.codeproject.com/KB/dotnet/predictor/network.jpg).
+const graph = new GraphBuilder();
+const inputs = graph.input(2);
+graph.nextStage();
+const outputs = graph.units(2, { activation: "tanh" });
+const shared = graph.parameter({
+  initializer: { kind: "constant", value: 0.25 },
+  label: "shared-weight",
+});
 
-```javascript
-function Perceptron(input, hidden, output)
-{
-	// create the layers
-	var inputLayer = new Layer(input);
-	var hiddenLayer = new Layer(hidden);
-	var outputLayer = new Layer(output);
-
-	// connect the layers
-	inputLayer.project(hiddenLayer);
-	hiddenLayer.project(outputLayer);
-
-	// set the layers
-	this.set({
-		input: inputLayer,
-		hidden: [hiddenLayer],
-		output: outputLayer
-	});
-}
-
-// extend the prototype chain
-Perceptron.prototype = new Network();
-Perceptron.prototype.constructor = Perceptron;
+graph.connect(inputs.units, outputs, "all-to-all", { parameter: shared });
+const definition = graph.build({ inputs, outputs });
+const session = await compileModel(definition);
 ```
 
-Now you can test your new network by creating a trainer and teaching the perceptron to learn an XOR
+Stages define deterministic ordering. A zero-delay connection reads the current
+step and must point to a later stage. A one-delay connection reads the previous
+step. Gates follow the same explicit delay rule.
 
-```javascript
-var myPerceptron = new Perceptron(2,3,1);
-var myTrainer = new Trainer(myPerceptron);
+## Choosing a backend
 
-myTrainer.XOR(); // { error: 0.004998819355993572, iterations: 21871, time: 356 }
+`backend: "auto"` currently chooses CPU for small or generic workloads and
+WebGPU when a sufficiently large model will be reused enough to amortize setup.
+Wasm is fully supported when selected explicitly; the generic sparse Wasm
+interpreter is not auto-selected until specialization benchmarks justify it.
+Paper is never chosen automatically.
 
-myPerceptron.activate([0,0]); // 0.0268581547421616
-myPerceptron.activate([1,0]); // 0.9829673642853368
-myPerceptron.activate([0,1]); // 0.9831714267395621
-myPerceptron.activate([1,1]); // 0.02128894618097928
+```ts
+const cpu = await compileModel(definition, { backend: "cpu" });
+const wasm = await compileModel(definition, { backend: "wasm" });
+const gpu = await compileModel(definition, {
+  backend: "webgpu",
+  fallback: ["wasm", "cpu"],
+});
 ```
 
-##### Long Short-Term Memory
+WebGPU requires a browser with WebGPU in a secure context (`https:` or
+`localhost`). Explicit WebGPU compilation uses the declared fallback order when
+the API, adapter, plan feature, or device limit is unavailable.
 
-This is how you can create a simple **long short-term memory** network with input gate, forget gate, output gate, and peephole connections:
+Run `npm run test:webgpu` to serve the hardware checks and six interactive
+learning demos: [XOR](packages/backend-webgpu/test/xor.html),
+[MNIST digit drawing](packages/backend-webgpu/test/mnist.html),
+[MNIST to Neural CA](packages/backend-webgpu/test/mnist-automata.html),
+[Growing Neural CA](packages/backend-webgpu/test/growing-neural-ca.html),
+[discrete sequence recall](packages/backend-webgpu/test/dsr.html), and the
+coordinate-to-RGB [learn-to-paint portrait](packages/backend-webgpu/test/learn-to-paint.html).
+The portrait source is bundled with the example, so it does not depend on a
+remote image at runtime.
 
-![long short-term memory](http://people.idsia.ch/~juergen/lstmcell4.jpg)
+The Growing Neural CA demo is a specialized differentiable simulation rather
+than a flattened generic graph. `GrowingNeuralCaTrainer` keeps the full
+generation tape and Adam state in one WebGPU heap, differentiates the
+identity/Sobel → ReLU MLP → stochastic residual rule through randomized
+rollout horizons, scores consecutive terminal states to form an attractor, and
+trains persistence and repair from an in-place sample pool. Its
+`artifact()` result is the versioned JSON shape consumed directly by
+`GrowingNeural.fromArtifact(...)` in `@cazala/automata`.
 
-```javascript
-function LSTM(input, blocks, output)
-{
-	// create the layers
-	var inputLayer = new Layer(input);
-	var inputGate = new Layer(blocks);
-	var forgetGate = new Layer(blocks);
-	var memoryCell = new Layer(blocks);
-	var outputGate = new Layer(blocks);
-	var outputLayer = new Layer(output);
+## Legacy imports
 
-	// connections from input layer
-	var input = inputLayer.project(memoryCell);
-	inputLayer.project(inputGate);
-	inputLayer.project(forgetGate);
-	inputLayer.project(outputGate);
+`@synaptic/compat-v1` imports Synaptic v1 `Network.toJSON()` data:
 
-	// connections from memory cell
-	var output = memoryCell.project(outputLayer);
+```ts
+import { compileModel, importLegacy } from "synaptic";
 
-	// self-connection
-	var self = memoryCell.project(memoryCell);
+const imported = importLegacy(JSON.parse(json));
+console.log(imported.warnings);
 
-	// peepholes
-	memoryCell.project(inputGate);
-	memoryCell.project(forgetGate);
-	memoryCell.project(outputGate);
-
-	// gates
-	inputGate.gate(input, Layer.gateType.INPUT);
-	forgetGate.gate(self, Layer.gateType.ONE_TO_ONE);
-	outputGate.gate(output, Layer.gateType.OUTPUT);
-
-	// input to output direct connection
-	inputLayer.project(outputLayer);
-
-	// set the layers of the neural network
-	this.set({
-		input: inputLayer,
-		hidden: [inputGate, forgetGate, memoryCell, outputGate],
-		output: outputLayer
-	});
-}
-
-// extend the prototype chain
-LSTM.prototype = new Network();
-LSTM.prototype.constructor = LSTM;
+const session = await compileModel(imported.value.checkpoint, {
+  backend: "cpu",
+});
 ```
 
-These are examples for explanatory purposes, the [Architect](https://github.com/cazala/synaptic/wiki/Architect/) already includes Multilayer Perceptrons and
-Multilayer LSTM network architectures.
+Warnings are explicit where the old format did not carry enough information for
+lossless conversion.
 
-## Contribute
+## Packages
 
-**Synaptic** is an Open Source project that started in Buenos Aires, Argentina. Anybody in the world is welcome to contribute to the development of the project.
+| Package | Purpose |
+| --- | --- |
+| `synaptic` | Public facade, backend selection, and re-exports |
+| `@synaptic/core` | Schema, builder, validation, plans, artifacts, contracts |
+| `@synaptic/layers` | Input, dense, LSTM, and composition macros |
+| `@synaptic/backend-paper` | Equation-aligned oracle |
+| `@synaptic/backend-cpu` | Portable typed-array runtime |
+| `@synaptic/backend-wasm` | Persistent scalar/SIMD WebAssembly runtime |
+| `@synaptic/backend-webgpu` | WGSL compute runtime and fallbacks |
+| `@synaptic/compat-v1` | Synaptic v1 importer |
+| `@synaptic/conformance` | Shared parity fixtures and seeded learning workloads |
 
-If you want to contribute feel free to send PR's, just make sure to run **npm run test** and **npm run build** before submitting it. This way you'll run all the test specs and build the web distribution files.
+## Documentation
 
-## Support
+- [Getting started](docs/getting-started.md)
+- [Architecture](docs/architecture.md)
+- [Backend behavior](docs/backends.md)
+- [Growing Neural Cellular Automata](docs/growing-neural-ca.md)
+- [Artifacts and migration](docs/artifacts-and-migration.md)
+- [Testing](docs/testing.md)
+- [Contributing](docs/contributing.md)
+- [Original v2 research proposal](docs/v2-architecture-proposal.md)
 
-If you like this project and you want to show your support, you can buy me a beer with [magic internet money](https://i.imgur.com/mScSiOo.jpg):
+## License
 
-```
-BTC: 16ePagGBbHfm2d6esjMXcUBTNgqpnLWNeK
-ETH: 0xa423bfe9db2dc125dd3b56f215e09658491cc556
-LTC: LeeemeZj6YL6pkTTtEGHFD6idDxHBF2HXa
-XMR: 46WNbmwXpYxiBpkbHjAgjC65cyzAxtaaBQjcGpAZquhBKw2r8NtPQniEgMJcwFMCZzSBrEJtmPsTR54MoGBDbjTi2W1XmgM
-```
-
-<3
+MIT. See [LICENSE](LICENSE).

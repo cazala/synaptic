@@ -1,0 +1,6 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "synaptic-v2",
+  "pages_build_output_dir": "./.cloudflare/pages",
+  "compatibility_date": "2026-07-31"
+}
