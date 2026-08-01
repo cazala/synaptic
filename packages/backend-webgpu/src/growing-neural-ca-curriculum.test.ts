@@ -21,8 +21,18 @@ function target(): Float32Array {
 function quality(
   meanLoss = 0.0001,
   meanAliveCells = 8,
+  overrides: Partial<GrowingNeuralCaBatchQuality> = {},
 ): GrowingNeuralCaBatchQuality {
-  return { samples: 4, meanLoss, meanAliveCells };
+  return {
+    samples: 4,
+    meanLoss,
+    maximumLoss: meanLoss,
+    meanAliveCells,
+    minimumAliveCells: meanAliveCells,
+    maximumAliveCells: meanAliveCells,
+    minimumTargetCoverage: 1,
+    ...overrides,
+  };
 }
 
 function metrics(
@@ -105,13 +115,13 @@ describe("Growing Neural CA adaptive curriculum", () => {
 
     expect(stable.key).toBe("regeneration");
     expect(curriculum.trainingOptions()).toMatchObject({
-      damageProbability: 0.25,
+      damageProbability: 0.5,
       useSamplePool: true,
     });
 
     const repairing = advance(
       curriculum,
-      47,
+      95,
       metrics(quality(), quality(), quality()),
     );
     expect(repairing.key).toBe("regeneration");
@@ -142,6 +152,34 @@ describe("Growing Neural CA adaptive curriculum", () => {
     expect(regressed.progress).toBeLessThan(0.92);
     expect(regressed.phases[2]?.stateLabel).toBe("active");
     expect(curriculum.trainingOptions().learningRate).toBe(0.0005);
+  });
+
+  it("does not let good averages hide unreliable target repair", () => {
+    const curriculum = new GrowingNeuralCaCurriculum(target());
+    advance(curriculum, 16, metrics(quality()));
+    advance(curriculum, 32, metrics(quality(), quality()));
+
+    const almostCovered = quality(0.0001, 8, {
+      // The mean looks excellent, but at least one repaired sample misses
+      // enough target cells to fail the strict regeneration criterion.
+      minimumTargetCoverage: 0.895,
+    });
+    const unreliable = advance(
+      curriculum,
+      96,
+      metrics(quality(), quality(), almostCovered),
+    );
+
+    expect(unreliable.key).toBe("regeneration");
+    expect(unreliable.progress).toBeGreaterThan(0.97);
+    expect(unreliable.mastered).toBe(false);
+
+    const reliable = advance(
+      curriculum,
+      96,
+      metrics(quality(), quality(), quality()),
+    );
+    expect(reliable.mastered).toBe(true);
   });
 
   it("rejects empty targets that could falsely satisfy image loss", () => {

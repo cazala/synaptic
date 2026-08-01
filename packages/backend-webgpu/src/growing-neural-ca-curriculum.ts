@@ -43,7 +43,10 @@ interface PhaseDefinition {
   readonly relativeLossTarget: number;
   readonly minimumAliveRatio: number;
   readonly maximumAliveRatio: number;
+  readonly minimumTargetCoverage: number;
   readonly observations: number;
+  readonly promotionConfidence: number;
+  readonly minimumPassRate: number;
 }
 
 interface Tracker {
@@ -51,7 +54,6 @@ interface Tracker {
   readonly observations: number;
 }
 
-const PROMOTION_CONFIDENCE = 0.92;
 const PHASES: readonly PhaseDefinition[] = Object.freeze([
   Object.freeze({
     key: "growth",
@@ -61,7 +63,10 @@ const PHASES: readonly PhaseDefinition[] = Object.freeze([
     relativeLossTarget: 0.08,
     minimumAliveRatio: 0.6,
     maximumAliveRatio: 1.6,
+    minimumTargetCoverage: 0.7,
     observations: 16,
+    promotionConfidence: 0.92,
+    minimumPassRate: 0.75,
   }),
   Object.freeze({
     key: "stability",
@@ -71,17 +76,23 @@ const PHASES: readonly PhaseDefinition[] = Object.freeze([
     relativeLossTarget: 0.06,
     minimumAliveRatio: 0.7,
     maximumAliveRatio: 1.45,
+    minimumTargetCoverage: 0.8,
     observations: 32,
+    promotionConfidence: 0.92,
+    minimumPassRate: 0.8,
   }),
   Object.freeze({
     key: "regeneration",
     label: "regeneration",
-    detail: "Testing damaged states for recovered shape and coverage.",
-    criterion: "damaged states · repeated quality checks",
-    relativeLossTarget: 0.08,
-    minimumAliveRatio: 0.6,
-    maximumAliveRatio: 1.6,
-    observations: 48,
+    detail: "Testing varied target-anchored cuts against worst-sample quality.",
+    criterion: "96 damaged batches · ≥90% strict passes",
+    relativeLossTarget: 0.04,
+    minimumAliveRatio: 0.8,
+    maximumAliveRatio: 1.25,
+    minimumTargetCoverage: 0.9,
+    observations: 96,
+    promotionConfidence: 0.97,
+    minimumPassRate: 0.9,
   }),
 ]);
 
@@ -205,7 +216,7 @@ export class GrowingNeuralCaCurriculum {
       : this.#phaseProgress(2);
     return Object.freeze({
       learningRate: this.#regenerationMastered ? 0.0003 : 0.0005,
-      damageProbability: 0.25 + progress * 0.75,
+      damageProbability: 0.5 + progress * 0.5,
       useSamplePool: true,
     });
   }
@@ -218,18 +229,29 @@ export class GrowingNeuralCaCurriculum {
       return;
     }
     const definition = PHASES[phaseIndex]!;
-    const relativeLoss = quality.meanLoss / this.#targetEnergy;
+    const relativeLoss = quality.maximumLoss / this.#targetEnergy;
     const lossScore = relativeLoss === 0
       ? 1
       : clamp(definition.relativeLossTarget / relativeLoss);
-    const aliveRatio = quality.meanAliveCells / this.#targetAliveCells;
-    const aliveScore = aliveRatio < definition.minimumAliveRatio
-      ? clamp(aliveRatio / definition.minimumAliveRatio)
-      : aliveRatio > definition.maximumAliveRatio
-      ? clamp(definition.maximumAliveRatio / aliveRatio)
-      : 1;
+    const minimumAliveRatio =
+      quality.minimumAliveCells / this.#targetAliveCells;
+    const maximumAliveRatio =
+      quality.maximumAliveCells / this.#targetAliveCells;
+    const aliveScore = Math.min(
+      minimumAliveRatio < definition.minimumAliveRatio
+        ? clamp(minimumAliveRatio / definition.minimumAliveRatio)
+        : 1,
+      maximumAliveRatio > definition.maximumAliveRatio
+        ? clamp(definition.maximumAliveRatio / maximumAliveRatio)
+        : 1,
+    );
+    const targetCoverageScore = clamp(
+      quality.minimumTargetCoverage / definition.minimumTargetCoverage,
+    );
     const tracker = this.#trackers[phaseIndex]!;
-    tracker.scores.push(Math.min(lossScore, aliveScore));
+    tracker.scores.push(
+      Math.min(lossScore, aliveScore, targetCoverageScore),
+    );
     if (tracker.scores.length > tracker.observations) {
       tracker.scores.shift();
     }
@@ -261,9 +283,15 @@ export class GrowingNeuralCaCurriculum {
   #phaseReady(phaseIndex: number): boolean {
     for (let index = 0; index <= phaseIndex; index += 1) {
       const tracker = this.#trackers[index]!;
+      const definition = PHASES[index]!;
+      const passRate = tracker.scores.length === 0
+        ? 0
+        : tracker.scores.filter((score) => score >= 1).length /
+          tracker.scores.length;
       if (
         tracker.scores.length < tracker.observations ||
-        this.#trackerConfidence(index) < PROMOTION_CONFIDENCE
+        this.#trackerConfidence(index) < definition.promotionConfidence ||
+        passRate < definition.minimumPassRate
       ) {
         return false;
       }

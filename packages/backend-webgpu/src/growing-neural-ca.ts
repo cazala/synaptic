@@ -79,7 +79,11 @@ export interface GrowingNeuralCaTrainOptions {
 export interface GrowingNeuralCaBatchQuality {
   readonly samples: number;
   readonly meanLoss: number;
+  readonly maximumLoss: number;
   readonly meanAliveCells: number;
+  readonly minimumAliveCells: number;
+  readonly maximumAliveCells: number;
+  readonly minimumTargetCoverage: number;
 }
 
 export interface GrowingNeuralCaQualityMetrics {
@@ -105,6 +109,8 @@ export interface GrowingNeuralCaStateHealth {
   readonly loss: number;
   readonly maximumAbsoluteValue: number;
   readonly aliveCells: number;
+  /** Fraction of target-visible cells that remain alive in the state. */
+  readonly targetCoverage: number;
   readonly nonFiniteValues: number;
 }
 
@@ -313,6 +319,8 @@ export function measureGrowingNeuralCaState(
   let squaredError = 0;
   let maximumAbsoluteValue = 0;
   let aliveCells = 0;
+  let targetAliveCells = 0;
+  let coveredTargetCells = 0;
   let nonFiniteValues = 0;
   for (let cell = 0; cell < target.length / 4; cell += 1) {
     const stateOffset = cell * channelCount;
@@ -320,6 +328,21 @@ export function measureGrowingNeuralCaState(
     const alpha = state[stateOffset + 3];
     if (alpha !== undefined && Number.isFinite(alpha) && alpha > aliveThreshold) {
       aliveCells += 1;
+    }
+    const targetAlpha = target[targetOffset + 3];
+    if (
+      targetAlpha !== undefined &&
+      Number.isFinite(targetAlpha) &&
+      targetAlpha > aliveThreshold
+    ) {
+      targetAliveCells += 1;
+      if (
+        alpha !== undefined &&
+        Number.isFinite(alpha) &&
+        alpha > aliveThreshold
+      ) {
+        coveredTargetCells += 1;
+      }
     }
     for (let channel = 0; channel < channelCount; channel += 1) {
       const value = state[stateOffset + channel];
@@ -345,6 +368,9 @@ export function measureGrowingNeuralCaState(
       : Number.POSITIVE_INFINITY,
     maximumAbsoluteValue,
     aliveCells,
+    targetCoverage: targetAliveCells === 0
+      ? 1
+      : coveredTargetCells / targetAliveCells,
     nonFiniteValues,
   });
 }
@@ -359,7 +385,15 @@ function measureBatchQuality(
   const stateLength = (target.length / 4) * channels;
   const totals = new Map<
     GrowingNeuralCaSampleKind,
-    { samples: number; loss: number; aliveCells: number }
+    {
+      samples: number;
+      loss: number;
+      maximumLoss: number;
+      aliveCells: number;
+      minimumAliveCells: number;
+      maximumAliveCells: number;
+      minimumTargetCoverage: number;
+    }
   >();
   for (let batch = 0; batch < sampleKinds.length; batch += 1) {
     const kind = sampleKinds[batch];
@@ -375,11 +409,28 @@ function measureBatchQuality(
     const total = totals.get(kind) ?? {
       samples: 0,
       loss: 0,
+      maximumLoss: 0,
       aliveCells: 0,
+      minimumAliveCells: Number.POSITIVE_INFINITY,
+      maximumAliveCells: 0,
+      minimumTargetCoverage: 1,
     };
     total.samples += 1;
     total.loss += health.loss;
+    total.maximumLoss = Math.max(total.maximumLoss, health.loss);
     total.aliveCells += health.aliveCells;
+    total.minimumAliveCells = Math.min(
+      total.minimumAliveCells,
+      health.aliveCells,
+    );
+    total.maximumAliveCells = Math.max(
+      total.maximumAliveCells,
+      health.aliveCells,
+    );
+    total.minimumTargetCoverage = Math.min(
+      total.minimumTargetCoverage,
+      health.targetCoverage,
+    );
     totals.set(kind, total);
   }
   const quality = (
@@ -391,7 +442,11 @@ function measureBatchQuality(
       : Object.freeze({
           samples: total.samples,
           meanLoss: total.loss / total.samples,
+          maximumLoss: total.maximumLoss,
           meanAliveCells: total.aliveCells / total.samples,
+          minimumAliveCells: total.minimumAliveCells,
+          maximumAliveCells: total.maximumAliveCells,
+          minimumTargetCoverage: total.minimumTargetCoverage,
         });
   };
   return Object.freeze({
@@ -1808,6 +1863,18 @@ export class GrowingNeuralCaTrainer {
         .slice(0, damageCandidateCount)
         .map(({ batch }) => batch),
     );
+    const targetCells: Array<readonly [number, number]> = [];
+    for (let y = 0; y < this.size; y += 1) {
+      for (let x = 0; x < this.size; x += 1) {
+        const alpha = target[(y * this.size + x) * 4 + 3];
+        if (
+          alpha !== undefined &&
+          alpha > this.#options.aliveThreshold
+        ) {
+          targetCells.push([x, y]);
+        }
+      }
+    }
 
     let damagedSamples = 0;
     for (let batch = 0; batch < this.batchSize; batch += 1) {
@@ -1824,22 +1891,25 @@ export class GrowingNeuralCaTrainer {
         random() < damageProbability
       ) {
         // Match the broad random cuts used by the reference regenerating
-        // curriculum. A fixed, small hole teaches local smoothing but does
-        // not make the target a sufficiently wide repair attractor.
-        const minimumRadius = Math.max(2, Math.floor(this.size * 0.1));
+        // curriculum. Anchor each cut in the visible target so a favorable
+        // background hit cannot count as regeneration evidence. A fixed,
+        // small hole teaches local smoothing but does not make the target a
+        // sufficiently wide repair attractor.
+        const minimumRadius = Math.max(2, Math.floor(this.size * 0.14));
         const maximumRadius = Math.max(
           minimumRadius,
-          Math.floor(this.size * 0.2),
+          Math.floor(this.size * 0.25),
         );
         const radius =
           minimumRadius +
           Math.floor(random() * (maximumRadius - minimumRadius + 1));
-        const centerX =
-          Math.floor(this.size / 2) +
-          Math.floor((random() * 2 - 1) * this.size * 0.2);
-        const centerY =
-          Math.floor(this.size / 2) +
-          Math.floor((random() * 2 - 1) * this.size * 0.2);
+        const targetCell = targetCells.length === 0
+          ? [Math.floor(this.size / 2), Math.floor(this.size / 2)]
+          : targetCells[Math.floor(random() * targetCells.length)]!;
+        const centerX = targetCell[0] +
+          Math.floor((random() * 2 - 1) * radius * 0.35);
+        const centerY = targetCell[1] +
+          Math.floor((random() * 2 - 1) * radius * 0.35);
         for (let y = 0; y < this.size; y += 1) {
           for (let x = 0; x < this.size; x += 1) {
             if ((x - centerX) ** 2 + (y - centerY) ** 2 > radius ** 2) {

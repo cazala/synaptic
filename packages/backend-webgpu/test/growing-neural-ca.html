@@ -662,7 +662,7 @@
         <article class="phase-step" data-phase="regeneration" data-state="pending">
           <span class="phase-number">03</span>
           <strong>Regeneration</strong>
-          <small>damaged states · repeated quality checks</small>
+          <small>96 damaged batches · ≥90% strict passes</small>
           <span class="phase-status">
             <b class="phase-percent">0%</b>
             <i class="phase-state">waiting</i>
@@ -750,24 +750,25 @@
       <header>
         <h3 id="curriculum-explanation-title">An evidence-based curriculum</h3>
         <p>
-          A phase advances only after a full rolling window reaches 92%
-          confidence, measured from target-normalized image loss and
-          living-cell coverage. Every later phase must preserve the earlier
-          skills, so elapsed iterations alone can never unlock the next stage.
+          A phase advances only after a full rolling evidence window meets its
+          confidence and pass-rate bar. The score uses the worst sample in each
+          batch—not its average—and combines target-normalized image loss,
+          living-cell bounds, and coverage of visible target cells. Every later
+          phase must also preserve the earlier skills.
         </p>
       </header>
       <dl class="curriculum-summary">
         <div>
           <dt>01 · Growth</dt>
-          <dd>Fresh seed → target. No pool or damage. 16 observations; relative loss ≤ .08 and living coverage 60–160%.</dd>
+          <dd>Fresh seed → target. No pool or damage. 16 observations at 92% confidence; relative loss ≤ .08, target coverage ≥70%, and living count 60–160%.</dd>
         </div>
         <div>
           <dt>02 · Stability</dt>
-          <dd>Retained pool states → target. 32 observations; relative loss ≤ .06 and living coverage 70–145%.</dd>
+          <dd>Retained pool states → target. 32 observations at 92% confidence; relative loss ≤ .06, target coverage ≥80%, and living count 70–145%.</dd>
         </div>
         <div>
           <dt>03 · Regeneration</dt>
-          <dd>Damaged pool states → target. 48 observations; relative loss ≤ .08, coverage 60–160%, and damage ramps 25–100%.</dd>
+          <dd>Target-anchored cuts → target. 96 damaged batches at 97% confidence with ≥90% strict passes; relative loss ≤ .04, target coverage ≥90%, living count 80–125%, and damage ramps 50–100%.</dd>
         </div>
       </dl>
       <p class="explanation-footer">

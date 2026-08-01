@@ -107,9 +107,13 @@ describe("Growing Neural CA trainer substrate", () => {
     expect(health).toMatchObject({
       maximumAbsoluteValue: 4,
       aliveCells: 1,
+      targetCoverage: 1,
       nonFiniteValues: 0,
     });
     expect(health.loss).toBeCloseTo((0.25 ** 2 + 0.2 ** 2) / 8);
+
+    state[3] = 0;
+    expect(measureGrowingNeuralCaState(state, target, 6).targetCoverage).toBe(0);
 
     state[11] = Number.NaN;
     expect(measureGrowingNeuralCaState(state, target, 6)).toMatchObject({

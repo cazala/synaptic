@@ -161,10 +161,12 @@ The first six pages are polished interactive examples:
   the last sixteen states of each rollout toward the target while learning
   growth, persistence, and damage repair from an in-place sample pool. The
   adaptive eight-sample curriculum advances only after seed-grown, retained,
-  and damaged final states repeatedly meet target-relative image-error and
-  living-cell-coverage criteria. Damage probability increases with measured
-  repair confidence rather than elapsed updates. Its cuts include the demo
-  button's four-cell-radius hole. Every
+  and damaged final states repeatedly meet worst-sample target-relative image
+  error, target-cell coverage, and living-cell-count criteria. Regeneration
+  additionally requires a 96-batch evidence window, 97% confidence, and a 90%
+  strict pass rate. Damage probability increases with measured repair
+  confidence rather than elapsed updates, and target-anchored cuts range from
+  the demo's four-cell-radius hole to harder wounds. Every
   eighth update streams its four tensors into Automata's live `GrowingNeural`
   simulation on a 48×48 desktop grid or 32×32 mobile grid, while the trainer
   remains 24×24. A centered, padded, training-area-normalized health check
