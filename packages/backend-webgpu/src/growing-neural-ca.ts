@@ -55,6 +55,8 @@ export interface GrowingNeuralCaTrainerOptions {
   readonly stabilitySteps?: number;
   /** Weight of the explicit target-alpha L1 + L2 shape loss. */
   readonly shapeLossWeight?: number;
+  /** Weight of the L1 penalty for state values outside [-1, 1]. */
+  readonly overflowLossWeight?: number;
   readonly fireRate?: number;
   readonly stepSize?: number;
   readonly aliveThreshold?: number;
@@ -111,6 +113,8 @@ export interface GrowingNeuralCaStateHealth {
   readonly loss: number;
   /** Mean L1 + L2 error between state alpha and target alpha. */
   readonly shapeLoss: number;
+  /** Mean distance of all state channels beyond the stable [-1, 1] range. */
+  readonly overflowLoss: number;
   readonly maximumAbsoluteValue: number;
   readonly aliveCells: number;
   /** Fraction of target-visible cells that remain alive in the state. */
@@ -166,6 +170,7 @@ interface ResolvedOptions {
   readonly minRolloutSteps: number;
   readonly stabilitySteps: number;
   readonly shapeLossWeight: number;
+  readonly overflowLossWeight: number;
   readonly fireRate: number;
   readonly stepSize: number;
   readonly aliveThreshold: number;
@@ -325,6 +330,7 @@ export function measureGrowingNeuralCaState(
   );
   let squaredError = 0;
   let shapeError = 0;
+  let overflowError = 0;
   let maximumAbsoluteValue = 0;
   let aliveCells = 0;
   let targetAliveCells = 0;
@@ -368,6 +374,7 @@ export function measureGrowingNeuralCaState(
         continue;
       }
       maximumAbsoluteValue = Math.max(maximumAbsoluteValue, Math.abs(value));
+      overflowError += Math.abs(value - Math.max(-1, Math.min(1, value)));
       if (channel < 4) {
         const expected = target[targetOffset + channel];
         if (expected === undefined || !Number.isFinite(expected)) {
@@ -385,6 +392,9 @@ export function measureGrowingNeuralCaState(
       : Number.POSITIVE_INFINITY,
     shapeLoss: nonFiniteValues === 0
       ? shapeError / (target.length / 4)
+      : Number.POSITIVE_INFINITY,
+    overflowLoss: nonFiniteValues === 0
+      ? overflowError / state.length
       : Number.POSITIVE_INFINITY,
     maximumAbsoluteValue,
     aliveCells,
@@ -638,6 +648,12 @@ function resolveOptions(options: GrowingNeuralCaTrainerOptions): ResolvedOptions
       0,
       1_000,
     ),
+    overflowLossWeight: finiteRange(
+      "overflowLossWeight",
+      options.overflowLossWeight ?? 10,
+      0,
+      1_000,
+    ),
     fireRate: finiteRange(
       "fireRate",
       options.fireRate ?? artifact?.fireRate ?? 0.5,
@@ -739,6 +755,7 @@ const FIRE_RATE: f32 = ${options.fireRate};
 const STEP_SIZE: f32 = ${options.stepSize};
 const ALIVE_THRESHOLD: f32 = ${options.aliveThreshold};
 const SHAPE_LOSS_WEIGHT: f32 = ${options.shapeLossWeight};
+const OVERFLOW_LOSS_WEIGHT: f32 = ${options.overflowLossWeight};
 
 const WEIGHTS: u32 = ${o("weights")}u;
 const W1: u32 = ${o("weights") + parameters.inputToHidden}u;
@@ -928,12 +945,12 @@ fn initializeLoss(@builtin(global_invocation_id) gid: vec3<u32>) {
   heap[GRADIENT_A + index] = 0.0;
   heap[GRADIENT_B + index] = 0.0;
   heap[LOSS + index] = 0.0;
+  let stateScale = 1.0 / f32(BATCH_CELLS * STABILITY_STEPS);
   if (channel < 4u) {
     let cell = batchCell % CELLS;
     let difference =
       heap[stateIndex(dispatch.activeSteps, batchCell, channel)] -
       heap[TARGET + cell * 4u + channel];
-    let stateScale = 1.0 / f32(BATCH_CELLS * STABILITY_STEPS);
     let imageScale = stateScale / 4.0;
     heap[GRADIENT_A + index] = 2.0 * difference * imageScale;
     heap[LOSS + index] = difference * difference * imageScale;
@@ -946,6 +963,12 @@ fn initializeLoss(@builtin(global_invocation_id) gid: vec3<u32>) {
         (abs(difference) + difference * difference) * stateScale;
     }
   }
+  let value = heap[stateIndex(dispatch.activeSteps, batchCell, channel)];
+  let overflow = value - clamp(value, -1.0, 1.0);
+  let overflowScale =
+    OVERFLOW_LOSS_WEIGHT * stateScale / f32(CHANNELS);
+  heap[GRADIENT_A + index] += sign(overflow) * overflowScale;
+  heap[LOSS + index] += abs(overflow) * overflowScale;
 }
 
 @compute @workgroup_size(${WORKGROUP_SIZE})
@@ -956,14 +979,14 @@ fn addStabilityLoss(@builtin(global_invocation_id) gid: vec3<u32>) {
   }
   let channel = index % CHANNELS;
   let batchCell = index / CHANNELS;
+  let gradientIndex = gradientOutputBase() + index;
+  let stateScale = 1.0 / f32(BATCH_CELLS * STABILITY_STEPS);
   if (channel < 4u) {
     let cell = batchCell % CELLS;
     let difference =
       heap[stateIndex(dispatch.time, batchCell, channel)] -
       heap[TARGET + cell * 4u + channel];
-    let stateScale = 1.0 / f32(BATCH_CELLS * STABILITY_STEPS);
     let imageScale = stateScale / 4.0;
-    let gradientIndex = gradientOutputBase() + index;
     heap[gradientIndex] += 2.0 * difference * imageScale;
     heap[LOSS + index] += difference * difference * imageScale;
     if (channel == 3u) {
@@ -975,6 +998,12 @@ fn addStabilityLoss(@builtin(global_invocation_id) gid: vec3<u32>) {
         (abs(difference) + difference * difference) * stateScale;
     }
   }
+  let value = heap[stateIndex(dispatch.time, batchCell, channel)];
+  let overflow = value - clamp(value, -1.0, 1.0);
+  let overflowScale =
+    OVERFLOW_LOSS_WEIGHT * stateScale / f32(CHANNELS);
+  heap[gradientIndex] += sign(overflow) * overflowScale;
+  heap[LOSS + index] += abs(overflow) * overflowScale;
 }
 
 @compute @workgroup_size(1)

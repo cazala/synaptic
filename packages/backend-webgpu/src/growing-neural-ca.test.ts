@@ -113,6 +113,7 @@ describe("Growing Neural CA trainer substrate", () => {
     });
     expect(health.loss).toBeCloseTo((0.25 ** 2 + 0.2 ** 2) / 8);
     expect(health.shapeLoss).toBeCloseTo((0.2 + 0.2 ** 2) / 2);
+    expect(health.overflowLoss).toBeCloseTo((3 + 2) / 12);
 
     state[3] = 0;
     expect(measureGrowingNeuralCaState(state, target, 6).targetCoverage).toBe(0);
