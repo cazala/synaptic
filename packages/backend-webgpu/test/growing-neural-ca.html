@@ -24,42 +24,10 @@
       #060a11;
   }
   .hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-    gap: 2rem;
+    grid-template-columns: 1fr;
+    gap: 0;
   }
   .hero h1 { max-width: 12ch; }
-  .live-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: .55rem;
-    border: 1px solid #315a55;
-    border-radius: 999px;
-    padding: .55rem .8rem;
-    color: #93efd6;
-    background: #0a1919;
-    font: 700 .64rem ui-monospace, monospace;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-  }
-  .live-badge::before {
-    width: .55rem;
-    height: .55rem;
-    border-radius: 50%;
-    background: var(--mint);
-    box-shadow: 0 0 1rem var(--mint);
-    content: "";
-  }
-  .live-badge[data-training="false"] {
-    border-color: #735f39;
-    color: #ffd98a;
-    background: #1a150b;
-  }
-  .live-badge[data-training="false"]::before {
-    background: var(--amber);
-    box-shadow: 0 0 1rem var(--amber);
-  }
   .phase-badge {
     position: absolute;
     z-index: 2;
@@ -460,10 +428,7 @@
     padding: 1.4rem;
   }
   .curriculum-explanation > header {
-    display: grid;
-    grid-template-columns: minmax(0, .75fr) minmax(20rem, 1.25fr);
-    gap: 2rem;
-    align-items: end;
+    max-width: 76ch;
     margin-bottom: 1.2rem;
   }
   .curriculum-explanation h3 {
@@ -471,7 +436,7 @@
     font-size: 1.05rem;
   }
   .curriculum-explanation header p {
-    margin: 0;
+    margin: .55rem 0 0;
     color: #8294aa;
     font-size: .7rem;
     line-height: 1.65;
@@ -516,8 +481,7 @@
     .hero, .experiment { grid-template-columns: 1fr; }
     .architecture { grid-template-columns: 1fr 1fr; }
     .stage:nth-child(2)::after { display: none; }
-    .explanation-head,
-    .curriculum-explanation > header { grid-template-columns: 1fr; gap: .8rem; }
+    .explanation-head { grid-template-columns: 1fr; gap: .8rem; }
     .explanation-grid,
     .curriculum-summary { grid-template-columns: 1fr; }
     .explanation-topic + .explanation-topic {
@@ -557,11 +521,10 @@
       <h1>Teach one cell to become an organism.</h1>
       <p class="lede">
         Synaptic unrolls a neural cellular automaton through time, trains its
-        shared local rule with backpropagation, then streams the same weights
-        into Automata for a live growth and regeneration simulation.
+        shared local rule, and continuously runs what it has learned in the live
+        growth and regeneration simulation below.
       </p>
     </div>
-    <div class="live-badge">training in browser</div>
   </header>
 
   <section class="architecture" aria-label="Growing Neural CA architecture">
@@ -617,9 +580,9 @@
     <article class="organism-panel panel">
       <header class="panel-head">
         <div>
-          <h2>Automata inference</h2>
+          <h2>Live organism</h2>
           <p id="inference-meta">
-            Responsive live grid · exact artifact handoff · click or drag to
+            Responsive live grid · latest learned rule · click or drag to
             damage after regeneration
           </p>
         </div>
@@ -712,28 +675,27 @@
       </article>
 
       <article class="explanation-topic">
-        <span class="topic-number">02 · TRAINING TAPE</span>
-        <h3>Judge an unfolding process, not one frame.</h3>
+        <span class="topic-number">02 · LEARNING OVER TIME</span>
+        <h3>Learn a process, not a snapshot.</h3>
         <p>
-          Each optimizer update records a random 64–96-generation trajectory.
-          The same target is scored at each of its final sixteen states, so the
-          organism must stay correct instead of briefly passing through the
-          image. Its loss combines RGBA L1 + L2 error, local Sobel edge
-          alignment, and an explicit alpha-shape L1 + L2 penalty across every
-          cell and batch sample: zero is an exact match, and lower is better.
-          The shape term directly teaches which cells should live or die instead
-          of leaving silhouette coverage only to curriculum scoring. A
-          hidden-state overflow penalty also pulls every channel back toward the
-          stable −1…1 range before a large value can turn into an exploding
-          rollout.
+          Each lesson lets the organism evolve for a random 64–96 generations.
+          Synaptic scores its final sixteen states, rewarding accurate color,
+          crisp edges, the right living shape, and stable internal values.
+          Scoring a sequence prevents the organism from resembling the target
+          for only one lucky moment.
         </p>
         <p>
-          BPTT (backpropagation through time) carries those errors backward
-          through the entire tape. Adam (adaptive moment estimation) then
-          turns the resulting gradients into weight updates using momentum and
-          an adaptive step size for each weight.
+          L1 counts every difference by its size. L2 squares differences, giving
+          larger mistakes extra weight. Together they provide steady correction
+          and strong pressure on obvious errors. They contribute to the loss
+          shown above: zero is an exact match, and lower is better.
         </p>
-        <code class="topic-flow">rollout → pixel + edge + shape + overflow loss → BPTT → Adam</code>
+        <p>
+          Synaptic traces that feedback backward through the recorded
+          generations—backpropagation through time—then Adam makes a measured
+          update to the shared rule.
+        </p>
+        <code class="topic-flow">grow → score the final 16 states → trace mistakes → adjust the rule</code>
       </article>
 
       <article class="explanation-topic">
@@ -757,14 +719,13 @@
       <header>
         <h3 id="curriculum-explanation-title">An evidence-based curriculum</h3>
         <p>
-          A phase advances only after a full rolling evidence window meets its
-          confidence and pass-rate bar. The score uses the worst sample in each
-          batch—not its average—and combines target-normalized image loss,
-          living-cell bounds, and coverage of visible target cells. Every later
-          phase must also preserve the earlier skills. If confidence stops
-          improving for sixteen full evidence windows, training keeps its best
-          weights but flushes stale states, resets Adam's momentum, and briefly
-          restarts with a higher learning rate.
+          A phase advances only when a rolling set of recent trials is
+          consistently good, including the weakest example in each batch. The
+          check balances image accuracy, living-cell count, and target coverage;
+          later phases must also preserve earlier skills. If progress stalls for
+          sixteen full windows, Synaptic keeps the learned rule, refreshes its
+          practice states, clears learning momentum, and briefly raises the
+          learning rate.
         </p>
       </header>
       <dl class="curriculum-summary">
@@ -782,8 +743,8 @@
         </div>
       </dl>
       <p class="explanation-footer">
-        The learned 48 → 128 → 16 tensors export as a versioned artifact and
-        run unchanged in Automata's larger live inference grid.
+        The same local rule learned on the compact training grid runs
+        continuously on the larger live grid above.
       </p>
     </section>
   </section>
@@ -837,7 +798,6 @@
   const organismWrap = document.querySelector("#organism-wrap");
   const inferenceMeta = document.querySelector("#inference-meta");
   const status = document.querySelector("#status");
-  const liveBadge = document.querySelector(".live-badge");
   const phaseBadge = document.querySelector("#phase-badge");
   const phaseSteps = [...document.querySelectorAll(".phase-step")].map(
     (element) => ({
@@ -860,7 +820,7 @@
   };
   inferenceMeta.textContent =
     `${INFERENCE_SIZE} × ${INFERENCE_SIZE} live grid · ` +
-    "exact artifact handoff · click or drag to damage after regeneration";
+    "latest learned rule · click or drag to damage after regeneration";
   organismCanvas.setAttribute(
     "aria-label",
     `${INFERENCE_SIZE} by ${INFERENCE_SIZE} growing neural ` +
@@ -1037,9 +997,6 @@
     const percentage = Math.round(snapshot.progress * 100);
     phaseBadge.textContent =
       `Phase ${snapshot.index + 1} · ${snapshot.label} · ${percentage}%`;
-    liveBadge.textContent =
-      `${training ? "training" : "paused"} · ${snapshot.label}`;
-    liveBadge.dataset.training = String(training);
     for (let index = 0; index < phaseSteps.length; index++) {
       const step = phaseSteps[index];
       const phase = snapshot.phases[index];
